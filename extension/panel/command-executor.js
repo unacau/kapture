@@ -228,11 +228,16 @@ class CommandExecutor {
               reject(new Error(`Failed to get element bounds: ${error.toString()}`));
               return;
             }
+            
+            // Check if element was not found
             if (bounds && bounds.error) {
-              const err = new Error(`Element not found: ${bounds.selector}`);
-              err.code = bounds.code;
-              err.selector = bounds.selector;
-              reject(err);
+              resolve({
+                selector: bounds.selector,
+                error: {
+                  code: bounds.code,
+                  message: 'Element not found'
+                }
+              });
               return;
             }
 
@@ -328,17 +333,26 @@ class CommandExecutor {
             (result, error) => {
               if (error) {
                 reject(new Error(`Failed to get element position: ${error.toString()}`));
-              } else if (result && result.error) {
-                const err = new Error(`Element not found: ${result.selector}`);
-                err.code = result.code;
-                err.selector = result.selector;
-                reject(err);
               } else {
                 resolve(result);
               }
             }
           );
         });
+        
+        // Check if element was not found
+        if (coords.error) {
+          // Return success with element not found status
+          resolve({
+            selector: coords.selector,
+            clicked: false,
+            error: {
+              code: coords.code,
+              message: 'Element not found'
+            }
+          });
+          return;
+        }
 
         // Create visual cursor
         await new Promise((resolve, reject) => {
@@ -621,12 +635,8 @@ class CommandExecutor {
         (result, error) => {
           if (error) {
             reject(new Error(`Fill failed: ${error.toString()}`));
-          } else if (result && result.error) {
-            const err = new Error(result.message || `Element not found: ${result.selector}`);
-            err.code = result.code;
-            err.selector = result.selector;
-            reject(err);
           } else {
+            // Always resolve, even if element not found or not fillable
             resolve(result);
           }
         }
@@ -701,13 +711,8 @@ class CommandExecutor {
         (result, error) => {
           if (error) {
             reject(new Error(`Select failed: ${error.toString()}`));
-          } else if (result && result.error) {
-            const err = new Error(result.message || `Element not found: ${result.selector}`);
-            err.code = result.code;
-            err.selector = result.selector;
-            if (result.value) err.value = result.value;
-            reject(err);
           } else {
+            // Always resolve, even if element not found or option not found
             resolve(result);
           }
         }
@@ -760,17 +765,26 @@ class CommandExecutor {
             (result, error) => {
               if (error) {
                 reject(new Error(`Failed to get element position: ${error.toString()}`));
-              } else if (result && result.error) {
-                const err = new Error(`Element not found: ${result.selector}`);
-                err.code = result.code;
-                err.selector = result.selector;
-                reject(err);
               } else {
                 resolve(result);
               }
             }
           );
         });
+        
+        // Check if element was not found
+        if (coords.error) {
+          // Return success with element not found status
+          resolve({
+            selector: coords.selector,
+            hovered: false,
+            error: {
+              code: coords.code,
+              message: 'Element not found'
+            }
+          });
+          return;
+        }
 
         // Create visual cursor
         await new Promise((resolve, reject) => {
@@ -928,12 +942,16 @@ class CommandExecutor {
           const element = document.querySelector(${JSON.stringify(selector)});
           if (!element) {
             return {
-              error: true,
-              code: 'ELEMENT_NOT_FOUND',
-              selector: ${JSON.stringify(selector)}
+              found: false,
+              selector: ${JSON.stringify(selector)},
+              error: {
+                code: 'ELEMENT_NOT_FOUND',
+                message: 'Element not found'
+              }
             };
           }
           return {
+            found: true,
             html: element.outerHTML,
             selector: ${JSON.stringify(selector)}
           };
@@ -945,16 +963,18 @@ class CommandExecutor {
         (result, error) => {
           if (error) {
             reject(new Error(`Get DOM failed: ${error.toString()}`));
-          } else if (result && result.error) {
-            const err = new Error(`Element not found: ${result.selector}`);
-            err.code = result.code;
-            err.selector = result.selector;
-            reject(err);
           } else {
-            resolve({
-              html: result,
-              selector: selector || 'body'
-            });
+            // Always resolve successfully, even if element not found
+            if (typeof result === 'string') {
+              // For body case where we return the HTML directly
+              resolve({
+                found: true,
+                html: result,
+                selector: 'body'
+              });
+            } else {
+              resolve(result);
+            }
           }
         }
       );

@@ -255,17 +255,24 @@ async function connect() {
             ws.send(JSON.stringify(result));
             addMessage('outgoing', result);
           } catch (error) {
-            const errorResponse = {
-              id: message.id,
-              type: 'response',
-              success: false,
-              error: {
-                message: error.message,
-                code: 'EXECUTION_ERROR'
-              }
-            };
-            ws.send(JSON.stringify(errorResponse));
-            addMessage('outgoing', errorResponse);
+            // If error is already a formatted response, use it directly
+            if (error && error.type === 'response' && error.success === false) {
+              ws.send(JSON.stringify(error));
+              addMessage('outgoing', error);
+            } else {
+              // Otherwise create a generic error response
+              const errorResponse = {
+                id: message.id,
+                type: 'response',
+                success: false,
+                error: {
+                  message: error.message || String(error),
+                  code: 'EXECUTION_ERROR'
+                }
+              };
+              ws.send(JSON.stringify(errorResponse));
+              addMessage('outgoing', errorResponse);
+            }
           }
         }
       } catch (error) {
