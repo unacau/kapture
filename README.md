@@ -261,6 +261,7 @@ See [docs/MCP_USAGE.md](docs/MCP_USAGE.md) for detailed setup instructions and e
 - `kaptivemcp_select` - Select dropdown options
 - `kaptivemcp_evaluate` - Execute JavaScript
 - `kaptivemcp_logs` - Retrieve console logs
+- `kaptivemcp_dom` - Get outerHTML of body or specific element
 
 ## Testing Commands
 
@@ -311,6 +312,10 @@ See [docs/MCP_USAGE.md](docs/MCP_USAGE.md) for detailed setup instructions and e
 
 // Get console logs
 { "max": 100 }
+
+// Get DOM HTML
+{} // Gets entire body
+{ "selector": ".main-content" } // Gets specific element
 ```
 
 ## Completed Features

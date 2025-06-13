@@ -195,6 +195,19 @@ Retrieve console logs from the browser.
 
 **Returns:** Array of log entries with timestamp, level, and message
 
+### kaptivemcp_dom
+Get outerHTML of the body or a specific element.
+
+**Parameters:**
+- `tabId` (string, required): Target tab ID
+- `selector` (string, optional): CSS selector of element (defaults to body)
+
+**Returns:** Object with:
+- `found` (boolean): Whether element was found
+- `html` (string): The outerHTML content (if found)
+- `selector` (string): The selector used
+- `error` (object): Error details if element not found
+
 ## Usage Examples
 
 ### Example 1: Web Scraping
@@ -227,6 +240,18 @@ const screenshot = await client.callTool('kaptivemcp_screenshot', {
   tabId,
   name: 'article-screenshot'
 });
+
+// Get article content HTML
+const domResult = await client.callTool('kaptivemcp_dom', {
+  tabId,
+  selector: 'article'
+});
+
+if (domResult.found) {
+  console.log('Article HTML:', domResult.html);
+} else {
+  console.log('Article element not found');
+}
 ```
 
 ### Example 2: Form Automation
@@ -382,7 +407,10 @@ await client.callTool('kaptivemcp_click', {
 
 ## Error Handling
 
-All tools return errors in a consistent format:
+Tools handle errors in two ways:
+
+### 1. Fatal Errors (thrown as exceptions)
+These are actual failures that prevent the command from executing:
 
 ```javascript
 try {
@@ -396,11 +424,42 @@ try {
 }
 ```
 
+### 2. Graceful Errors (returned in response)
+For expected conditions like "element not found", tools return success with error details:
+
+```javascript
+// Click on element that may not exist
+const result = await client.callTool('kaptivemcp_click', {
+  tabId,
+  selector: '.optional-button'
+});
+
+if (result.clicked) {
+  console.log('Button was clicked');
+} else if (result.error && result.error.code === 'ELEMENT_NOT_FOUND') {
+  console.log('Button not found on page');
+}
+
+// Get DOM of element that may not exist
+const domResult = await client.callTool('kaptivemcp_dom', {
+  tabId,
+  selector: '.dynamic-content'
+});
+
+if (domResult.found) {
+  console.log('Content HTML:', domResult.html);
+} else {
+  console.log('Content not loaded yet');
+}
+```
+
 Common error codes:
-- `TAB_NOT_FOUND`: Specified tab ID doesn't exist
-- `ELEMENT_NOT_FOUND`: CSS selector didn't match any elements
-- `TIMEOUT`: Command exceeded timeout limit
-- `EXECUTION_ERROR`: JavaScript evaluation failed
+- `TAB_NOT_FOUND`: Specified tab ID doesn't exist (thrown)
+- `ELEMENT_NOT_FOUND`: CSS selector didn't match any elements (graceful)
+- `INVALID_ELEMENT`: Element exists but wrong type (graceful)
+- `OPTION_NOT_FOUND`: Select option value not found (graceful)
+- `TIMEOUT`: Command exceeded timeout limit (thrown)
+- `EXECUTION_ERROR`: JavaScript evaluation failed (thrown)
 
 ## Best Practices
 
