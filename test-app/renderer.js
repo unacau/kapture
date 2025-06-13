@@ -3,14 +3,13 @@ let connected = false;
 let currentTools = [];
 let currentTabs = [];
 let selectedTabId = null;
+let tabPollingInterval = null;
 
 // DOM elements
 const statusEl = document.getElementById('status');
 const statusTextEl = document.getElementById('status-text');
-const connectBtn = document.getElementById('connect-btn');
 const refreshTabsBtn = document.getElementById('refresh-tabs');
 const tabListEl = document.getElementById('tab-list');
-const urlTextEl = document.getElementById('url-text');
 const tabContentEl = document.getElementById('tab-content');
 const consoleEl = document.getElementById('console-output');
 
@@ -27,19 +26,10 @@ function log(message, type = 'info') {
 }
 
 // Server management
-connectBtn.addEventListener('click', async () => {
-  if (connected) {
-    await stopServer();
-  } else {
-    await startServer();
-  }
-});
-
-async function startServer() {
+async function connectToServer() {
   try {
-    connectBtn.disabled = true;
-    connectBtn.textContent = 'Starting...';
-    log('Starting MCP server...');
+    log('Connecting to MCP server...');
+    statusTextEl.textContent = 'Connecting...';
 
     const result = await window.electronAPI.connectMCP();
     
@@ -47,43 +37,32 @@ async function startServer() {
       connected = true;
       statusEl.classList.add('connected');
       statusTextEl.textContent = 'Server Running';
-      connectBtn.textContent = 'Stop Server';
       refreshTabsBtn.disabled = false;
       
-      log('MCP server started successfully', 'info');
+      log('MCP server connected successfully', 'info');
       log(`Server capabilities: ${JSON.stringify(result.capabilities)}`, 'info');
       
       // Auto-discover tools
       await discoverTools();
       await refreshTabs();
+      
+      // Start polling for tabs if none found
+      startTabPolling();
     } else {
-      throw new Error(result.error || 'Failed to start server');
+      throw new Error(result.error || 'Failed to connect to server');
     }
   } catch (error) {
-    log(`Failed to start server: ${error.message}`, 'error');
-    connected = false;
-  } finally {
-    connectBtn.disabled = false;
-  }
-}
-
-async function stopServer() {
-  try {
-    await window.electronAPI.disconnectMCP();
+    log(`Failed to connect to server: ${error.message}`, 'error');
     connected = false;
     statusEl.classList.remove('connected');
-    statusTextEl.textContent = 'Server Stopped';
-    connectBtn.textContent = 'Start Server';
+    statusTextEl.textContent = 'Connection Failed';
     refreshTabsBtn.disabled = true;
     
-    // Clear tabs and content
-    currentTabs = [];
-    selectedTabId = null;
-    displayTabs();
-    
-    log('MCP server stopped');
-  } catch (error) {
-    log(`Error stopping server: ${error.message}`, 'error');
+    // Retry connection after delay
+    setTimeout(() => {
+      log('Retrying connection...');
+      connectToServer();
+    }, 3000);
   }
 }
 
@@ -99,28 +78,81 @@ async function discoverTools() {
   }
 }
 
-// Tab management
-refreshTabsBtn.addEventListener('click', refreshTabs);
+// Tab polling management
+function startTabPolling() {
+  // Don't start if already polling
+  if (tabPollingInterval) return;
+  
+  // Only poll if no tabs are connected
+  if (currentTabs.length === 0) {
+    log('Starting automatic tab discovery...');
+    tabPollingInterval = setInterval(async () => {
+      // Only poll if still connected and no tabs
+      if (connected && currentTabs.length === 0) {
+        await refreshTabs(true); // true = silent mode
+      } else {
+        stopTabPolling();
+      }
+    }, 1000);
+  }
+}
 
-async function refreshTabs() {
+function stopTabPolling() {
+  if (tabPollingInterval) {
+    clearInterval(tabPollingInterval);
+    tabPollingInterval = null;
+    log('Stopped automatic tab discovery');
+  }
+}
+
+// Tab management
+refreshTabsBtn.addEventListener('click', () => refreshTabs(false));
+
+async function refreshTabs(silent = false) {
   try {
-    log('Refreshing tabs...');
+    if (!silent) {
+      log('Refreshing tabs...');
+    }
     const result = await callTool('kaptivemcp_list_tabs', {});
     const content = JSON.parse(result.content[0].text);
-    currentTabs = content.tabs || [];
+    const newTabs = content.tabs || [];
     
-    log(`Found ${currentTabs.length} connected tabs`);
+    // Check if we found new tabs
+    if (currentTabs.length === 0 && newTabs.length > 0) {
+      log(`Found ${newTabs.length} connected tab${newTabs.length > 1 ? 's' : ''}!`);
+      stopTabPolling();
+    } else if (!silent) {
+      log(`Found ${newTabs.length} connected tabs`);
+    }
+    
+    currentTabs = newTabs;
     displayTabs();
+    
+    // Auto-select first tab if none selected
+    if (!selectedTabId && currentTabs.length > 0) {
+      selectTab(currentTabs[0].tabId);
+    } else if (selectedTabId) {
+      // Update tab content if already selected
+      displayTabContent();
+    }
     
     // If selected tab is gone, clear selection
     if (selectedTabId && !currentTabs.find(t => t.tabId === selectedTabId)) {
       selectedTabId = null;
       displayTabContent();
     }
+    
+    // If no tabs, start polling
+    if (currentTabs.length === 0) {
+      startTabPolling();
+    }
   } catch (error) {
-    log(`Failed to refresh tabs: ${error.message}`, 'error');
+    if (!silent) {
+      log(`Failed to refresh tabs: ${error.message}`, 'error');
+    }
     currentTabs = [];
     displayTabs();
+    startTabPolling();
   }
 }
 
@@ -128,8 +160,7 @@ function displayTabs() {
   tabListEl.innerHTML = '';
   
   if (currentTabs.length === 0) {
-    tabListEl.innerHTML = '<div class="empty-state" style="padding: 0.5rem;">No tabs connected</div>';
-    urlTextEl.textContent = 'No tab selected';
+    tabListEl.innerHTML = '<div class="empty-state" style="padding: 0.5rem;">Looking for Chrome tabs...</div>';
     return;
   }
 
@@ -149,12 +180,6 @@ function displayTabs() {
 
 function selectTab(tabId) {
   selectedTabId = tabId;
-  const tab = currentTabs.find(t => t.tabId === tabId);
-  
-  if (tab) {
-    urlTextEl.textContent = tab.url;
-  }
-  
   displayTabs();
   displayTabContent();
 }
@@ -170,13 +195,69 @@ function displayTabContent() {
     return;
   }
 
-  // Create tool cards
+  // Get current tab info
+  const currentTab = currentTabs.find(t => t.tabId === selectedTabId);
+  const currentUrl = currentTab ? currentTab.url : '';
+
+  // Create browser navigation bar
+  const navBarHtml = `
+    <div class="browser-nav-bar">
+      <button class="nav-btn" id="nav-back" title="Go back">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path fill="currentColor" d="M11 2L5 8l6 6v-12z"/>
+        </svg>
+      </button>
+      <button class="nav-btn" id="nav-forward" title="Go forward">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path fill="currentColor" d="M5 2l6 6-6 6V2z"/>
+        </svg>
+      </button>
+      <input type="text" class="nav-url-input" id="nav-url" value="${currentUrl}" placeholder="Enter URL...">
+      <button class="nav-btn nav-refresh" id="nav-refresh" title="Navigate">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path fill="currentColor" d="M12 8l-6-6v4H2v4h4v4l6-6z"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  // Create tool cards (excluding navigation tools)
   const toolsHtml = currentTools
-    .filter(tool => tool.name !== 'kaptivemcp_list_tabs') // Skip list tabs tool
+    .filter(tool => !['kaptivemcp_list_tabs', 'kaptivemcp_navigate', 'kaptivemcp_go_back', 'kaptivemcp_go_forward'].includes(tool.name))
     .map(tool => createToolCard(tool))
     .join('');
 
-  tabContentEl.innerHTML = `<div class="tools-grid">${toolsHtml}</div>`;
+  tabContentEl.innerHTML = `
+    ${navBarHtml}
+    <div class="tools-grid">${toolsHtml}</div>
+  `;
+
+  // Add navigation event listeners
+  document.getElementById('nav-back').addEventListener('click', async () => {
+    await executeNavigation('back');
+  });
+
+  document.getElementById('nav-forward').addEventListener('click', async () => {
+    await executeNavigation('forward');
+  });
+
+  const urlInput = document.getElementById('nav-url');
+  const navRefresh = document.getElementById('nav-refresh');
+
+  const navigateToUrl = async () => {
+    const url = urlInput.value.trim();
+    if (url) {
+      await executeNavigation('navigate', url);
+    }
+  };
+
+  urlInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      navigateToUrl();
+    }
+  });
+
+  navRefresh.addEventListener('click', navigateToUrl);
 
   // Restore form data if exists
   if (tabFormData[selectedTabId]) {
@@ -328,6 +409,60 @@ async function callTool(name, args) {
   });
 }
 
+// Execute navigation commands
+async function executeNavigation(action, url = null) {
+  try {
+    let toolName, params;
+    
+    switch (action) {
+      case 'back':
+        toolName = 'kaptivemcp_go_back';
+        params = { tabId: selectedTabId };
+        log('Navigating back...');
+        break;
+      case 'forward':
+        toolName = 'kaptivemcp_go_forward';
+        params = { tabId: selectedTabId };
+        log('Navigating forward...');
+        break;
+      case 'navigate':
+        toolName = 'kaptivemcp_navigate';
+        params = { tabId: selectedTabId, url };
+        log(`Navigating to ${url}...`);
+        break;
+    }
+    
+    const result = await callTool(toolName, params);
+    const content = JSON.parse(result.content[0].text);
+    
+    if (content.error) {
+      log(`Navigation failed: ${content.error.message}`, 'error');
+    } else {
+      log(`Navigation completed`);
+      
+      // Update local tab info if we got new URL/title
+      if (content.url && content.title) {
+        const tab = currentTabs.find(t => t.tabId === selectedTabId);
+        if (tab) {
+          tab.url = content.url;
+          tab.title = content.title;
+          
+          // Update UI immediately
+          displayTabs();
+          
+          // Update URL input
+          const urlInput = document.getElementById('nav-url');
+          if (urlInput) {
+            urlInput.value = content.url;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    log(`Navigation error: ${error.message}`, 'error');
+  }
+}
+
 // Clear console
 document.getElementById('clear-console').addEventListener('click', () => {
   consoleEl.innerHTML = '';
@@ -343,15 +478,35 @@ window.electronAPI.onMCPNotification((message) => {
 });
 
 window.electronAPI.onMCPDisconnected((data) => {
-  log(`MCP server exited (code: ${data.code})`, 'error');
-  stopServer();
+  log(`MCP server disconnected (code: ${data.code})`, 'error');
+  connected = false;
+  statusEl.classList.remove('connected');
+  statusTextEl.textContent = 'Disconnected';
+  refreshTabsBtn.disabled = true;
+  
+  // Stop polling
+  stopTabPolling();
+  
+  // Clear tabs and content
+  currentTabs = [];
+  selectedTabId = null;
+  displayTabs();
+  
+  // Attempt to reconnect
+  setTimeout(() => {
+    log('Attempting to reconnect...');
+    connectToServer();
+  }, 2000);
 });
 
 window.electronAPI.onMCPError((data) => {
   if (data.type === 'PORT_IN_USE') {
     log(data.message, 'error');
     alert('Port 61822 is already in use!\n\nPlease stop any running Kapture server instances:\n- Check for other terminal windows running "npm start"\n- Check for other Electron test app instances\n- Use "lsof -i :61822" to find the process');
-    stopServer();
+    connected = false;
+    statusEl.classList.remove('connected');
+    statusTextEl.textContent = 'Port In Use';
+    refreshTabsBtn.disabled = true;
   } else {
     log(`Server error: ${data.message}`, 'error');
   }
@@ -359,3 +514,6 @@ window.electronAPI.onMCPError((data) => {
 
 // Initial state
 log('Kapture MCP Test Client ready');
+
+// Auto-connect on startup
+connectToServer();

@@ -23,18 +23,49 @@ function createWindow() {
   if (process.argv.includes('--dev')) {
     mainWindow.webContents.openDevTools();
   }
+  
+  // Kill MCP process before reload
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'r' && (input.meta || input.control)) {
+      if (mcpProcess) {
+        console.log('Killing MCP process before reload');
+        mcpProcess.kill();
+        mcpProcess = null;
+      }
+    }
+  });
 }
 
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-  if (mcpProcess) {
-    mcpProcess.kill();
-  }
+  killMCPProcess();
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
+
+app.on('before-quit', () => {
+  killMCPProcess();
+});
+
+// Helper to ensure MCP process is killed
+function killMCPProcess() {
+  if (mcpProcess) {
+    console.log('Killing MCP process...');
+    mcpProcess.kill('SIGTERM');
+    
+    // Force kill after a moment if still alive
+    setTimeout(() => {
+      if (mcpProcess && !mcpProcess.killed) {
+        console.log('Force killing MCP process...');
+        mcpProcess.kill('SIGKILL');
+      }
+    }, 100);
+    
+    mcpProcess = null;
+  }
+}
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -68,6 +99,13 @@ function handleMCPMessage(message) {
 // IPC handlers for renderer process
 ipcMain.handle('mcp-connect', async () => {
   try {
+    // Kill any existing process first (handles refreshes)
+    killMCPProcess();
+    if (mcpProcess) {
+      // Wait a moment for the process to fully terminate
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
     // Spawn the MCP server
     const serverPath = path.join(__dirname, '..', 'server', 'dist', 'index.js');
     mcpProcess = spawn('node', [serverPath], {
@@ -146,6 +184,15 @@ ipcMain.handle('mcp-connect', async () => {
         }
       }
     });
+    
+    // Handle error event (for spawn errors)
+    mcpProcess.on('error', (error) => {
+      console.error('Failed to spawn MCP process:', error);
+      mainWindow.webContents.send('mcp-error', {
+        type: 'SPAWN_ERROR',
+        message: `Failed to start server: ${error.message}`
+      });
+    });
 
     // Send initialize request
     const response = await sendMCPRequest('initialize', {
@@ -168,11 +215,10 @@ ipcMain.handle('mcp-connect', async () => {
   }
 });
 
+// Note: mcp-disconnect is no longer used since the server runs continuously
+// The handler is kept for compatibility but could be removed in the future
 ipcMain.handle('mcp-disconnect', async () => {
-  if (mcpProcess) {
-    mcpProcess.kill();
-    mcpProcess = null;
-  }
+  // Do nothing - server stays running with the app
   return { success: true };
 });
 

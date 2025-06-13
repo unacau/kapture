@@ -33,11 +33,14 @@ npm start
 
 ## Usage
 
-1. **Connect**: Click "Connect" to spawn the MCP server process
+1. **Auto-Connect**: The app automatically starts the MCP server on launch
 2. **Open Chrome**: Open Chrome with the Kapture extension and connect a tab via DevTools
-3. **Discover Tools**: The app automatically discovers available tools on connection
-4. **Select Tab**: Choose a connected tab from the sidebar
-5. **Execute Tools**: Select a tool, fill in parameters, and click Execute
+3. **Tab List**: Connected tabs appear automatically in the browser-style tab interface
+4. **Select Tab**: Click on a tab to see available tools
+5. **Execute Tools**: Fill in parameters and click Execute to run tools
+6. **View Results**: Results appear below each tool with JSON formatting
+
+Note: The server runs continuously while the app is open. Use Cmd+R to refresh if needed.
 
 ## Architecture
 

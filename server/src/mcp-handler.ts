@@ -25,6 +25,7 @@ export class MCPHandler {
     resolve: (result: any) => void;
     reject: (error: any) => void;
     timeout: NodeJS.Timeout;
+    tabId?: string;
   }> = new Map();
 
   constructor(
@@ -71,7 +72,7 @@ export class MCPHandler {
         reject(new Error(`Command timeout: ${command}`));
       }, params.timeout || 5000);
 
-      this.pendingCommands.set(commandId, { resolve, reject, timeout });
+      this.pendingCommands.set(commandId, { resolve, reject, timeout, tabId });
       logger.log(`Registered pending command: ${command} (${commandId})`);
     });
 
@@ -103,6 +104,19 @@ export class MCPHandler {
     // Clear timeout
     clearTimeout(pending.timeout);
     this.pendingCommands.delete(response.id);
+
+    // If this is a successful navigation response with URL/title, update tab registry
+    if (response.success && response.result && pending.tabId) {
+      const result = response.result;
+      if ((result.action === 'back' || result.action === 'forward' || result.navigated) && 
+          result.url && result.title) {
+        logger.log(`Updating tab ${pending.tabId} info after navigation: ${result.url}`);
+        this.tabRegistry.updateTabInfo(pending.tabId, {
+          url: result.url,
+          title: result.title
+        });
+      }
+    }
 
     // Resolve or reject based on response
     if (response.success) {

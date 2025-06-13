@@ -364,3 +364,19 @@ document.addEventListener('keydown', (e) => {
 // Initialize
 updateConnectionStatus(false);
 updateLogCount();
+
+// Send tab info update to server
+function sendTabInfoUpdate(url, title) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const updateMessage = {
+      type: 'tab-info',
+      url: url,
+      title: title
+    };
+    ws.send(JSON.stringify(updateMessage));
+    console.log('Sent tab info update:', updateMessage);
+  }
+}
+
+// Export for command executor
+window.sendTabInfoUpdate = sendTabInfoUpdate;

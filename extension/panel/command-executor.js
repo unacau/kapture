@@ -182,10 +182,23 @@ class CommandExecutor {
           if (error) {
             reject(new Error(`Navigation failed: ${error.toString()}`));
           } else {
-            // Wait a bit for navigation to start
+            // Wait for navigation to complete and get new URL/title
             setTimeout(() => {
-              resolve({ url, navigated: true });
-            }, 100);
+              chrome.devtools.inspectedWindow.eval(
+                '({ url: window.location.href, title: document.title })',
+                (navInfo, navError) => {
+                  if (navError) {
+                    resolve({ url, navigated: true });
+                  } else {
+                    resolve({ 
+                      navigated: true,
+                      url: navInfo.url,
+                      title: navInfo.title
+                    });
+                  }
+                }
+              );
+            }, 500);
           }
         }
       );
@@ -201,7 +214,23 @@ class CommandExecutor {
           if (error) {
             reject(new Error(`Go back failed: ${error.toString()}`));
           } else {
-            resolve({ action: 'back' });
+            // Wait for navigation to complete and get new URL/title
+            setTimeout(() => {
+              chrome.devtools.inspectedWindow.eval(
+                '({ url: window.location.href, title: document.title })',
+                (navInfo, navError) => {
+                  if (navError) {
+                    resolve({ action: 'back' });
+                  } else {
+                    resolve({ 
+                      action: 'back',
+                      url: navInfo.url,
+                      title: navInfo.title
+                    });
+                  }
+                }
+              );
+            }, 300);
           }
         }
       );
@@ -217,7 +246,23 @@ class CommandExecutor {
           if (error) {
             reject(new Error(`Go forward failed: ${error.toString()}`));
           } else {
-            resolve({ action: 'forward' });
+            // Wait for navigation to complete and get new URL/title
+            setTimeout(() => {
+              chrome.devtools.inspectedWindow.eval(
+                '({ url: window.location.href, title: document.title })',
+                (navInfo, navError) => {
+                  if (navError) {
+                    resolve({ action: 'forward' });
+                  } else {
+                    resolve({ 
+                      action: 'forward',
+                      url: navInfo.url,
+                      title: navInfo.title
+                    });
+                  }
+                }
+              );
+            }, 300);
           }
         }
       );
