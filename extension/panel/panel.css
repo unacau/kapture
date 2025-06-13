@@ -1,0 +1,465 @@
+/* Kapture DevTools Panel - Clean WebSocket-style UI */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11px;
+  color: #333;
+  background: #fff;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #1e1e1e;
+    color: #ccc;
+  }
+}
+
+.panel-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-bottom: 1px solid #ccc;
+  background: #f3f3f3;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .header {
+    background: #2d2d30;
+    border-bottom-color: #444;
+  }
+}
+
+/* Status Indicator */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #999;
+}
+
+.status-indicator.connected .status-dot {
+  background: #4caf50;
+}
+
+.status-text {
+  font-size: 11px;
+  color: #666;
+}
+
+@media (prefers-color-scheme: dark) {
+  .status-text {
+    color: #999;
+  }
+}
+
+/* Tab ID */
+.tab-id {
+  font-family: monospace;
+  font-size: 11px;
+  color: #666;
+  margin-right: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tab-id {
+    color: #999;
+  }
+}
+
+/* Log Info */
+.log-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  margin-right: 12px;
+}
+
+#log-count {
+  font-size: 11px;
+  color: #666;
+}
+
+@media (prefers-color-scheme: dark) {
+  #log-count {
+    color: #999;
+  }
+}
+
+/* Clear Buttons */
+.clear-messages-btn,
+.clear-logs-btn {
+  padding: 2px 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-messages-btn:hover,
+.clear-logs-btn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+@media (prefers-color-scheme: dark) {
+  .clear-messages-btn,
+  .clear-logs-btn {
+    background: #3c3c3c;
+    border-color: #555;
+    color: #ccc;
+  }
+
+  .clear-messages-btn:hover,
+  .clear-logs-btn:hover {
+    background: #484848;
+    border-color: #666;
+  }
+}
+
+/* Connect Button */
+.connect-btn {
+  padding: 3px 12px;
+  border: 1px solid #1a73e8;
+  background: #1a73e8;
+  color: white;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.connect-btn:hover {
+  background: #1557b0;
+  border-color: #1557b0;
+}
+
+.connect-btn.connected {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.connect-btn.connected:hover {
+  background: #c8e6c9;
+}
+
+@media (prefers-color-scheme: dark) {
+  .connect-btn {
+    background: #1a73e8;
+    border-color: #1a73e8;
+    color: white;
+  }
+
+  .connect-btn:hover {
+    background: #1557b0;
+    border-color: #1557b0;
+  }
+
+  .connect-btn.connected {
+    background: #1b5e20;
+    border-color: #4caf50;
+    color: #a5d6a7;
+  }
+}
+
+/* Messages Container */
+.messages-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Messages Header */
+.messages-header {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f3f3f3;
+  border-bottom: 1px solid #ccc;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .messages-header {
+    background: #2d2d30;
+    border-bottom-color: #444;
+  }
+}
+
+.column-data {
+  flex: 1;
+  padding-left: 20px;
+}
+
+.column-time {
+  width: 100px;
+  text-align: right;
+  margin-right: 8px;
+}
+
+.header-clear-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #333;
+}
+
+.header-clear-btn:hover {
+  opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .header-clear-btn {
+    color: #ccc;
+  }
+}
+
+/* Messages List */
+.messages-list {
+  flex: 1;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+/* Message Row */
+.message-row {
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.message-row:hover {
+  background: #f5f5f5;
+}
+
+.message-row.selected {
+  background: #e3f2fd;
+}
+
+@media (prefers-color-scheme: dark) {
+  .message-row {
+    border-bottom-color: #2d2d30;
+  }
+
+  .message-row:hover {
+    background: #2d2d30;
+  }
+
+  .message-row.selected {
+    background: #264f78;
+  }
+}
+
+/* Message Arrow */
+.message-arrow {
+  width: 12px;
+  margin-right: 8px;
+  color: #666;
+  font-size: 10px;
+}
+
+.message-row.outgoing .message-arrow {
+  color: #1976d2;
+}
+
+.message-row.incoming .message-arrow {
+  color: #388e3c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .message-arrow {
+    color: #999;
+  }
+
+  .message-row.outgoing .message-arrow {
+    color: #42a5f5;
+  }
+
+  .message-row.incoming .message-arrow {
+    color: #66bb6a;
+  }
+}
+
+/* Message Data */
+.message-data {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  .message-data {
+    color: #ccc;
+  }
+}
+
+/* Message Time */
+.message-time {
+  width: 100px;
+  text-align: right;
+  color: #666;
+  font-size: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .message-time {
+    color: #999;
+  }
+}
+
+/* Detail View */
+.detail-view {
+  height: 200px;
+  border-top: 1px solid #ccc;
+  background: #fafafa;
+  overflow: auto;
+  flex-shrink: 0;
+  padding: 8px;
+  display: none;
+}
+
+.detail-view.active {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  .detail-view {
+    background: #1e1e1e;
+    border-top-color: #444;
+  }
+}
+
+.detail-content {
+  margin: 0;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .detail-content {
+    color: #ccc;
+  }
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+}
+
+/* Screenshot Preview */
+.screenshot-preview {
+  margin-top: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.screenshot-thumbnail {
+  max-width: 100%;
+  max-height: 200px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.screenshot-thumbnail:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .screenshot-thumbnail {
+    border-color: #444;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #444;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}

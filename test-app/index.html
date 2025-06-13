@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kapture Test Web Application</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Kapture Test Web Application</h1>
+      <p class="subtitle">MCP Client for Testing Browser Automation</p>
+    </header>
+
+    <div class="main-content">
+      <!-- Connection Panel -->
+      <aside class="sidebar">
+        <div class="panel">
+          <h2>MCP Connection</h2>
+          <div class="connection-status" id="connection-status">
+            <span class="status-indicator" id="status-indicator"></span>
+            <span id="status-text">Disconnected</span>
+          </div>
+          <div class="connection-controls">
+            <button id="connect-btn" class="btn btn-primary">Connect to Server</button>
+            <button id="disconnect-btn" class="btn btn-secondary" disabled>Disconnect</button>
+          </div>
+          <div class="connection-info">
+            <small>Connects to MCP server via stdio protocol</small>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Connected Tabs</h2>
+          <div class="tabs-container">
+            <button id="refresh-tabs-btn" class="btn btn-secondary btn-small">Refresh</button>
+            <div id="tabs-list" class="tabs-list">
+              <p class="empty-state">No tabs connected</p>
+            </div>
+          </div>
+          <div class="selected-tab">
+            <h3>Selected Tab</h3>
+            <div id="selected-tab-info" class="tab-info">
+              <p class="empty-state">No tab selected</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Testing Area -->
+      <main class="content">
+        <div class="tabs-nav">
+          <button class="tab-btn active" data-tab="tools">Tool Testing</button>
+          <button class="tab-btn" data-tab="history">Command History</button>
+          <button class="tab-btn" data-tab="raw">Raw MCP</button>
+        </div>
+
+        <!-- Tool Testing Tab -->
+        <div id="tools-tab" class="tab-content active">
+          <div class="panel">
+            <h2>Browser Automation Tools</h2>
+            
+            <div class="tool-selector">
+              <label for="tool-select">Select Tool:</label>
+              <select id="tool-select">
+                <option value="">Choose a tool...</option>
+                <option value="kaptivemcp_list_tabs">List Tabs</option>
+                <option value="kaptivemcp_navigate">Navigate</option>
+                <option value="kaptivemcp_go_back">Go Back</option>
+                <option value="kaptivemcp_go_forward">Go Forward</option>
+                <option value="kaptivemcp_screenshot">Screenshot</option>
+                <option value="kaptivemcp_click">Click Element</option>
+                <option value="kaptivemcp_hover">Hover Element</option>
+                <option value="kaptivemcp_fill">Fill Input</option>
+                <option value="kaptivemcp_select">Select Option</option>
+                <option value="kaptivemcp_evaluate">Execute JavaScript</option>
+                <option value="kaptivemcp_logs">Get Console Logs</option>
+              </select>
+            </div>
+
+            <div id="tool-form" class="tool-form">
+              <p class="help-text">Select a tool to see its parameters</p>
+            </div>
+
+            <div class="tool-actions">
+              <button id="execute-tool-btn" class="btn btn-primary" disabled>Execute Tool</button>
+              <button id="clear-form-btn" class="btn btn-secondary">Clear Form</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Tool Response</h2>
+            <div class="response-controls">
+              <button id="clear-response-btn" class="btn btn-secondary btn-small">Clear</button>
+              <button id="copy-response-btn" class="btn btn-secondary btn-small">Copy</button>
+            </div>
+            <div id="tool-response" class="response-viewer">
+              <p class="help-text">Tool responses will appear here</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Command History Tab -->
+        <div id="history-tab" class="tab-content">
+          <div class="panel">
+            <h2>Command History</h2>
+            <div class="history-controls">
+              <button id="clear-history-btn" class="btn btn-secondary">Clear History</button>
+              <button id="export-history-btn" class="btn btn-secondary">Export as JSON</button>
+            </div>
+            <div id="history-list" class="history-list">
+              <p class="help-text">Command history will appear here</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Raw MCP Tab -->
+        <div id="raw-tab" class="tab-content">
+          <div class="panel">
+            <h2>Raw MCP Protocol</h2>
+            <p class="help-text">For advanced users: Send raw MCP requests</p>
+            
+            <div class="raw-request">
+              <label for="raw-method">Method:</label>
+              <select id="raw-method">
+                <option value="tools/list">tools/list</option>
+                <option value="tools/call">tools/call</option>
+              </select>
+            </div>
+
+            <div class="raw-request">
+              <label for="raw-params">Parameters (JSON):</label>
+              <textarea id="raw-params" rows="8" placeholder='{"name": "tool_name", "arguments": {}}'></textarea>
+            </div>
+
+            <div class="raw-actions">
+              <button id="send-raw-btn" class="btn btn-primary">Send Request</button>
+              <button id="clear-raw-btn" class="btn btn-secondary">Clear</button>
+            </div>
+
+            <div class="raw-response">
+              <h3>Raw Response</h3>
+              <pre id="raw-response-text"></pre>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Status Bar -->
+    <footer class="status-bar">
+      <span id="status-message">Ready</span>
+      <span id="last-execution-time"></span>
+    </footer>
+  </div>
+
+  <!-- Scripts -->
+  <script src="components/mcp-client.js"></script>
+  <script src="components/tabs-manager.js"></script>
+  <script src="components/tool-forms.js"></script>
+  <script src="components/history-manager.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

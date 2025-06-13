@@ -1,0 +1,24 @@
+{
+  "name": "kapture-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Kapture browser automation",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "debug": "KAPTURE_DEBUG=1 node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "ws": "^8.18.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0"
+  }
+}

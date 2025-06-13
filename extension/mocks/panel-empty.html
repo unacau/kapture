@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Kapture</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div class="panel-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="status-indicator" id="status-indicator">
+        <span class="status-dot"></span>
+        <span class="status-text">Disconnected</span>
+      </div>
+      <div class="tab-id" id="tab-id">Tab: -</div>
+      <button class="connect-btn" id="connect-btn">Connect</button>
+    </div>
+
+    <!-- Messages List (Empty State) -->
+    <div class="messages-container">
+      <div class="messages-header">
+        <div class="column-data">Data</div>
+        <div class="column-time">Time</div>
+      </div>
+      
+      <div class="messages-list" id="messages-list">
+        <div class="empty-state">
+          No messages yet. Click Connect to start.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

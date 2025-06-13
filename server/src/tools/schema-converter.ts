@@ -1,0 +1,62 @@
+import { z } from 'zod';
+
+// Convert Zod schema to JSON Schema format for MCP
+export function zodToJsonSchema(schema: z.ZodType<any>): any {
+  if (schema instanceof z.ZodObject) {
+    const shape = schema.shape;
+    const properties: any = {};
+    const required: string[] = [];
+
+    for (const [key, value] of Object.entries(shape)) {
+      properties[key] = zodToJsonSchema(value as z.ZodType<any>);
+      
+      // Check if field is required
+      if (!(value as any).isOptional()) {
+        required.push(key);
+      }
+    }
+
+    return {
+      type: 'object',
+      properties,
+      required: required.length > 0 ? required : undefined
+    };
+  }
+
+  if (schema instanceof z.ZodString) {
+    const schemaWithDesc = schema as any;
+    return {
+      type: 'string',
+      description: schemaWithDesc._def.description
+    };
+  }
+
+  if (schema instanceof z.ZodNumber) {
+    const schemaWithDesc = schema as any;
+    return {
+      type: 'number',
+      description: schemaWithDesc._def.description
+    };
+  }
+
+  if (schema instanceof z.ZodBoolean) {
+    const schemaWithDesc = schema as any;
+    return {
+      type: 'boolean',
+      description: schemaWithDesc._def.description
+    };
+  }
+
+  if (schema instanceof z.ZodOptional) {
+    return zodToJsonSchema(schema.unwrap());
+  }
+
+  if (schema instanceof z.ZodDefault) {
+    const inner = zodToJsonSchema(schema._def.innerType);
+    inner.default = schema._def.defaultValue();
+    return inner;
+  }
+
+  // Default fallback
+  return { type: 'string' };
+}
