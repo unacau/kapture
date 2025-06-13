@@ -123,7 +123,26 @@ class MCPClient {
 
   // Tool execution methods
   async executeListTabs() {
-    return await this.listTabs();
+    try {
+      const result = await this.listTabs();
+      this.emit('command-response', {
+        command: 'kaptivemcp_list_tabs',
+        params: {},
+        response: { tabs: result },
+        success: true,
+        timestamp: new Date().toISOString()
+      });
+      return result;
+    } catch (error) {
+      this.emit('command-response', {
+        command: 'kaptivemcp_list_tabs',
+        params: {},
+        error: error.message,
+        success: false,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
   }
 
   async executeNavigate(tabId, url, timeout = 30000) {
