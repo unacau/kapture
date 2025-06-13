@@ -32,11 +32,11 @@ Kapture is a Chrome DevTools Extension that provides remote browser automation c
 - Tab discovery and management
 - Error propagation
 
-### Phase 5 - Test Web Application ✅
-- Comprehensive MCP client interface
-- Tool testing forms for all commands
-- Command history tracking
-- Response visualization
+### Phase 5 - Test Application ✅
+- Electron-based MCP client using real stdio protocol
+- Exactly mimics Claude Desktop's connection method
+- Tool discovery and testing interface
+- Real-time tab management
 
 ### Phase 6 - Advanced Commands ✅
 - Fill input fields (`kaptivemcp_fill`)
@@ -60,7 +60,7 @@ Kapture is a Chrome DevTools Extension that provides remote browser automation c
 kapture/
 ├── extension/          # Chrome Extension
 ├── server/            # MCP Server (Node.js/TypeScript)
-├── test-app/          # Test Web Application (coming in Phase 5)
+├── test-app/          # Electron Test Application (MCP client)
 └── docs/              # Documentation
 ```
 

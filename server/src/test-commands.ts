@@ -15,28 +15,8 @@ interface PendingCommand {
 const pendingCommands = new Map<string, PendingCommand>();
 
 export function setupTestEndpoint(wsManager: WebSocketManager, tabRegistry: TabRegistry, port: number = 8080) {
-  // Set up response handler
-  wsManager.setResponseHandler((response) => {
-    logger.log(`Test endpoint received response: ${response.id}`);
-    logger.log('Response handler got:', {
-      success: response.success,
-      result: response.result,
-      hasResult: 'result' in response,
-      resultKeys: response.result ? Object.keys(response.result) : 'no result'
-    });
-    const pending = pendingCommands.get(response.id);
-    if (pending) {
-      clearTimeout(pending.timeout);
-      pendingCommands.delete(response.id);
-      
-      if (response.success) {
-        logger.log('Resolving with result:', response.result);
-        pending.resolve(response.result);
-      } else {
-        pending.reject(new Error(response.error?.message || 'Command failed'));
-      }
-    }
-  });
+  // REMOVED: Response handler setup - this was overwriting the MCP handler
+  // The test endpoint is deprecated and should not interfere with MCP operation
   const server = createServer(async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -64,6 +44,7 @@ export function setupTestEndpoint(wsManager: WebSocketManager, tabRegistry: TabR
       res.end(JSON.stringify({ tabs }));
       return;
     }
+
 
     // Send command to tab
     if (url.pathname === '/command' && req.method === 'POST') {

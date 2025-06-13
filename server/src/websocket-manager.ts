@@ -105,7 +105,7 @@ export class WebSocketManager {
           resultType: typeof (message as ResponseMessage).result
         });
         if (this.responseHandler) {
-          logger.log('Calling response handler');
+          logger.log('Calling response handler with message id:', message.id);
           this.responseHandler(message as ResponseMessage);
         } else {
           logger.warn('No response handler set');

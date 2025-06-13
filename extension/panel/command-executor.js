@@ -5,7 +5,37 @@ class CommandExecutor {
   constructor() {
     this.consoleLogBuffer = [];
     this.maxLogEntries = 1000;
+    this.helpersInjected = false;
     this.setupConsoleCapture();
+    this.injectHelpers();
+  }
+  
+  // Inject helper functions into the page
+  async injectHelpers() {
+    if (this.helpersInjected) return;
+    
+    try {
+      const response = await fetch('page-helpers.js');
+      const script = await response.text();
+      
+      await new Promise((resolve, reject) => {
+        chrome.devtools.inspectedWindow.eval(
+          script,
+          (result, error) => {
+            if (error) {
+              console.error('Failed to inject helpers:', error);
+              reject(error);
+            } else {
+              this.helpersInjected = true;
+              console.log('Kapture helpers injected successfully');
+              resolve(result);
+            }
+          }
+        );
+      });
+    } catch (error) {
+      console.error('Failed to load helpers:', error);
+    }
   }
 
   // Setup console log capturing
@@ -196,33 +226,16 @@ class CommandExecutor {
 
   // Take screenshot
   async screenshot(params) {
-    const { selector, width, height } = params;
+    const { selector } = params;
 
     // If selector is provided, get element bounds first
     if (selector) {
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
+        await this.injectHelpers();
+        
         // Get element bounds
         chrome.devtools.inspectedWindow.eval(
-          `(function() {
-            const element = document.querySelector(${JSON.stringify(selector)});
-            if (!element) {
-              return {
-                error: true,
-                code: 'ELEMENT_NOT_FOUND',
-                selector: ${JSON.stringify(selector)}
-              };
-            }
-            const rect = element.getBoundingClientRect();
-            const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-            const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-            return {
-              x: Math.round(rect.left + scrollX),
-              y: Math.round(rect.top + scrollY),
-              width: Math.round(rect.width),
-              height: Math.round(rect.height),
-              devicePixelRatio: window.devicePixelRatio || 1
-            };
-          })()`,
+          `window.__kaptureHelpers.getElementBounds(${JSON.stringify(selector)})`,
           (bounds, error) => {
             if (error) {
               reject(new Error(`Failed to get element bounds: ${error.toString()}`));
@@ -301,35 +314,13 @@ class CommandExecutor {
       let debuggerAttached = false;
       
       try {
+        // Ensure helpers are injected
+        await this.injectHelpers();
+        
         // First, get element coordinates and info
         const coords = await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `(function() {
-              const element = document.querySelector(${JSON.stringify(selector)});
-              if (!element) {
-                return {
-                  error: true,
-                  code: 'ELEMENT_NOT_FOUND',
-                  selector: ${JSON.stringify(selector)}
-                };
-              }
-              
-              // Scroll element into view if needed
-              element.scrollIntoViewIfNeeded ? element.scrollIntoViewIfNeeded() : element.scrollIntoView({ block: 'center' });
-              
-              // Get element position
-              const rect = element.getBoundingClientRect();
-              const x = rect.left + rect.width / 2;
-              const y = rect.top + rect.height / 2;
-              
-              return {
-                x: x,
-                y: y,
-                selector: ${JSON.stringify(selector)},
-                tagName: element.tagName,
-                text: element.textContent.slice(0, 100)
-              };
-            })()`,
+            `window.__kaptureHelpers.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
             (result, error) => {
               if (error) {
                 reject(new Error(`Failed to get element position: ${error.toString()}`));
@@ -357,31 +348,7 @@ class CommandExecutor {
         // Create visual cursor
         await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `(function() {
-              // Remove any existing cursor
-              const existingCursor = document.getElementById('kapture-mouse-cursor');
-              if (existingCursor) existingCursor.remove();
-              
-              // Create cursor element
-              const cursor = document.createElement('div');
-              cursor.id = 'kapture-mouse-cursor';
-              cursor.innerHTML = \`
-                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="40" height="40" viewBox="0 0 30 30">
-                    <path d="M 9 3 A 1 1 0 0 0 8 4 L 8 21 A 1 1 0 0 0 9 22 A 1 1 0 0 0 9.796875 21.601562 L 12.919922 18.119141 L 16.382812 26.117188 C 16.701812 26.855187 17.566828 27.188469 18.298828 26.855469 C 19.020828 26.527469 19.340672 25.678078 19.013672 24.955078 L 15.439453 17.039062 L 21 17 A 1 1 0 0 0 22 16 A 1 1 0 0 0 21.628906 15.222656 L 9.7832031 3.3789062 A 1 1 0 0 0 9 3 z"></path>
-                </svg>
-              \`;
-              cursor.style.cssText = \`
-                position: fixed;
-                width: 20px;
-                height: 20px;
-                pointer-events: none;
-                z-index: 999999;
-                transform: translate(0, 0);
-                transition: none;
-              \`;
-              document.body.appendChild(cursor);
-              return true;
-            })()`,
+            `window.__kaptureHelpers.createCursor()`,
             (result, error) => {
               if (error) reject(error);
               else resolve(result);
@@ -408,13 +375,7 @@ class CommandExecutor {
           // Update visual cursor position
           await new Promise((resolve) => {
             chrome.devtools.inspectedWindow.eval(
-              `(function() {
-                const cursor = document.getElementById('kapture-mouse-cursor');
-                if (cursor) {
-                  cursor.style.left = '${currentX}px';
-                  cursor.style.top = '${currentY}px';
-                }
-              })()`,
+              `window.__kaptureHelpers.moveCursor(${currentX}, ${currentY})`,
               () => resolve()
             );
           });
@@ -452,15 +413,7 @@ class CommandExecutor {
         // Visual feedback - make cursor pulse
         await new Promise((resolve) => {
           chrome.devtools.inspectedWindow.eval(
-            `(function() {
-              const cursor = document.getElementById('kapture-mouse-cursor');
-              if (cursor) {
-                cursor.style.transform = 'scale(0.8)';
-                setTimeout(() => {
-                  cursor.style.transform = 'scale(1)';
-                }, 100);
-              }
-            })()`,
+            `window.__kaptureHelpers.pulseCursor()`,
             () => resolve()
           );
         });
@@ -483,10 +436,10 @@ class CommandExecutor {
         // Remove cursor after a short delay
         setTimeout(() => {
           chrome.devtools.inspectedWindow.eval(
-            `document.getElementById('kapture-mouse-cursor')?.remove()`,
+            `window.__kaptureHelpers.removeCursor()`,
             () => {}
           );
-        }, 500);
+        }, 1000);
 
         // Detach debugger
         await chrome.debugger.detach({ tabId });
@@ -518,9 +471,11 @@ class CommandExecutor {
     const { max = 100 } = params;
 
     // First, try to get logs from the inspected window
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
+      await this.injectHelpers();
+      
       chrome.devtools.inspectedWindow.eval(
-        `window.__kaptureLogs ? window.__kaptureLogs.slice(-${max}).reverse() : []`,
+        `window.__kaptureHelpers.getLogs(${max})`,
         (result, error) => {
           if (!error && result && result.length > 0) {
             // Use logs from inspected window
@@ -572,66 +527,11 @@ class CommandExecutor {
       throw new Error('Value is required for fill');
     }
 
-    return new Promise((resolve, reject) => {
-      const fillScript = `
-        (function() {
-          const element = document.querySelector(${JSON.stringify(selector)});
-          if (!element) {
-            return {
-              error: true,
-              code: 'ELEMENT_NOT_FOUND',
-              selector: ${JSON.stringify(selector)}
-            };
-          }
-          
-          // Check if it's an input element
-          const tagName = element.tagName.toLowerCase();
-          const inputTypes = ['input', 'textarea'];
-          
-          if (!inputTypes.includes(tagName) && !element.isContentEditable) {
-            return {
-              error: true,
-              code: 'INVALID_ELEMENT',
-              message: 'Element is not fillable: ' + tagName,
-              selector: ${JSON.stringify(selector)}
-            };
-          }
-          
-          // Focus the element
-          element.focus();
-          
-          // Clear existing value
-          if (element.value !== undefined) {
-            element.value = '';
-          } else if (element.isContentEditable) {
-            element.textContent = '';
-          }
-          
-          // Set new value
-          if (element.value !== undefined) {
-            element.value = ${JSON.stringify(value)};
-          } else if (element.isContentEditable) {
-            element.textContent = ${JSON.stringify(value)};
-          }
-          
-          // Trigger input and change events
-          element.dispatchEvent(new Event('input', { bubbles: true }));
-          element.dispatchEvent(new Event('change', { bubbles: true }));
-          
-          // Blur to trigger any blur handlers
-          element.blur();
-          
-          return {
-            selector: ${JSON.stringify(selector)},
-            tagName: element.tagName,
-            value: element.value || element.textContent,
-            filled: true
-          };
-        })()
-      `;
-
+    return new Promise(async (resolve, reject) => {
+      await this.injectHelpers();
+      
       chrome.devtools.inspectedWindow.eval(
-        fillScript,
+        `window.__kaptureHelpers.fillElement(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
         (result, error) => {
           if (error) {
             reject(new Error(`Fill failed: ${error.toString()}`));
@@ -656,58 +556,11 @@ class CommandExecutor {
       throw new Error('Value is required for select');
     }
 
-    return new Promise((resolve, reject) => {
-      const selectScript = `
-        (function() {
-          const element = document.querySelector(${JSON.stringify(selector)});
-          if (!element) {
-            return {
-              error: true,
-              code: 'ELEMENT_NOT_FOUND',
-              selector: ${JSON.stringify(selector)}
-            };
-          }
-          
-          // Check if it's a select element
-          if (element.tagName.toLowerCase() !== 'select') {
-            return {
-              error: true,
-              code: 'INVALID_ELEMENT',
-              message: 'Element is not a select: ' + element.tagName,
-              selector: ${JSON.stringify(selector)}
-            };
-          }
-          
-          // Find option with matching value
-          const option = Array.from(element.options).find(opt => opt.value === ${JSON.stringify(value)});
-          if (!option) {
-            return {
-              error: true,
-              code: 'OPTION_NOT_FOUND',
-              message: 'Option with value not found: ${value}',
-              selector: ${JSON.stringify(selector)},
-              value: ${JSON.stringify(value)}
-            };
-          }
-          
-          // Select the option
-          element.value = ${JSON.stringify(value)};
-          option.selected = true;
-          
-          // Trigger change event
-          element.dispatchEvent(new Event('change', { bubbles: true }));
-          
-          return {
-            selector: ${JSON.stringify(selector)},
-            value: element.value,
-            selectedIndex: element.selectedIndex,
-            selectedText: element.options[element.selectedIndex].text
-          };
-        })()
-      `;
-
+    return new Promise(async (resolve, reject) => {
+      await this.injectHelpers();
+      
       chrome.devtools.inspectedWindow.eval(
-        selectScript,
+        `window.__kaptureHelpers.selectOption(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
         (result, error) => {
           if (error) {
             reject(new Error(`Select failed: ${error.toString()}`));
@@ -734,34 +587,13 @@ class CommandExecutor {
       let debuggerAttached = false;
 
       try {
+        // Ensure helpers are injected
+        await this.injectHelpers();
+        
         // First, get element coordinates
         const coords = await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `(function() {
-              const element = document.querySelector(${JSON.stringify(selector)});
-              if (!element) {
-                return {
-                  error: true,
-                  code: 'ELEMENT_NOT_FOUND',
-                  selector: ${JSON.stringify(selector)}
-                };
-              }
-              
-              // Scroll element into view if needed
-              element.scrollIntoViewIfNeeded ? element.scrollIntoViewIfNeeded() : element.scrollIntoView({ block: 'center' });
-              
-              // Get element position
-              const rect = element.getBoundingClientRect();
-              const x = rect.left + rect.width / 2;
-              const y = rect.top + rect.height / 2;
-              
-              return {
-                x: x,
-                y: y,
-                selector: ${JSON.stringify(selector)},
-                tagName: element.tagName
-              };
-            })()`,
+            `window.__kaptureHelpers.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
             (result, error) => {
               if (error) {
                 reject(new Error(`Failed to get element position: ${error.toString()}`));
@@ -789,31 +621,7 @@ class CommandExecutor {
         // Create visual cursor
         await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `(function() {
-              // Remove any existing cursor
-              const existingCursor = document.getElementById('kapture-mouse-cursor');
-              if (existingCursor) existingCursor.remove();
-              
-              // Create cursor element
-              const cursor = document.createElement('div');
-              cursor.id = 'kapture-mouse-cursor';
-              cursor.innerHTML = \`
-                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="40" height="40" viewBox="0 0 30 30">
-                    <path d="M 9 3 A 1 1 0 0 0 8 4 L 8 21 A 1 1 0 0 0 9 22 A 1 1 0 0 0 9.796875 21.601562 L 12.919922 18.119141 L 16.382812 26.117188 C 16.701812 26.855187 17.566828 27.188469 18.298828 26.855469 C 19.020828 26.527469 19.340672 25.678078 19.013672 24.955078 L 15.439453 17.039062 L 21 17 A 1 1 0 0 0 22 16 A 1 1 0 0 0 21.628906 15.222656 L 9.7832031 3.3789062 A 1 1 0 0 0 9 3 z"></path>
-                </svg>
-              \`;
-              cursor.style.cssText = \`
-                position: fixed;
-                width: 20px;
-                height: 20px;
-                pointer-events: none;
-                z-index: 999999;
-                transform: translate(0, 0);
-                transition: none;
-              \`;
-              document.body.appendChild(cursor);
-              return true;
-            })()`,
+            `window.__kaptureHelpers.createCursor()`,
             (result, error) => {
               if (error) reject(error);
               else resolve(result);
@@ -840,13 +648,7 @@ class CommandExecutor {
           // Update visual cursor position
           await new Promise((resolve) => {
             chrome.devtools.inspectedWindow.eval(
-              `(function() {
-                const cursor = document.getElementById('kapture-mouse-cursor');
-                if (cursor) {
-                  cursor.style.left = '${currentX}px';
-                  cursor.style.top = '${currentY}px';
-                }
-              })()`,
+              `window.__kaptureHelpers.moveCursor(${currentX}, ${currentY})`,
               () => resolve()
             );
           });
@@ -870,7 +672,7 @@ class CommandExecutor {
         // Remove cursor after a short delay
         setTimeout(() => {
           chrome.devtools.inspectedWindow.eval(
-            `document.getElementById('kapture-mouse-cursor')?.remove()`,
+            `window.__kaptureHelpers.removeCursor()`,
             () => {}
           );
         }, 1000);
@@ -936,45 +738,16 @@ class CommandExecutor {
   async getDom(params) {
     const { selector } = params;
 
-    return new Promise((resolve, reject) => {
-      const domScript = selector ? `
-        (function() {
-          const element = document.querySelector(${JSON.stringify(selector)});
-          if (!element) {
-            return {
-              found: false,
-              selector: ${JSON.stringify(selector)},
-              error: {
-                code: 'ELEMENT_NOT_FOUND',
-                message: 'Element not found'
-              }
-            };
-          }
-          return {
-            found: true,
-            html: element.outerHTML,
-            selector: ${JSON.stringify(selector)}
-          };
-        })()
-      ` : `document.body.outerHTML`;
-
+    return new Promise(async (resolve, reject) => {
+      await this.injectHelpers();
+      
       chrome.devtools.inspectedWindow.eval(
-        domScript,
+        `window.__kaptureHelpers.getOuterHTML(${JSON.stringify(selector || '')})`,
         (result, error) => {
           if (error) {
             reject(new Error(`Get DOM failed: ${error.toString()}`));
           } else {
-            // Always resolve successfully, even if element not found
-            if (typeof result === 'string') {
-              // For body case where we return the HTML directly
-              resolve({
-                found: true,
-                html: result,
-                selector: 'body'
-              });
-            } else {
-              resolve(result);
-            }
+            resolve(result);
           }
         }
       );

@@ -64,12 +64,12 @@ export class MCPHandler {
 
     // Setup promise for response
     const responsePromise = new Promise<any>((resolve, reject) => {
-      // Set timeout (default 30 seconds)
+      // Set timeout (default 5 seconds)
       const timeout = setTimeout(() => {
         this.pendingCommands.delete(commandId);
         logger.warn(`Command timeout for ${command} (${commandId})`);
         reject(new Error(`Command timeout: ${command}`));
-      }, params.timeout || 30000);
+      }, params.timeout || 5000);
 
       this.pendingCommands.set(commandId, { resolve, reject, timeout });
       logger.log(`Registered pending command: ${command} (${commandId})`);
@@ -90,7 +90,8 @@ export class MCPHandler {
   }
 
   handleCommandResponse(response: CommandResponse): void {
-    logger.log(`Received command response: ${response.id}, success: ${response.success}`);
+    logger.log(`MCP Handler received command response: ${response.id}, success: ${response.success}`);
+    logger.log(`Current pending commands before handling: ${Array.from(this.pendingCommands.keys()).join(', ')}`);
     
     const pending = this.pendingCommands.get(response.id);
     if (!pending) {
