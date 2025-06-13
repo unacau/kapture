@@ -29,3 +29,12 @@ export const evaluateTool = {
     code: z.string().describe('JavaScript code to execute')
   }),
 };
+
+export const domTool = {
+  name: 'kaptivemcp_dom',
+  description: 'Get outerHTML of the body or a specific element',
+  inputSchema: z.object({
+    tabId: z.string().describe('Target tab ID'),
+    selector: z.string().optional().describe('CSS selector of element (optional, defaults to body)')
+  }),
+};

@@ -119,6 +119,9 @@ class CommandExecutor {
         case 'kaptivemcp_evaluate':
           return await this.evaluate(params);
 
+        case 'kaptivemcp_dom':
+          return await this.getDom(params);
+
         default:
           throw new Error(`Unknown command: ${command}`);
       }
@@ -203,7 +206,11 @@ class CommandExecutor {
           `(function() {
             const element = document.querySelector(${JSON.stringify(selector)});
             if (!element) {
-              throw new Error('Element not found: ${selector}');
+              return {
+                error: true,
+                code: 'ELEMENT_NOT_FOUND',
+                selector: ${JSON.stringify(selector)}
+              };
             }
             const rect = element.getBoundingClientRect();
             const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
@@ -219,6 +226,13 @@ class CommandExecutor {
           (bounds, error) => {
             if (error) {
               reject(new Error(`Failed to get element bounds: ${error.toString()}`));
+              return;
+            }
+            if (bounds && bounds.error) {
+              const err = new Error(`Element not found: ${bounds.selector}`);
+              err.code = bounds.code;
+              err.selector = bounds.selector;
+              reject(err);
               return;
             }
 
@@ -276,41 +290,212 @@ class CommandExecutor {
       throw new Error('Selector is required for click');
     }
 
-    return new Promise((resolve, reject) => {
-      const clickScript = `
-        (function() {
-          const element = document.querySelector(${JSON.stringify(selector)});
-          if (!element) {
-            throw new Error('Element not found: ${selector}');
-          }
-          
-          // Simulate click
-          const event = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-          });
-          
-          element.dispatchEvent(event);
-          
-          return {
-            selector: ${JSON.stringify(selector)},
-            tagName: element.tagName,
-            text: element.textContent.slice(0, 100)
-          };
-        })()
-      `;
+    const tabId = chrome.devtools.inspectedWindow.tabId;
 
-      chrome.devtools.inspectedWindow.eval(
-        clickScript,
-        (result, error) => {
-          if (error) {
-            reject(new Error(`Click failed: ${error.toString()}`));
-          } else {
-            resolve(result);
+    return new Promise(async (resolve, reject) => {
+      let debuggerAttached = false;
+      
+      try {
+        // First, get element coordinates and info
+        const coords = await new Promise((resolve, reject) => {
+          chrome.devtools.inspectedWindow.eval(
+            `(function() {
+              const element = document.querySelector(${JSON.stringify(selector)});
+              if (!element) {
+                return {
+                  error: true,
+                  code: 'ELEMENT_NOT_FOUND',
+                  selector: ${JSON.stringify(selector)}
+                };
+              }
+              
+              // Scroll element into view if needed
+              element.scrollIntoViewIfNeeded ? element.scrollIntoViewIfNeeded() : element.scrollIntoView({ block: 'center' });
+              
+              // Get element position
+              const rect = element.getBoundingClientRect();
+              const x = rect.left + rect.width / 2;
+              const y = rect.top + rect.height / 2;
+              
+              return {
+                x: x,
+                y: y,
+                selector: ${JSON.stringify(selector)},
+                tagName: element.tagName,
+                text: element.textContent.slice(0, 100)
+              };
+            })()`,
+            (result, error) => {
+              if (error) {
+                reject(new Error(`Failed to get element position: ${error.toString()}`));
+              } else if (result && result.error) {
+                const err = new Error(`Element not found: ${result.selector}`);
+                err.code = result.code;
+                err.selector = result.selector;
+                reject(err);
+              } else {
+                resolve(result);
+              }
+            }
+          );
+        });
+
+        // Create visual cursor
+        await new Promise((resolve, reject) => {
+          chrome.devtools.inspectedWindow.eval(
+            `(function() {
+              // Remove any existing cursor
+              const existingCursor = document.getElementById('kapture-mouse-cursor');
+              if (existingCursor) existingCursor.remove();
+              
+              // Create cursor element
+              const cursor = document.createElement('div');
+              cursor.id = 'kapture-mouse-cursor';
+              cursor.innerHTML = \`
+                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="40" height="40" viewBox="0 0 30 30">
+                    <path d="M 9 3 A 1 1 0 0 0 8 4 L 8 21 A 1 1 0 0 0 9 22 A 1 1 0 0 0 9.796875 21.601562 L 12.919922 18.119141 L 16.382812 26.117188 C 16.701812 26.855187 17.566828 27.188469 18.298828 26.855469 C 19.020828 26.527469 19.340672 25.678078 19.013672 24.955078 L 15.439453 17.039062 L 21 17 A 1 1 0 0 0 22 16 A 1 1 0 0 0 21.628906 15.222656 L 9.7832031 3.3789062 A 1 1 0 0 0 9 3 z"></path>
+                </svg>
+              \`;
+              cursor.style.cssText = \`
+                position: fixed;
+                width: 20px;
+                height: 20px;
+                pointer-events: none;
+                z-index: 999999;
+                transform: translate(0, 0);
+                transition: none;
+              \`;
+              document.body.appendChild(cursor);
+              return true;
+            })()`,
+            (result, error) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+        });
+
+        // Attach debugger
+        await chrome.debugger.attach({ tabId }, '1.3');
+        debuggerAttached = true;
+
+        // Move mouse to element with smooth animation
+        const steps = 20;
+        const startX = 0;
+        const startY = 0;
+
+        for (let i = 0; i <= steps; i++) {
+          const progress = i / steps;
+          // Use easing function for smooth movement
+          const easeProgress = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+          const currentX = startX + (coords.x - startX) * easeProgress;
+          const currentY = startY + (coords.y - startY) * easeProgress;
+
+          // Update visual cursor position
+          await new Promise((resolve) => {
+            chrome.devtools.inspectedWindow.eval(
+              `(function() {
+                const cursor = document.getElementById('kapture-mouse-cursor');
+                if (cursor) {
+                  cursor.style.left = '${currentX}px';
+                  cursor.style.top = '${currentY}px';
+                }
+              })()`,
+              () => resolve()
+            );
+          });
+
+          await chrome.debugger.sendCommand(
+            { tabId },
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mouseMoved',
+              x: Math.round(currentX),
+              y: Math.round(currentY)
+            }
+          );
+
+          // Small delay between steps for smooth animation
+          if (i < steps) {
+            await new Promise(r => setTimeout(r, 20));
           }
         }
-      );
+
+        // Perform the click at the final position
+        // Mouse down
+        await chrome.debugger.sendCommand(
+          { tabId },
+          'Input.dispatchMouseEvent',
+          {
+            type: 'mousePressed',
+            x: Math.round(coords.x),
+            y: Math.round(coords.y),
+            button: 'left',
+            clickCount: 1
+          }
+        );
+
+        // Visual feedback - make cursor pulse
+        await new Promise((resolve) => {
+          chrome.devtools.inspectedWindow.eval(
+            `(function() {
+              const cursor = document.getElementById('kapture-mouse-cursor');
+              if (cursor) {
+                cursor.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                  cursor.style.transform = 'scale(1)';
+                }, 100);
+              }
+            })()`,
+            () => resolve()
+          );
+        });
+
+        await new Promise(r => setTimeout(r, 50));
+
+        // Mouse up
+        await chrome.debugger.sendCommand(
+          { tabId },
+          'Input.dispatchMouseEvent',
+          {
+            type: 'mouseReleased',
+            x: Math.round(coords.x),
+            y: Math.round(coords.y),
+            button: 'left',
+            clickCount: 1
+          }
+        );
+
+        // Remove cursor after a short delay
+        setTimeout(() => {
+          chrome.devtools.inspectedWindow.eval(
+            `document.getElementById('kapture-mouse-cursor')?.remove()`,
+            () => {}
+          );
+        }, 500);
+
+        // Detach debugger
+        await chrome.debugger.detach({ tabId });
+        debuggerAttached = false;
+
+        resolve({
+          selector: coords.selector,
+          tagName: coords.tagName,
+          text: coords.text,
+          clicked: true
+        });
+      } catch (error) {
+        // Make sure to detach debugger on error
+        if (debuggerAttached) {
+          try {
+            await chrome.debugger.detach({ tabId });
+          } catch (detachError) {
+            // Ignore detach errors
+          }
+        }
+        
+        reject(new Error(`Click failed: ${error.message}`));
+      }
     });
   }
 
@@ -378,7 +563,11 @@ class CommandExecutor {
         (function() {
           const element = document.querySelector(${JSON.stringify(selector)});
           if (!element) {
-            throw new Error('Element not found: ${selector}');
+            return {
+              error: true,
+              code: 'ELEMENT_NOT_FOUND',
+              selector: ${JSON.stringify(selector)}
+            };
           }
           
           // Check if it's an input element
@@ -386,7 +575,12 @@ class CommandExecutor {
           const inputTypes = ['input', 'textarea'];
           
           if (!inputTypes.includes(tagName) && !element.isContentEditable) {
-            throw new Error('Element is not fillable: ' + tagName);
+            return {
+              error: true,
+              code: 'INVALID_ELEMENT',
+              message: 'Element is not fillable: ' + tagName,
+              selector: ${JSON.stringify(selector)}
+            };
           }
           
           // Focus the element
@@ -427,6 +621,11 @@ class CommandExecutor {
         (result, error) => {
           if (error) {
             reject(new Error(`Fill failed: ${error.toString()}`));
+          } else if (result && result.error) {
+            const err = new Error(result.message || `Element not found: ${result.selector}`);
+            err.code = result.code;
+            err.selector = result.selector;
+            reject(err);
           } else {
             resolve(result);
           }
@@ -452,18 +651,33 @@ class CommandExecutor {
         (function() {
           const element = document.querySelector(${JSON.stringify(selector)});
           if (!element) {
-            throw new Error('Element not found: ${selector}');
+            return {
+              error: true,
+              code: 'ELEMENT_NOT_FOUND',
+              selector: ${JSON.stringify(selector)}
+            };
           }
           
           // Check if it's a select element
           if (element.tagName.toLowerCase() !== 'select') {
-            throw new Error('Element is not a select: ' + element.tagName);
+            return {
+              error: true,
+              code: 'INVALID_ELEMENT',
+              message: 'Element is not a select: ' + element.tagName,
+              selector: ${JSON.stringify(selector)}
+            };
           }
           
           // Find option with matching value
           const option = Array.from(element.options).find(opt => opt.value === ${JSON.stringify(value)});
           if (!option) {
-            throw new Error('Option with value not found: ${value}');
+            return {
+              error: true,
+              code: 'OPTION_NOT_FOUND',
+              message: 'Option with value not found: ${value}',
+              selector: ${JSON.stringify(selector)},
+              value: ${JSON.stringify(value)}
+            };
           }
           
           // Select the option
@@ -487,6 +701,12 @@ class CommandExecutor {
         (result, error) => {
           if (error) {
             reject(new Error(`Select failed: ${error.toString()}`));
+          } else if (result && result.error) {
+            const err = new Error(result.message || `Element not found: ${result.selector}`);
+            err.code = result.code;
+            err.selector = result.selector;
+            if (result.value) err.value = result.value;
+            reject(err);
           } else {
             resolve(result);
           }
@@ -503,67 +723,166 @@ class CommandExecutor {
       throw new Error('Selector is required for hover');
     }
 
-    return new Promise((resolve, reject) => {
-      const hoverScript = `
-        (function() {
-          const element = document.querySelector(${JSON.stringify(selector)});
-          if (!element) {
-            throw new Error('Element not found: ${selector}');
-          }
-          
-          // Get element position
-          const rect = element.getBoundingClientRect();
-          const x = rect.left + rect.width / 2;
-          const y = rect.top + rect.height / 2;
-          
-          // Create and dispatch mouse events
-          const mouseenter = new MouseEvent('mouseenter', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-            clientX: x,
-            clientY: y
-          });
-          
-          const mouseover = new MouseEvent('mouseover', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-            clientX: x,
-            clientY: y
-          });
-          
-          const mousemove = new MouseEvent('mousemove', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-            clientX: x,
-            clientY: y
-          });
-          
-          element.dispatchEvent(mouseenter);
-          element.dispatchEvent(mouseover);
-          element.dispatchEvent(mousemove);
-          
-          return {
-            selector: ${JSON.stringify(selector)},
-            tagName: element.tagName,
-            position: { x, y },
-            hovered: true
-          };
-        })()
-      `;
+    const tabId = chrome.devtools.inspectedWindow.tabId;
 
-      chrome.devtools.inspectedWindow.eval(
-        hoverScript,
-        (result, error) => {
-          if (error) {
-            reject(new Error(`Hover failed: ${error.toString()}`));
-          } else {
-            resolve(result);
+    return new Promise(async (resolve, reject) => {
+      let debuggerAttached = false;
+
+      try {
+        // First, get element coordinates
+        const coords = await new Promise((resolve, reject) => {
+          chrome.devtools.inspectedWindow.eval(
+            `(function() {
+              const element = document.querySelector(${JSON.stringify(selector)});
+              if (!element) {
+                return {
+                  error: true,
+                  code: 'ELEMENT_NOT_FOUND',
+                  selector: ${JSON.stringify(selector)}
+                };
+              }
+              
+              // Scroll element into view if needed
+              element.scrollIntoViewIfNeeded ? element.scrollIntoViewIfNeeded() : element.scrollIntoView({ block: 'center' });
+              
+              // Get element position
+              const rect = element.getBoundingClientRect();
+              const x = rect.left + rect.width / 2;
+              const y = rect.top + rect.height / 2;
+              
+              return {
+                x: x,
+                y: y,
+                selector: ${JSON.stringify(selector)},
+                tagName: element.tagName
+              };
+            })()`,
+            (result, error) => {
+              if (error) {
+                reject(new Error(`Failed to get element position: ${error.toString()}`));
+              } else if (result && result.error) {
+                const err = new Error(`Element not found: ${result.selector}`);
+                err.code = result.code;
+                err.selector = result.selector;
+                reject(err);
+              } else {
+                resolve(result);
+              }
+            }
+          );
+        });
+
+        // Create visual cursor
+        await new Promise((resolve, reject) => {
+          chrome.devtools.inspectedWindow.eval(
+            `(function() {
+              // Remove any existing cursor
+              const existingCursor = document.getElementById('kapture-mouse-cursor');
+              if (existingCursor) existingCursor.remove();
+              
+              // Create cursor element
+              const cursor = document.createElement('div');
+              cursor.id = 'kapture-mouse-cursor';
+              cursor.innerHTML = \`
+                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="40" height="40" viewBox="0 0 30 30">
+                    <path d="M 9 3 A 1 1 0 0 0 8 4 L 8 21 A 1 1 0 0 0 9 22 A 1 1 0 0 0 9.796875 21.601562 L 12.919922 18.119141 L 16.382812 26.117188 C 16.701812 26.855187 17.566828 27.188469 18.298828 26.855469 C 19.020828 26.527469 19.340672 25.678078 19.013672 24.955078 L 15.439453 17.039062 L 21 17 A 1 1 0 0 0 22 16 A 1 1 0 0 0 21.628906 15.222656 L 9.7832031 3.3789062 A 1 1 0 0 0 9 3 z"></path>
+                </svg>
+              \`;
+              cursor.style.cssText = \`
+                position: fixed;
+                width: 20px;
+                height: 20px;
+                pointer-events: none;
+                z-index: 999999;
+                transform: translate(0, 0);
+                transition: none;
+              \`;
+              document.body.appendChild(cursor);
+              return true;
+            })()`,
+            (result, error) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+        });
+
+        // Attach debugger
+        await chrome.debugger.attach({ tabId }, '1.3');
+        debuggerAttached = true;
+
+        // Move mouse to element with smooth animation
+        const steps = 20;
+        const startX = 0; //coords.x - 100;
+        const startY = 0; //coords.y - 100;
+
+        for (let i = 0; i <= steps; i++) {
+          const progress = i / steps;
+          // Use easing function for smooth movement
+          const easeProgress = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+          const currentX = startX + (coords.x - startX) * easeProgress;
+          const currentY = startY + (coords.y - startY) * easeProgress;
+
+          // Update visual cursor position
+          await new Promise((resolve) => {
+            chrome.devtools.inspectedWindow.eval(
+              `(function() {
+                const cursor = document.getElementById('kapture-mouse-cursor');
+                if (cursor) {
+                  cursor.style.left = '${currentX}px';
+                  cursor.style.top = '${currentY}px';
+                }
+              })()`,
+              () => resolve()
+            );
+          });
+
+          await chrome.debugger.sendCommand(
+            { tabId },
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mouseMoved',
+              x: Math.round(currentX),
+              y: Math.round(currentY)
+            }
+          );
+
+          // Small delay between steps for smooth animation
+          if (i < steps) {
+            await new Promise(r => setTimeout(r, 20));
           }
         }
-      );
+
+        // Remove cursor after a short delay
+        setTimeout(() => {
+          chrome.devtools.inspectedWindow.eval(
+            `document.getElementById('kapture-mouse-cursor')?.remove()`,
+            () => {}
+          );
+        }, 1000);
+
+        // Detach debugger
+        await chrome.debugger.detach({ tabId });
+        debuggerAttached = false;
+
+        resolve({
+          selector: coords.selector,
+          tagName: coords.tagName,
+          position: { x: coords.x, y: coords.y },
+          hovered: true
+        });
+      } catch (error) {
+        // Make sure to detach debugger on error
+        if (debuggerAttached) {
+          try {
+            await chrome.debugger.detach({ tabId });
+          } catch (detachError) {
+            // Ignore detach errors
+          }
+        }
+
+        reject(new Error(`Hover failed: ${error.message}`));
+      }
     });
   }
 
@@ -593,6 +912,49 @@ class CommandExecutor {
           } else {
             // Fallback to returning the raw result
             resolve(result);
+          }
+        }
+      );
+    });
+  }
+
+  // Get DOM outerHTML
+  async getDom(params) {
+    const { selector } = params;
+
+    return new Promise((resolve, reject) => {
+      const domScript = selector ? `
+        (function() {
+          const element = document.querySelector(${JSON.stringify(selector)});
+          if (!element) {
+            return {
+              error: true,
+              code: 'ELEMENT_NOT_FOUND',
+              selector: ${JSON.stringify(selector)}
+            };
+          }
+          return {
+            html: element.outerHTML,
+            selector: ${JSON.stringify(selector)}
+          };
+        })()
+      ` : `document.body.outerHTML`;
+
+      chrome.devtools.inspectedWindow.eval(
+        domScript,
+        (result, error) => {
+          if (error) {
+            reject(new Error(`Get DOM failed: ${error.toString()}`));
+          } else if (result && result.error) {
+            const err = new Error(`Element not found: ${result.selector}`);
+            err.code = result.code;
+            err.selector = result.selector;
+            reject(err);
+          } else {
+            resolve({
+              html: result,
+              selector: selector || 'body'
+            });
           }
         }
       );

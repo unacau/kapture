@@ -143,6 +143,14 @@ class ToolForms {
         parameters: [
           { name: 'max', type: 'number', required: false, placeholder: '100', description: 'Maximum log entries (default: 100)' }
         ]
+      },
+      'kaptivemcp_dom': {
+        name: 'Get DOM',
+        description: 'Get outerHTML of the body or a specific element',
+        requiresTab: true,
+        parameters: [
+          { name: 'selector', type: 'text', required: false, placeholder: '.main-content', description: 'CSS selector (optional, defaults to body)' }
+        ]
       }
     };
   }
@@ -313,6 +321,9 @@ class ToolForms {
           break;
         case 'kaptivemcp_logs':
           result = await this.mcpClient.executeLogs(tabId, params.max);
+          break;
+        case 'kaptivemcp_dom':
+          result = await this.mcpClient.executeDom(tabId, params.selector);
           break;
         default:
           throw new Error('Unknown tool: ' + this.currentTool);

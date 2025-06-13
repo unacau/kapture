@@ -170,6 +170,12 @@ class MCPClient {
   async executeLogs(tabId, max = 100) {
     return await this.executeCommand(tabId, 'kaptivemcp_logs', { max });
   }
+
+  async executeDom(tabId, selector = null) {
+    const params = {};
+    if (selector) params.selector = selector;
+    return await this.executeCommand(tabId, 'kaptivemcp_dom', params);
+  }
 }
 
 // Export for use in other modules

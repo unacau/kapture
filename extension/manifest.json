@@ -5,7 +5,8 @@
   "description": "Remote browser automation via MCP - DevTools Extension",
   "permissions": [
     "tabs",
-    "activeTab"
+    "activeTab",
+    "debugger"
   ],
   "host_permissions": [
     "http://localhost:61822/*",
