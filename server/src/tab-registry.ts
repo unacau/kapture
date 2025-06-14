@@ -13,6 +13,7 @@ export interface TabConnection {
 export class TabRegistry {
   private tabs: Map<string, TabConnection> = new Map();
   private nextTabId: number = 1;
+  private disconnectCallback?: (tabId: string) => Promise<void>;
 
   // Assign a new tab ID or validate requested ID
   assignTabId(requestedId?: string): string {
@@ -58,6 +59,12 @@ export class TabRegistry {
   unregister(tabId: string): void {
     if (this.tabs.delete(tabId)) {
       logger.log(`Tab unregistered: ${tabId}`);
+      // Call the disconnect callback if set
+      if (this.disconnectCallback) {
+        this.disconnectCallback(tabId).catch(err => {
+          logger.error(`Error in disconnect callback for tab ${tabId}:`, err);
+        });
+      }
     }
   }
 
@@ -95,5 +102,9 @@ export class TabRegistry {
 
   getActiveTabCount(): number {
     return this.tabs.size;
+  }
+
+  setDisconnectCallback(callback: (tabId: string) => Promise<void>): void {
+    this.disconnectCallback = callback;
   }
 }

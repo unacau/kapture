@@ -6,7 +6,9 @@ export const screenshotTool = {
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
     selector: z.string().optional().describe('CSS selector of element to capture (optional)'),
-    scale: z.number().min(0.1).max(1).default(0.5).describe('Scale factor (0.1-1.0) to reduce screenshot size (default: 0.5)')
+    scale: z.number().min(0.1).max(1).default(0.3).describe('Scale factor (0.1-1.0) to reduce screenshot size (default: 0.3)'),
+    format: z.enum(['webp', 'jpeg', 'png']).default('webp').describe('Image format (default: webp for best compression)'),
+    quality: z.number().min(0.1).max(1).default(0.85).describe('Compression quality for webp/jpeg (0.1-1.0, default: 0.85)')
   }),
 };
 

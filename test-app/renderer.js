@@ -274,8 +274,14 @@ function displayTabContent() {
   if (tabFormData[selectedTabId]) {
     Object.entries(tabFormData[selectedTabId]).forEach(([toolName, params]) => {
       Object.entries(params).forEach(([paramName, value]) => {
-        const input = document.getElementById(`${toolName}-${paramName}`);
-        if (input) input.value = value;
+        if (paramName === 'format') {
+          // For radio buttons, find and check the matching one
+          const radio = document.querySelector(`input[name="${toolName}-${paramName}"][value="${value}"]`);
+          if (radio) radio.checked = true;
+        } else {
+          const input = document.getElementById(`${toolName}-${paramName}`);
+          if (input) input.value = value;
+        }
       });
     });
   }
@@ -300,9 +306,22 @@ function createToolCard(tool) {
       } else if (schema.type === 'number') {
         const min = schema.minimum !== undefined ? `min="${schema.minimum}"` : '';
         const max = schema.maximum !== undefined ? `max="${schema.maximum}"` : '';
-        const step = name === 'scale' ? 'step="0.1"' : '';
+        const step = name === 'scale' || name === 'quality' ? 'step="0.1"' : '';
         const defaultValue = schema.default !== undefined ? `value="${schema.default}"` : '';
         inputHtml = `<input type="number" id="${inputId}" ${isRequired ? 'required' : ''} ${min} ${max} ${step} ${defaultValue}>`;
+      } else if (name === 'format' && schema.enum) {
+        // Create radio buttons for format selection
+        inputHtml = `<div class="radio-group">`;
+        schema.enum.forEach(format => {
+          const isDefault = schema.default === format;
+          inputHtml += `
+            <label class="radio-label">
+              <input type="radio" name="${inputId}" value="${format}" ${isDefault ? 'checked' : ''}>
+              <span>${format.toUpperCase()}</span>
+            </label>
+          `;
+        });
+        inputHtml += `</div>`;
       } else {
         inputHtml = `<input type="text" id="${inputId}" ${isRequired ? 'required' : ''}>`;
       }
@@ -336,15 +355,29 @@ function createToolCard(tool) {
 function addToolEventListeners() {
   // Save form data on input
   tabContentEl.querySelectorAll('input, textarea').forEach(input => {
-    input.addEventListener('input', () => {
-      const [toolName, paramName] = input.id.split('-');
-      if (!tabFormData[selectedTabId]) {
-        tabFormData[selectedTabId] = {};
+    const eventType = input.type === 'radio' ? 'change' : 'input';
+    input.addEventListener(eventType, () => {
+      if (input.type === 'radio') {
+        // For radio buttons, extract tool and param name from the name attribute
+        const [toolName, paramName] = input.name.split('-');
+        if (!tabFormData[selectedTabId]) {
+          tabFormData[selectedTabId] = {};
+        }
+        if (!tabFormData[selectedTabId][toolName]) {
+          tabFormData[selectedTabId][toolName] = {};
+        }
+        tabFormData[selectedTabId][toolName][paramName] = input.value;
+      } else {
+        // For other inputs, use the id attribute
+        const [toolName, paramName] = input.id.split('-');
+        if (!tabFormData[selectedTabId]) {
+          tabFormData[selectedTabId] = {};
+        }
+        if (!tabFormData[selectedTabId][toolName]) {
+          tabFormData[selectedTabId][toolName] = {};
+        }
+        tabFormData[selectedTabId][toolName][paramName] = input.value;
       }
-      if (!tabFormData[selectedTabId][toolName]) {
-        tabFormData[selectedTabId][toolName] = {};
-      }
-      tabFormData[selectedTabId][toolName][paramName] = input.value;
     });
   });
 
@@ -366,6 +399,11 @@ async function executeTool(toolName, button) {
   const contentEl = resultEl.querySelector('.result-content');
 
   try {
+    // Check if tab is selected
+    if (!selectedTabId) {
+      throw new Error('Please select a tab first');
+    }
+
     button.disabled = true;
     button.textContent = 'Executing...';
     resultEl.style.display = 'block';
@@ -380,12 +418,20 @@ async function executeTool(toolName, button) {
     Object.keys(paramProps).forEach(name => {
       if (name === 'tabId') return;
 
-      const input = document.getElementById(`${toolName}-${name}`);
-      if (input && input.value) {
-        if (paramProps[name].type === 'number') {
-          params[name] = parseFloat(input.value);
-        } else {
-          params[name] = input.value;
+      if (name === 'format' && paramProps[name].enum) {
+        // For radio buttons, find the checked one
+        const checkedRadio = document.querySelector(`input[name="${toolName}-${name}"]:checked`);
+        if (checkedRadio) {
+          params[name] = checkedRadio.value;
+        }
+      } else {
+        const input = document.getElementById(`${toolName}-${name}`);
+        if (input && input.value) {
+          if (paramProps[name].type === 'number') {
+            params[name] = parseFloat(input.value);
+          } else {
+            params[name] = input.value;
+          }
         }
       }
     });
@@ -398,7 +444,13 @@ async function executeTool(toolName, button) {
 
     // Parse and display result
     if (result.content && result.content[0]) {
-      const content = JSON.parse(result.content[0].text);
+      let content;
+      try {
+        content = JSON.parse(result.content[0].text);
+      } catch (parseError) {
+        // If JSON parsing fails, it might be a plain error message
+        throw new Error(result.content[0].text || 'Unknown error');
+      }
 
       // Set summary based on content
       if (content.error) {
@@ -451,16 +503,23 @@ async function executeTool(toolName, button) {
 
       // Special handling for screenshots
       if (content.dataUrl) {
+        // Remove any existing screenshot preview
+        const existingPreview = resultEl.parentNode.querySelector('.screenshot-preview');
+        if (existingPreview) {
+          existingPreview.remove();
+        }
+        
         const img = document.createElement('div');
         img.className = 'screenshot-preview';
         const scaleInfo = content.scale && content.scale < 1 ? ` (scaled to ${content.scale * 100}%)` : '';
+        const formatInfo = content.format ? ` (${content.format.toUpperCase()})` : '';
         img.innerHTML = `
           <img src="${content.dataUrl}" alt="Screenshot">
           <div style="text-align: center; margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
-            Screenshot captured${scaleInfo}
+            Screenshot captured${scaleInfo}${formatInfo}
           </div>
         `;
-        // Append after the details element, not inside it
+        // Insert after the details element
         resultEl.parentNode.insertBefore(img, resultEl.nextSibling);
       }
     } else {
@@ -471,9 +530,20 @@ async function executeTool(toolName, button) {
     log(`${toolName} executed successfully`);
   } catch (error) {
     resultEl.className = 'tool-result error';
-    summaryEl.textContent = `❌ Error: ${error.message}`;
+    let errorMessage = error.message;
+    
+    // Check for common error patterns
+    if (errorMessage.includes('Tab') && errorMessage.includes('not found')) {
+      errorMessage = 'Tab not found. Please refresh tabs and try again.';
+    } else if (errorMessage.includes('not connected')) {
+      errorMessage = 'MCP server not connected. Please connect first.';
+    } else if (errorMessage.includes('Please select a tab first')) {
+      errorMessage = 'No tab selected. Please select a tab from the list above.';
+    }
+    
+    summaryEl.textContent = `❌ Error: ${errorMessage}`;
     contentEl.textContent = error.stack || error.message;
-    log(`${toolName} failed: ${error.message}`, 'error');
+    log(`${toolName} failed: ${errorMessage}`, 'error');
   } finally {
     button.disabled = false;
     button.textContent = 'Execute';
@@ -550,6 +620,27 @@ document.getElementById('clear-console').addEventListener('click', () => {
 window.electronAPI.onMCPNotification((message) => {
   if (message.method === 'log' && message.params) {
     log(message.params.message, message.params.type || 'info');
+  } else if (message.method === 'kapturemcp/tab_disconnected' && message.params) {
+    // Handle tab disconnection notification
+    const { tabId } = message.params;
+    log(`Tab ${tabId} disconnected`, 'warning');
+    
+    // Remove tab from current tabs
+    currentTabs = currentTabs.filter(tab => tab.tabId !== tabId);
+    
+    // If this was the selected tab, clear selection
+    if (selectedTabId === tabId) {
+      selectedTabId = null;
+      displayTabContent();
+    }
+    
+    // Update UI
+    displayTabs();
+    
+    // Start polling if no tabs left
+    if (currentTabs.length === 0) {
+      startTabPolling();
+    }
   } else {
     log(`Notification: ${message.method}`, 'info');
   }

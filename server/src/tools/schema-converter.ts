@@ -33,10 +33,23 @@ export function zodToJsonSchema(schema: z.ZodType<any>): any {
 
   if (schema instanceof z.ZodNumber) {
     const schemaWithDesc = schema as any;
-    return {
+    const result: any = {
       type: 'number',
       description: schemaWithDesc._def.description
     };
+    
+    // Add min/max constraints if they exist
+    if (schemaWithDesc._def.checks) {
+      for (const check of schemaWithDesc._def.checks) {
+        if (check.kind === 'min') {
+          result.minimum = check.value;
+        } else if (check.kind === 'max') {
+          result.maximum = check.value;
+        }
+      }
+    }
+    
+    return result;
   }
 
   if (schema instanceof z.ZodBoolean) {
@@ -55,6 +68,15 @@ export function zodToJsonSchema(schema: z.ZodType<any>): any {
     const inner = zodToJsonSchema(schema._def.innerType);
     inner.default = schema._def.defaultValue();
     return inner;
+  }
+
+  if (schema instanceof z.ZodEnum) {
+    const schemaWithDesc = schema as any;
+    return {
+      type: 'string',
+      enum: schemaWithDesc._def.values,
+      description: schemaWithDesc._def.description
+    };
   }
 
   // Default fallback

@@ -17,7 +17,7 @@ import { logger } from './logger.js';
 
 const PORT = 61822;
 
-// Initialize tab registry
+// Initialize tab registry with disconnect callback
 const tabRegistry = new TabRegistry();
 
 // Initialize WebSocket server for Chrome Extension connections
@@ -33,6 +33,23 @@ const wsManager = new WebSocketManager(wss, tabRegistry);
 
 // Initialize MCP handler
 const mcpHandler = new MCPHandler(wsManager, tabRegistry);
+
+// Set up tab disconnect notification handler
+tabRegistry.setDisconnectCallback(async (tabId: string) => {
+  logger.log(`Sending tab disconnect notification for tab ${tabId}`);
+  try {
+    // Send a custom notification about tab disconnection
+    await server.notification({
+      method: 'kapturemcp/tab_disconnected',
+      params: {
+        tabId,
+        timestamp: Date.now()
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to send tab disconnect notification:', error);
+  }
+});
 
 // Connect WebSocket responses to MCP handler
 wsManager.setResponseHandler((response) => {
@@ -126,6 +143,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Setup test HTTP endpoint for Phase 2 testing
 const testServer = setupTestEndpoint(wsManager, tabRegistry);
+
+// Set up tab disconnect notification
+tabRegistry.setDisconnectCallback(async (tabId: string) => {
+  try {
+    await server.notification({
+      method: 'kapturemcp/tab_disconnected',
+      params: {
+        tabId,
+        timestamp: Date.now()
+      }
+    });
+    logger.log(`Sent disconnect notification for tab ${tabId}`);
+  } catch (error) {
+    logger.error(`Failed to send disconnect notification for tab ${tabId}:`, error);
+  }
+});
 
 // Start the MCP server with stdio transport
 async function startServer() {

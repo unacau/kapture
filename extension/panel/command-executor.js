@@ -271,7 +271,7 @@ class CommandExecutor {
 
   // Take screenshot
   async screenshot(params) {
-    const { selector, scale } = params;
+    const { selector, scale, format, quality } = params;
 
     // If selector is provided, get element bounds first
     if (selector) {
@@ -304,7 +304,9 @@ class CommandExecutor {
               type: 'capture-screenshot',
               tabId: chrome.devtools.inspectedWindow.tabId,
               bounds: bounds,
-              scale: scale
+              scale: scale,
+              format: format,
+              quality: quality
             }, (response) => {
               if (chrome.runtime.lastError) {
                 reject(new Error(`Screenshot failed: ${chrome.runtime.lastError.message}`));
@@ -318,6 +320,8 @@ class CommandExecutor {
                     resolve({
                       dataUrl: response.dataUrl,
                       scale: response.scale || 1,
+                      format: response.format || 'png',
+                      quality: response.quality,
                       timestamp: Date.now(),
                       url: navInfo?.url || '',
                       title: navInfo?.title || ''
@@ -337,7 +341,9 @@ class CommandExecutor {
         chrome.runtime.sendMessage({
           type: 'capture-screenshot',
           tabId: chrome.devtools.inspectedWindow.tabId,
-          scale: scale
+          scale: scale,
+          format: format,
+          quality: quality
         }, (response) => {
           if (chrome.runtime.lastError) {
             reject(new Error(`Screenshot failed: ${chrome.runtime.lastError.message}`));
@@ -351,6 +357,8 @@ class CommandExecutor {
                 resolve({
                   dataUrl: response.dataUrl,
                   scale: response.scale || 1,
+                  format: response.format || 'png',
+                  quality: response.quality,
                   timestamp: Date.now(),
                   url: navInfo?.url || '',
                   title: navInfo?.title || ''
