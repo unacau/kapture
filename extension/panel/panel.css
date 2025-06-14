@@ -109,6 +109,24 @@ body {
   }
 }
 
+/* MCP Client */
+.mcp-client {
+  font-size: 11px;
+  color: #666;
+  margin-right: 8px;
+  font-style: italic;
+}
+
+.mcp-client:empty {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mcp-client {
+    color: #999;
+  }
+}
+
 /* Log Info */
 .log-info {
   display: flex;

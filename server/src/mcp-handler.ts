@@ -27,11 +27,20 @@ export class MCPHandler {
     timeout: NodeJS.Timeout;
     tabId?: string;
   }> = new Map();
+  private clientInfo: { name?: string; version?: string } = {};
 
   constructor(
     private wsManager: WebSocketManager,
     private tabRegistry: TabRegistry
   ) {}
+  
+  setClientInfo(info: { name?: string; version?: string }) {
+    this.clientInfo = info;
+  }
+  
+  getClientInfo(): { name?: string; version?: string } {
+    return this.clientInfo;
+  }
 
   async executeCommand(command: string, args: any): Promise<any> {
     // Handle list_tabs specially - it doesn't need a tabId
@@ -137,7 +146,10 @@ export class MCPHandler {
       lastPing: tab.lastPing
     }));
 
-    return { tabs };
+    return { 
+      tabs,
+      mcpClient: this.clientInfo
+    };
   }
 
   cleanup(): void {

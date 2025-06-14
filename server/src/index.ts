@@ -2,7 +2,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { 
   ListToolsRequestSchema, 
-  CallToolRequestSchema 
+  CallToolRequestSchema,
+  InitializeRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { WebSocketServer } from 'ws';
@@ -38,6 +39,9 @@ wsManager.setResponseHandler((response) => {
   mcpHandler.handleCommandResponse(response);
 });
 
+// Store client info
+let mcpClientInfo: { name?: string; version?: string } = {};
+
 // Create MCP server
 const server = new Server(
   {
@@ -50,6 +54,31 @@ const server = new Server(
     },
   }
 );
+
+// Set up initialize handler to capture client info immediately
+server.setRequestHandler(InitializeRequestSchema, async (request) => {
+  // Capture client info from the request
+  if (request.params.clientInfo) {
+    mcpClientInfo = request.params.clientInfo;
+    logger.log(`MCP client connected: ${mcpClientInfo.name} v${mcpClientInfo.version}`);
+    
+    mcpHandler.setClientInfo(mcpClientInfo);
+    wsManager.setMcpClientInfo(mcpClientInfo);
+  }
+  
+  // Process the initialize request normally
+  return {
+    protocolVersion: '2024-11-05',
+    capabilities: {
+      tools: {}
+    },
+    serverInfo: {
+      name: 'kapture-mcp-server',
+      version: '1.0.0'
+    }
+  };
+});
+
 
 // Register handler for listing tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -95,10 +124,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Setup test HTTP endpoint for Phase 2 testing (suppress console output)
-const originalConsoleLog = console.log;
-console.log = () => {}; // Disable console.log for MCP compatibility
-
+// Setup test HTTP endpoint for Phase 2 testing
 const testServer = setupTestEndpoint(wsManager, tabRegistry);
 
 // Start the MCP server with stdio transport
@@ -106,6 +132,7 @@ async function startServer() {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
+    logger.log('MCP server started');
     // Server is ready
   } catch (error) {
     logger.error('Failed to start MCP server:', error);

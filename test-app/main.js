@@ -1,6 +1,6 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 
 let mainWindow;
 let mcpProcess;
@@ -36,7 +36,11 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  // Note: We don't kill existing servers on app startup anymore
+  // The prompt will appear when connecting to MCP
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   killMCPProcess();
@@ -65,6 +69,69 @@ function killMCPProcess() {
     
     mcpProcess = null;
   }
+}
+
+// Kill any process using port 61822
+function killProcessOnPort(port, skipPrompt = false) {
+  return new Promise((resolve) => {
+    // On macOS/Linux, use lsof to find process using the port
+    exec(`lsof -ti tcp:${port}`, async (error, stdout) => {
+      if (error || !stdout.trim()) {
+        // No process found or error
+        resolve();
+        return;
+      }
+      
+      const pid = stdout.trim();
+      console.log(`Found existing process on port ${port} with PID: ${pid}`);
+      
+      // Get process info
+      exec(`ps -p ${pid} -o comm=`, async (psError, psStdout) => {
+        const processName = psError ? 'Unknown' : psStdout.trim();
+        
+        let shouldKill = skipPrompt;
+        
+        if (!skipPrompt && mainWindow) {
+          // Show dialog to confirm
+          const result = await dialog.showMessageBox(mainWindow, {
+            type: 'question',
+            buttons: ['Kill Process', 'Cancel'],
+            defaultId: 0,
+            title: 'Existing Server Found',
+            message: `A process is already using port ${port}`,
+            detail: `Process: ${processName} (PID: ${pid})\n\nThis might be a Kapture server from Claude Desktop or another instance.\n\nDo you want to kill it and start a new server?`
+          });
+          
+          shouldKill = result.response === 0;
+        }
+        
+        if (shouldKill) {
+          // Kill the process
+          exec(`kill -9 ${pid}`, (killError) => {
+            if (killError) {
+              console.error(`Failed to kill process ${pid}:`, killError);
+              if (mainWindow) {
+                dialog.showErrorBox('Failed to Kill Process', `Could not kill process ${pid}: ${killError.message}`);
+              }
+            } else {
+              console.log(`Killed process ${pid} on port ${port}`);
+              if (mainWindow) {
+                mainWindow.webContents.send('mcp-notification', {
+                  method: 'log',
+                  params: { message: `Killed existing server process (${processName} PID: ${pid})`, type: 'info' }
+                });
+              }
+            }
+            // Give it a moment to release the port
+            setTimeout(resolve, 500);
+          });
+        } else {
+          // User cancelled, don't kill the process
+          resolve();
+        }
+      });
+    });
+  });
 }
 
 app.on('activate', () => {
@@ -101,6 +168,34 @@ ipcMain.handle('mcp-connect', async () => {
   try {
     // Kill any existing process first (handles refreshes)
     killMCPProcess();
+    
+    // Check if port is in use and prompt to kill
+    const portInUse = await new Promise((resolve) => {
+      exec(`lsof -ti tcp:61822`, (error, stdout) => {
+        resolve(!error && stdout.trim());
+      });
+    });
+    
+    if (portInUse) {
+      // Kill any process using port 61822 (e.g., from Claude Desktop)
+      await killProcessOnPort(61822);
+      
+      // Check again if port is still in use (user might have cancelled)
+      const stillInUse = await new Promise((resolve) => {
+        exec(`lsof -ti tcp:61822`, (error, stdout) => {
+          resolve(!error && stdout.trim());
+        });
+      });
+      
+      if (stillInUse) {
+        // User cancelled the kill dialog
+        return { 
+          success: false, 
+          error: 'Port 61822 is still in use. Please close the existing server or choose to kill it.' 
+        };
+      }
+    }
+    
     if (mcpProcess) {
       // Wait a moment for the process to fully terminate
       await new Promise(resolve => setTimeout(resolve, 200));

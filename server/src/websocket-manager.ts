@@ -27,6 +27,7 @@ interface ResponseMessage extends Message {
 
 export class WebSocketManager {
   private responseHandler?: (response: ResponseMessage) => void;
+  private mcpClientInfo: { name?: string; version?: string } = {};
 
   constructor(
     private wss: WebSocketServer,
@@ -37,6 +38,18 @@ export class WebSocketManager {
 
   setResponseHandler(handler: (response: ResponseMessage) => void): void {
     this.responseHandler = handler;
+  }
+  
+  setMcpClientInfo(info: { name?: string; version?: string }): void {
+    this.mcpClientInfo = info;
+    
+    // Notify all connected tabs about the MCP client
+    for (const tab of this.tabRegistry.getAll()) {
+      tab.ws.send(JSON.stringify({
+        type: 'mcp-client-update',
+        mcpClient: info
+      }));
+    }
   }
 
   private setupWebSocketServer(): void {
@@ -159,12 +172,19 @@ export class WebSocketManager {
       this.tabRegistry.updateTabInfo(assignedTabId, { url, title });
     }
 
-    // Send acknowledgment with the assigned tab ID
-    ws.send(JSON.stringify({
+    // Send acknowledgment with the assigned tab ID and MCP client info
+    const registeredMessage: any = {
       type: 'registered',
       tabId: assignedTabId,
       message: 'Successfully registered'
-    }));
+    };
+    
+    // Include MCP client info if available
+    if (this.mcpClientInfo && this.mcpClientInfo.name) {
+      registeredMessage.mcpClient = this.mcpClientInfo;
+    }
+    
+    ws.send(JSON.stringify(registeredMessage));
 
     // Request tab info update
     ws.send(JSON.stringify({

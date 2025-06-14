@@ -58,11 +58,14 @@ async function connectToServer() {
     statusTextEl.textContent = 'Connection Failed';
     refreshTabsBtn.disabled = true;
     
-    // Retry connection after delay
-    setTimeout(() => {
-      log('Retrying connection...');
-      connectToServer();
-    }, 3000);
+    // Don't retry if user cancelled killing existing process
+    if (!error.message.includes('still in use')) {
+      // Retry connection after delay
+      setTimeout(() => {
+        log('Retrying connection...');
+        connectToServer();
+      }, 3000);
+    }
   }
 }
 
@@ -116,6 +119,14 @@ async function refreshTabs(silent = false) {
     const result = await callTool('kaptivemcp_list_tabs', {});
     const content = JSON.parse(result.content[0].text);
     const newTabs = content.tabs || [];
+    
+    // Show MCP client info if available
+    if (content.mcpClient && content.mcpClient.name) {
+      const clientInfo = `${content.mcpClient.name} v${content.mcpClient.version || '?'}`;
+      if (!silent) {
+        log(`MCP Client: ${clientInfo}`);
+      }
+    }
     
     // Check if we found new tabs
     if (currentTabs.length === 0 && newTabs.length > 0) {

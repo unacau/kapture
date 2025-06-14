@@ -5,7 +5,9 @@ const statusIndicator = document.getElementById('status-indicator');
 const statusText = statusIndicator.querySelector('.status-text');
 const statusDot = statusIndicator.querySelector('.status-dot');
 const tabIdElement = document.getElementById('tab-id');
+const mcpClientElement = document.getElementById('mcp-client');
 const connectBtn = document.getElementById('connect-btn');
+
 const messagesList = document.getElementById('messages-list');
 const detailView = document.getElementById('detail-view');
 const logCountElement = document.getElementById('log-count');
@@ -23,6 +25,7 @@ let commandExecutor = null;
 let commandQueue = null;
 let messages = [];
 let selectedMessageIndex = null;
+let isManualDisconnect = false;  // Track if user manually disconnected
 
 
 // Update UI state
@@ -45,6 +48,7 @@ function updateConnectionStatus(connected, retrying = false) {
     connectBtn.classList.remove('connected');
     connectBtn.classList.add('connecting');
     tabIdElement.textContent = 'Tab: -';
+    mcpClientElement.textContent = '';
   } else {
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.remove('retrying');
@@ -53,6 +57,7 @@ function updateConnectionStatus(connected, retrying = false) {
     connectBtn.classList.remove('connected');
     connectBtn.classList.remove('connecting');
     tabIdElement.textContent = 'Tab: -';
+    mcpClientElement.textContent = '';
   }
 }
 
@@ -209,6 +214,9 @@ async function connect(fromRetry = false) {
     return;
   }
   
+  // Reset manual disconnect flag when connecting
+  isManualDisconnect = false;
+  
   // Only stop retrying if this is a manual connect
   if (!fromRetry) {
     stopRetrying();
@@ -268,7 +276,21 @@ async function connect(fromRetry = false) {
           tabId = message.tabId;
           previousTabId = tabId;  // Store for reconnection
           tabIdElement.textContent = `Tab: ${tabId}`;
+          
+          // Display MCP client info if provided
+          if (message.mcpClient && message.mcpClient.name) {
+            mcpClientElement.textContent = `via ${message.mcpClient.name} v${message.mcpClient.version || '?'}`;
+          } else {
+            mcpClientElement.textContent = '';
+          }
+          
           updateConnectionStatus(true);
+          
+        } else if (message.type === 'mcp-client-update') {
+          // Update MCP client info when it connects later
+          if (message.mcpClient && message.mcpClient.name) {
+            mcpClientElement.textContent = `via ${message.mcpClient.name} v${message.mcpClient.version || '?'}`;
+          }
           
         } else if (message.type === 'command') {
           // Execute command
@@ -311,8 +333,8 @@ async function connect(fromRetry = false) {
       console.log('WebSocket disconnected');
       const shouldRetry = !isConnected && retryInterval !== null;
       disconnect(shouldRetry);
-      // Start automatic retry if not already retrying
-      if (!retryInterval) {
+      // Start automatic retry only if not manually disconnected
+      if (!retryInterval && !isManualDisconnect) {
         startRetrying();
       }
     };
@@ -321,8 +343,8 @@ async function connect(fromRetry = false) {
     console.error('Connection failed:', error);
     const shouldRetry = retryInterval !== null;
     disconnect(shouldRetry);
-    // Start automatic retry after failed connection if not already retrying
-    if (!retryInterval) {
+    // Start automatic retry after failed connection only if not manually disconnected
+    if (!retryInterval && !isManualDisconnect) {
       startRetrying();
     }
   }
@@ -402,9 +424,11 @@ function clearLogs() {
 // Connect button handler
 connectBtn.addEventListener('click', () => {
   if (isConnected) {
+    isManualDisconnect = true;  // Mark as manual disconnect
     stopRetrying();
     disconnect();
   } else if (isRetrying) {
+    isManualDisconnect = true;  // Stop retrying is also manual
     stopRetrying();
   } else {
     // Start retrying which will attempt immediate connection
