@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapture - Browser Automation for AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .hero .tagline {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+        
+        .badges {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        
+        .badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        
+        .section {
+            margin-bottom: 80px;
+        }
+        
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #2d3748;
+        }
+        
+        .problems {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+        }
+        
+        .problems ul {
+            list-style: none;
+        }
+        
+        .problems li {
+            padding: 15px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .problems li:last-child {
+            border-bottom: none;
+        }
+        
+        .problems strong {
+            color: #e53e3e;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        
+        .feature-card ul {
+            list-style: none;
+            color: #4a5568;
+        }
+        
+        .feature-card li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .feature-card li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+        
+        .architecture {
+            background: #2d3748;
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .architecture pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            overflow-x: auto;
+        }
+        
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .tool-category {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tool-category h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .tool-category code {
+            background: #f7fafc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #2d3748;
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .step {
+            text-align: center;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            line-height: 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .footer a {
+            color: #a78bfa;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Kapture</h1>
+        <p class="tagline">Control your browser with AI using Chrome DevTools and MCP</p>
+        
+        <div class="badges">
+            <div class="badge">✨ 100% OPEN SOURCE</div>
+            <div class="badge">🔒 NO ANALYTICS</div>
+            <div class="badge">🛡️ NO TRACKERS</div>
+        </div>
+        
+        <div class="cta-buttons">
+            <a href="#" class="btn btn-primary">Download Extension</a>
+            <a href="#" class="btn btn-secondary">View on GitHub</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <section class="section">
+            <h2>Why Kapture?</h2>
+            <div class="problems">
+                <p style="margin-bottom: 20px;">Browser automation is essential for AI agents, but existing solutions struggle with:</p>
+                <ul>
+                    <li><strong>Unreliable clicking and element interaction</strong> - Traditional tools frequently fail to click elements or interact with modern web applications</li>
+                    <li><strong>Complex setup and dependencies</strong> - Most solutions require Selenium, Chrome drivers, or headless browser configurations</li>
+                    <li><strong>Poor error handling</strong> - Cryptic errors that are difficult for AI agents to understand and recover from</li>
+                    <li><strong>Connection instability</strong> - WebSocket disconnections and lack of reconnection support</li>
+                    <li><strong>Limited debugging capabilities</strong> - No easy way to test commands or see what's happening</li>
+                </ul>
+                <p style="margin-top: 30px; font-size: 1.2rem; text-align: center; color: #667eea; font-weight: 600;">
+                    Kapture solves these problems with a fresh approach built specifically for AI-driven automation.
+                </p>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>Key Features</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <h3>🎯 Reliable Browser Control</h3>
+                    <ul>
+                        <li>DevTools-based architecture eliminates automation failures</li>
+                        <li>Sequential command execution prevents race conditions</li>
+                        <li>Smart element detection with proper error reporting</li>
+                        <li>Configurable timeouts for slow-loading pages</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>🚀 Superior Performance</h3>
+                    <ul>
+                        <li>Direct Chrome API access - No WebDriver overhead</li>
+                        <li>Efficient screenshot capture with compression</li>
+                        <li>Event-driven architecture - No polling</li>
+                        <li>Real-time WebSocket communication</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>🛠️ Developer-Friendly</h3>
+                    <ul>
+                        <li>Built-in DevTools panel for testing</li>
+                        <li>Visual command history with replay</li>
+                        <li>Real-time console log monitoring</li>
+                        <li>Included MCP Test App</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>🔒 Security & Privacy</h3>
+                    <ul>
+                        <li>Tab isolation - Commands affect specific tabs only</li>
+                        <li>Minimal permissions required</li>
+                        <li>Local execution - No cloud services</li>
+                        <li>Transparent operation</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>How It Works</h2>
+            <div class="architecture">
+                <pre>AI Application (Claude, etc.)
+       ↓ MCP Protocol
+   MCP Server
+       ↓ WebSocket
+Chrome Extension
+       ↓ DevTools API
+   Your Browser</pre>
+                <p style="margin-top: 30px;">Clean separation • Graceful error handling • Easy debugging • Multiple connections</p>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>Available Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-category">
+                    <h4>Navigation</h4>
+                    <p><code>navigate</code> <code>go_back</code> <code>go_forward</code></p>
+                </div>
+                <div class="tool-category">
+                    <h4>Interaction</h4>
+                    <p><code>click</code> <code>hover</code> <code>fill</code> <code>select</code></p>
+                </div>
+                <div class="tool-category">
+                    <h4>Information</h4>
+                    <p><code>screenshot</code> <code>logs</code> <code>dom</code> <code>list_tabs</code></p>
+                </div>
+                <div class="tool-category">
+                    <h4>Advanced</h4>
+                    <p><code>evaluate</code> (execute JavaScript)</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>Getting Started</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h4>Install Extension</h4>
+                    <p>Download from GitHub and load in Chrome Developer Mode</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h4>Start MCP Server</h4>
+                    <p>npm install, build, and start the server</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h4>Configure AI App</h4>
+                    <p>Add Kapture to your Claude Desktop config</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h4>Open DevTools</h4>
+                    <p>Navigate to Kapture tab and start automating</p>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <div class="footer">
+        <p>Kapture is an independent open-source project focused on reliable browser automation for AI applications.</p>
+        <p style="margin-top: 20px;">
+            <a href="#">GitHub</a> • 
+            <a href="#">Documentation</a> • 
+            <a href="#">Issues</a> • 
+            <a href="#">Contribute</a>
+        </p>
+    </div>
+</body>
+</html>

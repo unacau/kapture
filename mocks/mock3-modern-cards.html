@@ -4,28 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kapture - Browser Automation for AI</title>
-    <meta name="description" content="Control your browser with AI using Chrome DevTools and the Model Context Protocol. 100% open source, no analytics, no trackers.">
-    <meta property="og:title" content="Kapture - Browser Automation for AI">
-    <meta property="og:description" content="Control your browser with AI using Chrome DevTools and the Model Context Protocol. 100% open source, no analytics, no trackers.">
-    <meta property="og:image" content="https://williamkapke.github.io/kapture/assets/images/og-image.png">
-    <meta property="og:url" content="https://williamkapke.github.io/kapture/">
-    <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
-    <link rel="alternate icon" type="image/png" href="assets/images/icon48.png">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: #1a202c;
             background: #ffffff;
         }
-
+        
         .nav {
             position: fixed;
             top: 0;
@@ -36,7 +28,7 @@
             z-index: 1000;
             padding: 20px 0;
         }
-
+        
         .nav-content {
             max-width: 1200px;
             margin: 0 auto;
@@ -45,45 +37,39 @@
             justify-content: space-between;
             align-items: center;
         }
-
+        
         .logo {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
             font-size: 1.5rem;
             font-weight: 800;
-        }
-        
-        .logo span {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
+        
         .nav-links {
             display: flex;
             gap: 40px;
             list-style: none;
         }
-
+        
         .nav-links a {
             color: #4a5568;
             text-decoration: none;
             font-weight: 500;
             transition: color 0.2s;
         }
-
+        
         .nav-links a:hover {
             color: #667eea;
         }
-
+        
         .hero {
             margin-top: 80px;
             padding: 100px 20px;
             text-align: center;
             background: linear-gradient(to bottom, #f7fafc, #ffffff);
         }
-
+        
         .hero h1 {
             font-size: 4rem;
             font-weight: 800;
@@ -92,7 +78,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
+        
         .hero .subtitle {
             font-size: 1.5rem;
             color: #4a5568;
@@ -101,7 +87,7 @@
             margin-left: auto;
             margin-right: auto;
         }
-
+        
         .trust-badges {
             display: flex;
             justify-content: center;
@@ -109,7 +95,7 @@
             margin-bottom: 50px;
             flex-wrap: wrap;
         }
-
+        
         .trust-badge {
             display: flex;
             align-items: center;
@@ -117,20 +103,20 @@
             color: #2d3748;
             font-weight: 600;
         }
-
+        
         .trust-badge svg {
             width: 24px;
             height: 24px;
             fill: #48bb78;
         }
-
+        
         .hero-buttons {
             display: flex;
             gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
         }
-
+        
         .btn {
             padding: 16px 32px;
             text-decoration: none;
@@ -142,224 +128,69 @@
             align-items: center;
             gap: 10px;
         }
-
+        
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
         }
-
+        
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
-
+        
         .btn-secondary {
             background: white;
             color: #667eea;
             border: 2px solid #e9d8fd;
         }
-
+        
         .btn-secondary:hover {
             background: #f7fafc;
             border-color: #667eea;
         }
-
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
         }
-
+        
         .section {
             padding: 80px 0;
         }
-
+        
         .section-header {
             text-align: center;
             margin-bottom: 60px;
         }
-
+        
         .section-header h2 {
             font-size: 3rem;
             font-weight: 700;
             margin-bottom: 20px;
             color: #1a202c;
         }
-
+        
         .section-header p {
             font-size: 1.25rem;
             color: #4a5568;
             max-width: 600px;
             margin: 0 auto;
         }
-
-        /* Screenshot showcase section */
-        .showcase-section {
-            background: linear-gradient(to bottom, #ffffff, #f7fafc);
-            padding: 100px 0;
-        }
-
-        .tools-section {
-            padding: 100px 0;
-        }
-
-        .showcase-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        .showcase-main {
-            position: relative;
-            margin-bottom: 80px;
-        }
-
-        .browser-frame {
-            background: #2d3748;
-            border-radius: 12px;
-            padding: 10px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .browser-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-            padding: 0 10px;
-        }
-
-        .browser-dots {
-            display: flex;
-            gap: 8px;
-        }
-
-        .browser-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #4a5568;
-        }
-
-        .browser-dot:first-child { background: #fc605c; }
-        .browser-dot:nth-child(2) { background: #fdbc40; }
-        .browser-dot:nth-child(3) { background: #34c84a; }
-
-        .screenshot-container {
-            border-radius: 8px;
-            overflow: hidden;
-            background: #1a202c;
-        }
-
-        .screenshot-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .showcase-features {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 40px;
-            margin-top: 60px;
-        }
-
-        .showcase-feature {
-            text-align: center;
-        }
-
-        .showcase-feature-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            color: white;
-            font-size: 1.5rem;
-        }
-
-        .showcase-feature h3 {
-            font-size: 1.25rem;
-            margin-bottom: 10px;
-            color: #1a202c;
-        }
-
-        .showcase-feature p {
-            color: #4a5568;
-            line-height: 1.5;
-        }
-
-        /* Test app showcase */
-        .test-app-showcase {
-            background: white;
-            padding: 60px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-top: 80px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: center;
-        }
-
-        .test-app-content h3 {
-            font-size: 2rem;
-            margin-bottom: 20px;
-            color: #1a202c;
-        }
-
-        .test-app-content p {
-            color: #4a5568;
-            margin-bottom: 20px;
-            line-height: 1.8;
-        }
-
-        .test-app-features {
-            list-style: none;
-            margin-top: 30px;
-        }
-
-        .test-app-features li {
-            padding: 10px 0;
-            color: #4a5568;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .test-app-features li::before {
-            content: "✓";
-            color: #48bb78;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        .test-app-screenshot {
-            position: relative;
-        }
-
-        .test-app-screenshot img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-
+        
         .problems-section {
             background: #f7fafc;
         }
-
+        
         .problem-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
             margin-bottom: 50px;
         }
-
+        
         .problem-card {
             background: white;
             padding: 30px;
@@ -368,7 +199,7 @@
             position: relative;
             overflow: hidden;
         }
-
+        
         .problem-card::before {
             content: "";
             position: absolute;
@@ -378,17 +209,17 @@
             height: 100%;
             background: #f56565;
         }
-
+        
         .problem-card h3 {
             color: #e53e3e;
             margin-bottom: 10px;
             font-size: 1.25rem;
         }
-
+        
         .problem-card p {
             color: #4a5568;
         }
-
+        
         .solution-box {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -397,18 +228,18 @@
             text-align: center;
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
         }
-
+        
         .solution-box h3 {
             font-size: 2rem;
             margin-bottom: 15px;
         }
-
+        
         .feature-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 40px;
         }
-
+        
         .feature-card {
             text-align: center;
             padding: 40px 30px;
@@ -417,34 +248,34 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s;
         }
-
+        
         .feature-card:hover {
             transform: translateY(-10px);
         }
-
+        
         .feature-icon {
             font-size: 3rem;
             margin-bottom: 20px;
         }
-
+        
         .feature-card h3 {
             font-size: 1.5rem;
             margin-bottom: 15px;
             color: #1a202c;
         }
-
+        
         .feature-list {
             list-style: none;
             text-align: left;
             color: #4a5568;
         }
-
+        
         .feature-list li {
             padding: 8px 0;
             padding-left: 25px;
             position: relative;
         }
-
+        
         .feature-list li::before {
             content: "✓";
             position: absolute;
@@ -452,43 +283,42 @@
             color: #48bb78;
             font-weight: bold;
         }
-
+        
         .architecture-section {
             background: #1a202c;
             color: white;
         }
-
+        
         .architecture-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 60px;
             align-items: center;
         }
-
+        
         .architecture-diagram {
-            background: transparent;
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
             border-radius: 12px;
             text-align: center;
         }
-
-        .architecture-diagram img {
-            border-radius: 8px;
-            max-width: 100%;
-            height: auto;
+        
+        .architecture-diagram pre {
+            font-size: 1.2rem;
+            color: #e2e8f0;
         }
-
+        
         .architecture-benefits ul {
             list-style: none;
         }
-
+        
         .architecture-benefits li {
             padding: 15px 0;
             display: flex;
             align-items: center;
             gap: 15px;
         }
-
+        
         .architecture-benefits .icon {
             width: 40px;
             height: 40px;
@@ -500,32 +330,36 @@
             color: #48bb78;
             flex-shrink: 0;
         }
-
+        
+        .tools-section {
+            background: #f7fafc;
+        }
+        
         .tools-showcase {
             background: white;
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
-
+        
         .tool-categories {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 30px;
         }
-
+        
         .tool-category h4 {
             color: #667eea;
             margin-bottom: 15px;
             font-size: 1.25rem;
         }
-
+        
         .tool-list {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
         }
-
+        
         .tool-item {
             background: #edf2f7;
             padding: 6px 16px;
@@ -534,32 +368,32 @@
             color: #2d3748;
             font-family: 'Monaco', 'Consolas', monospace;
         }
-
+        
         .cta-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
             padding: 100px 20px;
         }
-
+        
         .cta-section h2 {
             font-size: 3rem;
             margin-bottom: 20px;
         }
-
+        
         .cta-section p {
             font-size: 1.25rem;
             margin-bottom: 40px;
             opacity: 0.9;
         }
-
+        
         .footer {
             background: #1a202c;
             color: white;
             padding: 60px 20px 40px;
             text-align: center;
         }
-
+        
         .footer-links {
             display: flex;
             justify-content: center;
@@ -567,38 +401,29 @@
             margin-bottom: 30px;
             flex-wrap: wrap;
         }
-
+        
         .footer-links a {
             color: #a0aec0;
             text-decoration: none;
             transition: color 0.2s;
         }
-
+        
         .footer-links a:hover {
             color: white;
         }
-
+        
         .footer-bottom {
             color: #718096;
             padding-top: 30px;
             border-top: 1px solid #2d3748;
         }
-
+        
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 3rem;
             }
-
+            
             .architecture-content {
-                grid-template-columns: 1fr;
-            }
-
-            .test-app-showcase {
-                grid-template-columns: 1fr;
-                padding: 40px;
-            }
-
-            .showcase-features {
                 grid-template-columns: 1fr;
             }
         }
@@ -607,29 +432,24 @@
 <body>
     <nav class="nav">
         <div class="nav-content">
-            <a href="#" class="logo">
-                <img src="assets/logo.svg" alt="Kapture" style="height: 28px; width: auto; margin-right: 8px;">
-                <span>Kapture</span>
-            </a>
+            <div class="logo">Kapture</div>
             <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
                 <li><a href="#how-it-works">How it Works</a></li>
                 <li><a href="#tools">Tools</a></li>
-                <li><a href="MCP_USAGE.html">Docs</a></li>
-                <li><a href="https://github.com/williamkapke/kapture">GitHub</a></li>
+                <li><a href="#docs">Docs</a></li>
+                <li><a href="#github">GitHub</a></li>
             </ul>
         </div>
     </nav>
-
+    
     <section class="hero">
-        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
-            <img src="assets/logo.svg" alt="Kapture Logo" style="height: 60px; width: auto; margin-right: 16px;">
-            <h1 style="margin: 0;">Kapture</h1>
-        </div>
+        <h1>Kapture</h1>
         <p class="subtitle">Control your browser with AI using Chrome DevTools and the Model Context Protocol</p>
-
+        
         <div class="trust-badges">
             <div class="trust-badge">
-                <svg viewBox="0 0 24 24"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,3.18L19,6.3V11.22C19,12.92 18.5,14.65 17.65,16.17C16.5,18.24 14.75,19.95 12.73,20.85L12,21.17L11.27,20.85C9.25,19.95 7.5,18.24 6.35,16.17C5.5,14.65 5,12.92 5,11.22V6.3L12,3.18M12,7A3,3 0 0,0 9,10A3,3 0 0,0 12,13A3,3 0 0,0 15,10A3,3 0 0,0 12,7Z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12 2L3.09 5.26C3.03 9.15 3.5 12.96 5.44 16.11C7.38 19.26 10.55 21.59 14.38 22.81L15 23L15.62 22.81C19.45 21.59 22.62 19.26 24.56 16.11C26.5 12.96 26.97 9.15 26.91 5.26L18 2L12 2M12 4.18L24 6.3C23.95 9.69 23.52 12.92 21.84 15.51C20.16 18.1 17.45 20.05 14.25 21.06L12 21.75L9.75 21.06C6.55 20.05 3.84 18.1 2.16 15.51C0.48 12.92 0.05 9.69 0 6.3L12 4.18M12 7L11 10L8 11L11 12L12 15L13 12L16 11L13 10L12 7Z"/></svg>
                 <span>100% Open Source</span>
             </div>
             <div class="trust-badge">
@@ -641,136 +461,34 @@
                 <span>No Trackers</span>
             </div>
         </div>
-
+        
         <div class="hero-buttons">
-            <a href="#" class="btn btn-primary" style="opacity: 0.8; cursor: not-allowed;" onclick="return false;">
+            <a href="#" class="btn btn-primary">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
-                <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
-                    Download Extension
-                    <small style="font-size: 0.75em; opacity: 0.8;">(coming soon)</small>
-                </span>
+                Download Extension
             </a>
-            <a href="https://github.com/williamkapke/kapture" class="btn btn-secondary">
+            <a href="#" class="btn btn-secondary">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"/></svg>
                 View on GitHub
             </a>
         </div>
     </section>
-
-    <!-- Screenshot Showcase Section -->
-    <section class="showcase-section">
-        <!-- See Kapture in Action -->
-        <div class="showcase-content">
-            <div class="section-header">
-                <h2>See Kapture in Action</h2>
-                <p>A powerful DevTools extension that brings browser automation to your fingertips</p>
-            </div>
-
-            <div class="showcase-main">
-                <div class="browser-frame">
-                    <div class="browser-header">
-                        <div class="browser-dots">
-                            <div class="browser-dot"></div>
-                            <div class="browser-dot"></div>
-                            <div class="browser-dot"></div>
-                        </div>
-                    </div>
-                    <div class="screenshot-container">
-                        <img src="assets/images/ScreenshotWithExtensionPanel.webp" alt="Kapture DevTools Panel showing command execution and real-time response monitoring">
-                    </div>
-                </div>
-            </div>
-
-            <div class="showcase-features">
-                <div class="showcase-feature">
-                    <div class="showcase-feature-icon">📊</div>
-                    <h3>Real-time Command History</h3>
-                    <p>See every command sent and response received with detailed timing information</p>
-                </div>
-                <div class="showcase-feature">
-                    <div class="showcase-feature-icon">🔌</div>
-                    <h3>WebSocket Connection Status</h3>
-                    <p>Monitor connection health and tab registration status at a glance</p>
-                </div>
-                <div class="showcase-feature">
-                    <div class="showcase-feature-icon">🖼️</div>
-                    <h3>Visual Response Preview</h3>
-                    <p>Screenshots and results displayed directly in the DevTools panel</p>
-                </div>
-            </div>
-
-        </div>
-    </section>
-
-    <section class="tools-section" id="tools">
-        <div class="container">
-            <div class="section-header">
-                <h2>Available Tools</h2>
-                <p>12 MCP tools for comprehensive browser automation</p>
-            </div>
-
-            <div class="tools-showcase">
-                <div class="tool-categories">
-                    <div class="tool-category">
-                        <h4>Navigation</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">navigate</span>
-                            <span class="tool-item">go_back</span>
-                            <span class="tool-item">go_forward</span>
-                        </div>
-                    </div>
-
-                    <div class="tool-category">
-                        <h4>Interaction</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">click</span>
-                            <span class="tool-item">hover</span>
-                            <span class="tool-item">fill</span>
-                            <span class="tool-item">select</span>
-                        </div>
-                    </div>
-
-                    <div class="tool-category">
-                        <h4>Information</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">screenshot</span>
-                            <span class="tool-item">logs</span>
-                            <span class="tool-item">dom</span>
-                            <span class="tool-item">list_tabs</span>
-                        </div>
-                    </div>
-
-                    <div class="tool-category">
-                        <h4>Advanced</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">evaluate</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    
     <section class="section problems-section">
-        <!-- Why Kapture? -->
         <div class="container">
             <div class="section-header">
-                <h2>What is wrong with other solutions?</h2>
+                <h2>Why Kapture?</h2>
                 <p>Browser automation is essential, but existing solutions have critical problems</p>
             </div>
-
+            
             <div class="problem-cards">
-                <div class="problem-card">
-                    <h3>NOT Open Source</h3>
-                    <p>Some projects track your use and do not make the ENTIRE source code available</p>
-                </div>
                 <div class="problem-card">
                     <h3>Unreliable Interactions</h3>
                     <p>Traditional tools frequently fail to click elements or interact with modern web applications</p>
                 </div>
                 <div class="problem-card">
                     <h3>Complex Setup</h3>
-                    <p>Some solutions require Selenium, Chrome drivers, or headless browser configurations</p>
+                    <p>Most solutions require Selenium, Chrome drivers, or headless browser configurations</p>
                 </div>
                 <div class="problem-card">
                     <h3>Poor Error Handling</h3>
@@ -785,22 +503,87 @@
                     <p>No easy way to test commands or see what's happening</p>
                 </div>
             </div>
+            
+            <div class="solution-box">
+                <h3>Kapture solves these problems</h3>
+                <p>A fresh approach built specifically for AI-driven automation</p>
+            </div>
         </div>
     </section>
-
-
-    <section class="section architecture-section" id="how-it-works">
+    
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Key Features</h2>
+                <p>Everything you need for reliable browser automation</p>
+            </div>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Reliable Control</h3>
+                    <ul class="feature-list">
+                        <li>DevTools-based architecture</li>
+                        <li>Sequential command execution</li>
+                        <li>Smart element detection</li>
+                        <li>Configurable timeouts</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Superior Performance</h3>
+                    <ul class="feature-list">
+                        <li>Direct Chrome API access</li>
+                        <li>Efficient screenshot capture</li>
+                        <li>Event-driven architecture</li>
+                        <li>Real-time WebSocket</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🛠️</div>
+                    <h3>Developer-Friendly</h3>
+                    <ul class="feature-list">
+                        <li>Built-in DevTools panel</li>
+                        <li>Visual command history</li>
+                        <li>Console log monitoring</li>
+                        <li>MCP Test App included</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Security & Privacy</h3>
+                    <ul class="feature-list">
+                        <li>Tab isolation</li>
+                        <li>Minimal permissions</li>
+                        <li>Local execution only</li>
+                        <li>Transparent operation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="section architecture-section">
         <div class="container">
             <div class="section-header">
                 <h2 style="color: white;">How It Works</h2>
                 <p style="color: #cbd5e0;">Three-layer architecture for maximum reliability</p>
             </div>
-
+            
             <div class="architecture-content">
                 <div class="architecture-diagram">
-                    <img src="assets/images/HowKaptureWorks.webp" alt="Kapture Architecture Diagram showing the flow from AI Applications through MCP Protocol to Kapture MCP Server, then via WebSockets to Chrome/Brave Browser Extensions and DevTools Panels" style="width: 100%; height: auto;">
+                    <pre>AI Application
+    ↓ MCP
+MCP Server
+    ↓ WebSocket
+Chrome Extension
+    ↓ DevTools
+Your Browser</pre>
                 </div>
-
+                
                 <div class="architecture-benefits">
                     <ul>
                         <li>
@@ -834,49 +617,77 @@
                     </ul>
                 </div>
             </div>
-
-            <!-- Test App Showcase -->
-            <div class="test-app-showcase" style="margin-top: 80px;">
-                <div class="test-app-content">
-                    <h3>MCP Test Client Included</h3>
-                    <p>Kapture comes with a powerful Electron-based test application that lets developers connect to the MCP server and test commands as if they were an AI agent.</p>
-                    <p>Perfect for debugging, development, and understanding how AI agents will interact with your browser automation setup.</p>
-                    <ul class="test-app-features">
-                        <li>Test all 12 MCP tools interactively</li>
-                        <li>Real-time console output</li>
-                        <li>Parameter validation</li>
-                        <li>Connection status monitoring</li>
-                    </ul>
-                </div>
-                <div class="test-app-screenshot">
-                    <img src="assets/images/test-app-screenshot.webp" alt="Kapture MCP Test Client showing interactive tool testing interface">
+        </div>
+    </section>
+    
+    <section class="section tools-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Available Tools</h2>
+                <p>12 MCP tools for comprehensive browser automation</p>
+            </div>
+            
+            <div class="tools-showcase">
+                <div class="tool-categories">
+                    <div class="tool-category">
+                        <h4>Navigation</h4>
+                        <div class="tool-list">
+                            <span class="tool-item">navigate</span>
+                            <span class="tool-item">go_back</span>
+                            <span class="tool-item">go_forward</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-category">
+                        <h4>Interaction</h4>
+                        <div class="tool-list">
+                            <span class="tool-item">click</span>
+                            <span class="tool-item">hover</span>
+                            <span class="tool-item">fill</span>
+                            <span class="tool-item">select</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-category">
+                        <h4>Information</h4>
+                        <div class="tool-list">
+                            <span class="tool-item">screenshot</span>
+                            <span class="tool-item">logs</span>
+                            <span class="tool-item">dom</span>
+                            <span class="tool-item">list_tabs</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-category">
+                        <h4>Advanced</h4>
+                        <div class="tool-list">
+                            <span class="tool-item">evaluate</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
-
+    
     <section class="cta-section">
         <h2>Ready to automate?</h2>
         <p>Give your AI the power to browse the web</p>
         <div class="hero-buttons">
-            <a href="#" class="btn btn-primary" style="background: white; color: #667eea; opacity: 0.8; cursor: not-allowed;" onclick="return false;">
-                <span style="display: flex; flex-direction: column; align-items: center; line-height: 1.2;">
-                    Download Kapture
-                    <small style="font-size: 0.75em; opacity: 0.8;">(coming soon)</small>
-                </span>
+            <a href="#" class="btn btn-primary" style="background: white; color: #667eea;">
+                Download Kapture
             </a>
-            <a href="MCP_USAGE.html" class="btn btn-secondary" style="border: 2px solid white; color: white; background: transparent;">
+            <a href="#" class="btn btn-secondary" style="border-color: white; color: white;">
                 Read Documentation
             </a>
         </div>
     </section>
-
+    
     <footer class="footer">
         <div class="footer-links">
-            <a href="https://github.com/williamkapke/kapture">GitHub</a>
-            <a href="MCP_USAGE.html">Documentation</a>
-            <a href="https://github.com/williamkapke/kapture/issues">Issues</a>
-            <a href="https://github.com/williamkapke/kapture#contributing">Contribute</a>
+            <a href="#">GitHub</a>
+            <a href="#">Documentation</a>
+            <a href="#">Issues</a>
+            <a href="#">Contribute</a>
         </div>
         <div class="footer-bottom">
             <p>Kapture is an independent open-source project focused on reliable browser automation for AI applications</p>
