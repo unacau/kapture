@@ -2,7 +2,7 @@
 
 Kapture is a Chrome DevTools Extension that enables browser automation through the Model Context Protocol (MCP). It allows AI applications like Claude to control web browsers via a three-layer architecture.
 
-![Kapture DevTools Extension Panel](extension/ScreenshotWithExtensionPanel.png)
+![Kapture DevTools Extension Panel](extension/ScreenshotWithExtensionPanel.webp)
 
 ## Overview
 
@@ -12,7 +12,7 @@ Kapture bridges AI assistants with web browsers through:
 - **WebSocket Bridge**: Real-time communication between server and extensions
 
 ## Architecture
-![How Kapture Works](docs/assets/images/HowKaptureWorks.png)
+![How Kapture Works](docs/assets/images/HowKaptureWorks.webp)
 
 ## Quick Start
 

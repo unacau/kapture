@@ -6,7 +6,7 @@ A robust Electron-based test application for the Kapture MCP server that impleme
 
 This test client provides a comprehensive development and testing environment for the Kapture MCP server, featuring a modern browser-style interface with real-time tab management, tool discovery, and execution capabilities.
 
-![Kapture MCP Test Client Interface](screenshot.png)
+![Kapture MCP Test Client Interface](screenshot.webp)
 
 ## Key Features
 
