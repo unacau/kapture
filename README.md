@@ -12,11 +12,11 @@ Kapture is a Chrome DevTools Extension that provides remote browser automation c
 
 ### Phase 2 - Core Commands ✅
 - Command executor and queue management
-- Navigate to URL (`kaptivemcp_navigate`)
-- Browser navigation (`kaptivemcp_go_back`, `kaptivemcp_go_forward`)
-- Screenshot capture (`kaptivemcp_screenshot`)
-- Element interaction (`kaptivemcp_click`)
-- Console log collection (`kaptivemcp_logs`)
+- Navigate to URL (`kapturemcp_navigate`)
+- Browser navigation (`kapturemcp_go_back`, `kapturemcp_go_forward`)
+- Screenshot capture (`kapturemcp_screenshot`)
+- Element interaction (`kapturemcp_click`)
+- Console log collection (`kapturemcp_logs`)
 - Command timeout handling
 - Test HTTP endpoint for command testing
 
@@ -39,10 +39,10 @@ Kapture is a Chrome DevTools Extension that provides remote browser automation c
 - Real-time tab management
 
 ### Phase 6 - Advanced Commands ✅
-- Fill input fields (`kaptivemcp_fill`)
-- Select dropdown options (`kaptivemcp_select`)
-- Hover over elements (`kaptivemcp_hover`)
-- Execute JavaScript (`kaptivemcp_evaluate`)
+- Fill input fields (`kapturemcp_fill`)
+- Select dropdown options (`kapturemcp_select`)
+- Hover over elements (`kapturemcp_hover`)
+- Execute JavaScript (`kapturemcp_evaluate`)
 
 ### Phase 8 - UI Enhancement ✅
 - Modern visual design with CSS variables
@@ -250,18 +250,18 @@ See [docs/MCP_USAGE.md](docs/MCP_USAGE.md) for detailed setup instructions and e
 
 ### Available MCP Tools
 
-- `kaptivemcp_list_tabs` - List all connected browser tabs
-- `kaptivemcp_navigate` - Navigate to a URL
-- `kaptivemcp_go_back` - Browser back button
-- `kaptivemcp_go_forward` - Browser forward button
-- `kaptivemcp_screenshot` - Capture screenshots
-- `kaptivemcp_click` - Click elements
-- `kaptivemcp_hover` - Hover over elements
-- `kaptivemcp_fill` - Fill input fields
-- `kaptivemcp_select` - Select dropdown options
-- `kaptivemcp_evaluate` - Execute JavaScript
-- `kaptivemcp_logs` - Retrieve console logs
-- `kaptivemcp_dom` - Get outerHTML of body or specific element
+- `kapturemcp_list_tabs` - List all connected browser tabs
+- `kapturemcp_navigate` - Navigate to a URL
+- `kapturemcp_go_back` - Browser back button
+- `kapturemcp_go_forward` - Browser forward button
+- `kapturemcp_screenshot` - Capture screenshots
+- `kapturemcp_click` - Click elements
+- `kapturemcp_hover` - Hover over elements
+- `kapturemcp_fill` - Fill input fields
+- `kapturemcp_select` - Select dropdown options
+- `kapturemcp_evaluate` - Execute JavaScript
+- `kapturemcp_logs` - Retrieve console logs
+- `kapturemcp_dom` - Get outerHTML of body or specific element
 
 ## Testing Commands
 
@@ -349,7 +349,7 @@ See [docs/MCP_USAGE.md](docs/MCP_USAGE.md) for detailed setup instructions and e
 ### Phase 4 - MCP Protocol Integration ✅
 - Full MCP server implementation with stdio transport
 - Tool definitions for all 11 browser automation commands
-- Tab discovery with `kaptivemcp_list_tabs`
+- Tab discovery with `kapturemcp_list_tabs`
 - Advanced tab management with metadata tracking
 - Command routing with response handling
 - Error propagation from extension to MCP client

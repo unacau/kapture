@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const navigateTool = {
-  name: 'kaptivemcp_navigate',
+  name: 'kapturemcp_navigate',
   description: 'Navigate browser tab to specified URL',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -11,7 +11,7 @@ export const navigateTool = {
 };
 
 export const goBackTool = {
-  name: 'kaptivemcp_go_back',
+  name: 'kapturemcp_go_back',
   description: 'Navigate back in browser history',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID')
@@ -19,7 +19,7 @@ export const goBackTool = {
 };
 
 export const goForwardTool = {
-  name: 'kaptivemcp_go_forward',
+  name: 'kapturemcp_go_forward',
   description: 'Navigate forward in browser history',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID')

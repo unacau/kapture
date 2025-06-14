@@ -32,20 +32,20 @@ async function connectToServer() {
     statusTextEl.textContent = 'Connecting...';
 
     const result = await window.electronAPI.connectMCP();
-    
+
     if (result.success) {
       connected = true;
       statusEl.classList.add('connected');
       statusTextEl.textContent = 'Server Running';
       refreshTabsBtn.disabled = false;
-      
+
       log('MCP server connected successfully', 'info');
       log(`Server capabilities: ${JSON.stringify(result.capabilities)}`, 'info');
-      
+
       // Auto-discover tools
       await discoverTools();
       await refreshTabs();
-      
+
       // Start polling for tabs if none found
       startTabPolling();
     } else {
@@ -57,7 +57,7 @@ async function connectToServer() {
     statusEl.classList.remove('connected');
     statusTextEl.textContent = 'Connection Failed';
     refreshTabsBtn.disabled = true;
-    
+
     // Don't retry if user cancelled killing existing process
     if (!error.message.includes('still in use')) {
       // Retry connection after delay
@@ -85,7 +85,7 @@ async function discoverTools() {
 function startTabPolling() {
   // Don't start if already polling
   if (tabPollingInterval) return;
-  
+
   // Only poll if no tabs are connected
   if (currentTabs.length === 0) {
     log('Starting automatic tab discovery...');
@@ -116,10 +116,10 @@ async function refreshTabs(silent = false) {
     if (!silent) {
       log('Refreshing tabs...');
     }
-    const result = await callTool('kaptivemcp_list_tabs', {});
+    const result = await callTool('kapturemcp_list_tabs', {});
     const content = JSON.parse(result.content[0].text);
     const newTabs = content.tabs || [];
-    
+
     // Show MCP client info if available
     if (content.mcpClient && content.mcpClient.name) {
       const clientInfo = `${content.mcpClient.name} v${content.mcpClient.version || '?'}`;
@@ -127,7 +127,7 @@ async function refreshTabs(silent = false) {
         log(`MCP Client: ${clientInfo}`);
       }
     }
-    
+
     // Check if we found new tabs
     if (currentTabs.length === 0 && newTabs.length > 0) {
       log(`Found ${newTabs.length} connected tab${newTabs.length > 1 ? 's' : ''}!`);
@@ -135,10 +135,10 @@ async function refreshTabs(silent = false) {
     } else if (!silent) {
       log(`Found ${newTabs.length} connected tabs`);
     }
-    
+
     currentTabs = newTabs;
     displayTabs();
-    
+
     // Auto-select first tab if none selected
     if (!selectedTabId && currentTabs.length > 0) {
       selectTab(currentTabs[0].tabId);
@@ -146,13 +146,13 @@ async function refreshTabs(silent = false) {
       // Update tab content if already selected
       displayTabContent();
     }
-    
+
     // If selected tab is gone, clear selection
     if (selectedTabId && !currentTabs.find(t => t.tabId === selectedTabId)) {
       selectedTabId = null;
       displayTabContent();
     }
-    
+
     // If no tabs, start polling
     if (currentTabs.length === 0) {
       startTabPolling();
@@ -169,7 +169,7 @@ async function refreshTabs(silent = false) {
 
 function displayTabs() {
   tabListEl.innerHTML = '';
-  
+
   if (currentTabs.length === 0) {
     tabListEl.innerHTML = '<div class="empty-state" style="padding: 0.5rem;">Looking for Chrome tabs...</div>';
     return;
@@ -181,9 +181,9 @@ function displayTabs() {
     if (tab.tabId === selectedTabId) {
       tabEl.classList.add('active');
     }
-    
+
     tabEl.innerHTML = `<span class="tab-title">${tab.title || 'Untitled'}</span>`;
-    
+
     tabEl.addEventListener('click', () => selectTab(tab.tabId));
     tabListEl.appendChild(tabEl);
   });
@@ -234,7 +234,7 @@ function displayTabContent() {
 
   // Create tool cards (excluding navigation tools)
   const toolsHtml = currentTools
-    .filter(tool => !['kaptivemcp_list_tabs', 'kaptivemcp_navigate', 'kaptivemcp_go_back', 'kaptivemcp_go_forward'].includes(tool.name))
+    .filter(tool => !['kapturemcp_list_tabs', 'kapturemcp_navigate', 'kapturemcp_go_back', 'kapturemcp_go_forward'].includes(tool.name))
     .map(tool => createToolCard(tool))
     .join('');
 
@@ -287,13 +287,13 @@ function displayTabContent() {
 function createToolCard(tool) {
   const params = tool.inputSchema?.properties || {};
   const required = tool.inputSchema?.required || [];
-  
+
   const paramsHtml = Object.entries(params)
     .filter(([name]) => name !== 'tabId')
     .map(([name, schema]) => {
       const isRequired = required.includes(name);
       const inputId = `${tool.name}-${name}`;
-      
+
       let inputHtml = '';
       if (schema.type === 'string' && name === 'code') {
         inputHtml = `<textarea id="${inputId}" ${isRequired ? 'required' : ''}></textarea>`;
@@ -306,7 +306,7 @@ function createToolCard(tool) {
       } else {
         inputHtml = `<input type="text" id="${inputId}" ${isRequired ? 'required' : ''}>`;
       }
-      
+
       return `
         <div class="param-group">
           <label for="${inputId}">
@@ -364,7 +364,7 @@ async function executeTool(toolName, button) {
   const resultEl = document.getElementById(`result-${toolName}`);
   const summaryEl = resultEl.querySelector('summary');
   const contentEl = resultEl.querySelector('.result-content');
-  
+
   try {
     button.disabled = true;
     button.textContent = 'Executing...';
@@ -375,11 +375,11 @@ async function executeTool(toolName, button) {
 
     // Gather parameters
     const params = { tabId: selectedTabId };
-    
+
     const paramProps = tool.inputSchema?.properties || {};
     Object.keys(paramProps).forEach(name => {
       if (name === 'tabId') return;
-      
+
       const input = document.getElementById(`${toolName}-${name}`);
       if (input && input.value) {
         if (paramProps[name].type === 'number') {
@@ -391,15 +391,15 @@ async function executeTool(toolName, button) {
     });
 
     log(`Executing ${toolName} with params: ${JSON.stringify(params)}`);
-    
+
     const result = await callTool(toolName, params);
-    
+
     resultEl.className = 'tool-result success';
-    
+
     // Parse and display result
     if (result.content && result.content[0]) {
       const content = JSON.parse(result.content[0].text);
-      
+
       // Set summary based on content
       if (content.error) {
         summaryEl.textContent = `❌ Error: ${content.error.message || 'Command failed'}`;
@@ -407,48 +407,48 @@ async function executeTool(toolName, button) {
       } else if (content.clicked === false || content.hovered === false || content.filled === false || content.selected === false) {
         summaryEl.textContent = '⚠️ Element not found';
         resultEl.className = 'tool-result warning';
-      } else if (toolName === 'kaptivemcp_screenshot') {
+      } else if (toolName === 'kapturemcp_screenshot') {
         summaryEl.textContent = '✅ Screenshot captured';
-      } else if (toolName === 'kaptivemcp_click') {
+      } else if (toolName === 'kapturemcp_click') {
         summaryEl.textContent = '✅ Clicked successfully';
-      } else if (toolName === 'kaptivemcp_hover') {
+      } else if (toolName === 'kapturemcp_hover') {
         summaryEl.textContent = '✅ Hovered successfully';
-      } else if (toolName === 'kaptivemcp_fill') {
+      } else if (toolName === 'kapturemcp_fill') {
         summaryEl.textContent = '✅ Filled successfully';
-      } else if (toolName === 'kaptivemcp_select') {
+      } else if (toolName === 'kapturemcp_select') {
         summaryEl.textContent = '✅ Selected successfully';
-      } else if (toolName === 'kaptivemcp_logs') {
+      } else if (toolName === 'kapturemcp_logs') {
         summaryEl.textContent = `✅ Retrieved ${content.logs?.length || 0} logs`;
-      } else if (toolName === 'kaptivemcp_evaluate') {
+      } else if (toolName === 'kapturemcp_evaluate') {
         summaryEl.textContent = '✅ Evaluated successfully';
-      } else if (toolName === 'kaptivemcp_dom') {
+      } else if (toolName === 'kapturemcp_dom') {
         summaryEl.textContent = '✅ DOM retrieved';
       } else {
         summaryEl.textContent = '✅ Success';
       }
-      
+
       contentEl.textContent = JSON.stringify(content, null, 2);
-      
+
       // Update local tab info if we got new URL/title
       if (content.url && content.title && selectedTabId) {
         const tab = currentTabs.find(t => t.tabId === selectedTabId);
         if (tab && (tab.url !== content.url || tab.title !== content.title)) {
           tab.url = content.url;
           tab.title = content.title;
-          
+
           // Update UI immediately
           displayTabs();
-          
+
           // Update URL input if it exists
           const urlInput = document.getElementById('nav-url');
           if (urlInput) {
             urlInput.value = content.url;
           }
-          
+
           log(`Tab info updated: ${content.title}`);
         }
       }
-      
+
       // Special handling for screenshots
       if (content.dataUrl) {
         const img = document.createElement('div');
@@ -467,7 +467,7 @@ async function executeTool(toolName, button) {
       summaryEl.textContent = '✅ Success';
       contentEl.textContent = JSON.stringify(result, null, 2);
     }
-    
+
     log(`${toolName} executed successfully`);
   } catch (error) {
     resultEl.className = 'tool-result error';
@@ -491,43 +491,43 @@ async function callTool(name, args) {
 async function executeNavigation(action, url = null) {
   try {
     let toolName, params;
-    
+
     switch (action) {
       case 'back':
-        toolName = 'kaptivemcp_go_back';
+        toolName = 'kapturemcp_go_back';
         params = { tabId: selectedTabId };
         log('Navigating back...');
         break;
       case 'forward':
-        toolName = 'kaptivemcp_go_forward';
+        toolName = 'kapturemcp_go_forward';
         params = { tabId: selectedTabId };
         log('Navigating forward...');
         break;
       case 'navigate':
-        toolName = 'kaptivemcp_navigate';
+        toolName = 'kapturemcp_navigate';
         params = { tabId: selectedTabId, url };
         log(`Navigating to ${url}...`);
         break;
     }
-    
+
     const result = await callTool(toolName, params);
     const content = JSON.parse(result.content[0].text);
-    
+
     if (content.error) {
       log(`Navigation failed: ${content.error.message}`, 'error');
     } else {
       log(`Navigation completed`);
-      
+
       // Update local tab info if we got new URL/title
       if (content.url && content.title) {
         const tab = currentTabs.find(t => t.tabId === selectedTabId);
         if (tab) {
           tab.url = content.url;
           tab.title = content.title;
-          
+
           // Update UI immediately
           displayTabs();
-          
+
           // Update URL input
           const urlInput = document.getElementById('nav-url');
           if (urlInput) {
@@ -561,15 +561,15 @@ window.electronAPI.onMCPDisconnected((data) => {
   statusEl.classList.remove('connected');
   statusTextEl.textContent = 'Disconnected';
   refreshTabsBtn.disabled = true;
-  
+
   // Stop polling
   stopTabPolling();
-  
+
   // Clear tabs and content
   currentTabs = [];
   selectedTabId = null;
   displayTabs();
-  
+
   // Attempt to reconnect
   setTimeout(() => {
     log('Attempting to reconnect...');

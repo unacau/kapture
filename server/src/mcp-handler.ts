@@ -33,24 +33,24 @@ export class MCPHandler {
     private wsManager: WebSocketManager,
     private tabRegistry: TabRegistry
   ) {}
-  
+
   setClientInfo(info: { name?: string; version?: string }) {
     this.clientInfo = info;
   }
-  
+
   getClientInfo(): { name?: string; version?: string } {
     return this.clientInfo;
   }
 
   async executeCommand(command: string, args: any): Promise<any> {
     // Handle list_tabs specially - it doesn't need a tabId
-    if (command === 'kaptivemcp_list_tabs') {
+    if (command === 'kapturemcp_list_tabs') {
       return this.listTabs();
     }
 
     // Extract tabId from args
     const { tabId, ...params } = args;
-    
+
     if (!tabId) {
       throw new Error('tabId is required');
     }
@@ -63,7 +63,7 @@ export class MCPHandler {
 
     // Generate unique command ID
     const commandId = `cmd-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Create command message
     const commandMessage = {
       id: commandId,
@@ -89,7 +89,7 @@ export class MCPHandler {
       // Send command to tab
       logger.log(`Sending command to tab ${tabId}: ${command} (${commandId})`);
       this.wsManager.sendCommand(tabId, commandMessage);
-      
+
       // Wait for response
       const response = await responsePromise;
       logger.log(`Command completed: ${command} (${commandId})`);
@@ -102,7 +102,7 @@ export class MCPHandler {
   handleCommandResponse(response: CommandResponse): void {
     logger.log(`MCP Handler received command response: ${response.id}, success: ${response.success}`);
     logger.log(`Current pending commands before handling: ${Array.from(this.pendingCommands.keys()).join(', ')}`);
-    
+
     const pending = this.pendingCommands.get(response.id);
     if (!pending) {
       logger.warn(`No pending command found for response: ${response.id}`);
@@ -146,7 +146,7 @@ export class MCPHandler {
       lastPing: tab.lastPing
     }));
 
-    return { 
+    return {
       tabs,
       mcpClient: this.clientInfo
     };

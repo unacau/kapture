@@ -9,15 +9,15 @@ class CommandExecutor {
     this.setupConsoleCapture();
     this.injectHelpers();
   }
-  
+
   // Inject helper functions into the page
   async injectHelpers() {
     if (this.helpersInjected) return;
-    
+
     try {
       const response = await fetch('page-helpers.js');
       const script = await response.text();
-      
+
       await new Promise((resolve, reject) => {
         chrome.devtools.inspectedWindow.eval(
           script,
@@ -119,37 +119,37 @@ class CommandExecutor {
 
     try {
       switch (command) {
-        case 'kaptivemcp_navigate':
+        case 'kapturemcp_navigate':
           return await this.navigate(params);
 
-        case 'kaptivemcp_go_back':
+        case 'kapturemcp_go_back':
           return await this.goBack(params);
 
-        case 'kaptivemcp_go_forward':
+        case 'kapturemcp_go_forward':
           return await this.goForward(params);
 
-        case 'kaptivemcp_screenshot':
+        case 'kapturemcp_screenshot':
           return await this.screenshot(params);
 
-        case 'kaptivemcp_click':
+        case 'kapturemcp_click':
           return await this.click(params);
 
-        case 'kaptivemcp_logs':
+        case 'kapturemcp_logs':
           return await this.getLogs(params);
 
-        case 'kaptivemcp_fill':
+        case 'kapturemcp_fill':
           return await this.fill(params);
 
-        case 'kaptivemcp_select':
+        case 'kapturemcp_select':
           return await this.select(params);
 
-        case 'kaptivemcp_hover':
+        case 'kapturemcp_hover':
           return await this.hover(params);
 
-        case 'kaptivemcp_evaluate':
+        case 'kapturemcp_evaluate':
           return await this.evaluate(params);
 
-        case 'kaptivemcp_dom':
+        case 'kapturemcp_dom':
           return await this.getDom(params);
 
         default:
@@ -190,7 +190,7 @@ class CommandExecutor {
                   if (navError) {
                     resolve({ url, navigated: true });
                   } else {
-                    resolve({ 
+                    resolve({
                       navigated: true,
                       url: navInfo.url,
                       title: navInfo.title
@@ -222,7 +222,7 @@ class CommandExecutor {
                   if (navError) {
                     resolve({ action: 'back' });
                   } else {
-                    resolve({ 
+                    resolve({
                       action: 'back',
                       url: navInfo.url,
                       title: navInfo.title
@@ -254,7 +254,7 @@ class CommandExecutor {
                   if (navError) {
                     resolve({ action: 'forward' });
                   } else {
-                    resolve({ 
+                    resolve({
                       action: 'forward',
                       url: navInfo.url,
                       title: navInfo.title
@@ -277,7 +277,7 @@ class CommandExecutor {
     if (selector) {
       return new Promise(async (resolve, reject) => {
         await this.injectHelpers();
-        
+
         // Get element bounds
         chrome.devtools.inspectedWindow.eval(
           `window.__kaptureHelpers.getElementBounds(${JSON.stringify(selector)})`,
@@ -286,7 +286,7 @@ class CommandExecutor {
               reject(new Error(`Failed to get element bounds: ${error.toString()}`));
               return;
             }
-            
+
             // Check if element was not found
             if (bounds && bounds.error) {
               resolve({
@@ -377,11 +377,11 @@ class CommandExecutor {
 
     return new Promise(async (resolve, reject) => {
       let debuggerAttached = false;
-      
+
       try {
         // Ensure helpers are injected
         await this.injectHelpers();
-        
+
         // First, get element coordinates and info
         const coords = await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
@@ -395,7 +395,7 @@ class CommandExecutor {
             }
           );
         });
-        
+
         // Check if element was not found
         if (coords.error) {
           // Return success with element not found status
@@ -541,7 +541,7 @@ class CommandExecutor {
             // Ignore detach errors
           }
         }
-        
+
         reject(new Error(`Click failed: ${error.message}`));
       }
     });
@@ -554,7 +554,7 @@ class CommandExecutor {
     // First, try to get logs from the inspected window
     return new Promise(async (resolve) => {
       await this.injectHelpers();
-      
+
       chrome.devtools.inspectedWindow.eval(
         `window.__kaptureHelpers.getLogs(${max})`,
         (result, error) => {
@@ -626,7 +626,7 @@ class CommandExecutor {
 
     return new Promise(async (resolve, reject) => {
       await this.injectHelpers();
-      
+
       chrome.devtools.inspectedWindow.eval(
         `window.__kaptureHelpers.fillElement(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
         (result, error) => {
@@ -665,7 +665,7 @@ class CommandExecutor {
 
     return new Promise(async (resolve, reject) => {
       await this.injectHelpers();
-      
+
       chrome.devtools.inspectedWindow.eval(
         `window.__kaptureHelpers.selectOption(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
         (result, error) => {
@@ -706,7 +706,7 @@ class CommandExecutor {
       try {
         // Ensure helpers are injected
         await this.injectHelpers();
-        
+
         // First, get element coordinates
         const coords = await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
@@ -720,7 +720,7 @@ class CommandExecutor {
             }
           );
         });
-        
+
         // Check if element was not found
         if (coords.error) {
           // Return success with element not found status
@@ -889,7 +889,7 @@ class CommandExecutor {
 
     return new Promise(async (resolve, reject) => {
       await this.injectHelpers();
-      
+
       chrome.devtools.inspectedWindow.eval(
         `window.__kaptureHelpers.getOuterHTML(${JSON.stringify(selector || '')})`,
         (result, error) => {

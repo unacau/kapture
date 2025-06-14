@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const screenshotTool = {
-  name: 'kaptivemcp_screenshot',
+  name: 'kapturemcp_screenshot',
   description: 'Capture a screenshot of the page or specific element',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -11,7 +11,7 @@ export const screenshotTool = {
 };
 
 export const logsTool = {
-  name: 'kaptivemcp_logs',
+  name: 'kapturemcp_logs',
   description: 'Retrieve console log messages from browser tab (most recent first)',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -20,7 +20,7 @@ export const logsTool = {
 };
 
 export const evaluateTool = {
-  name: 'kaptivemcp_evaluate',
+  name: 'kapturemcp_evaluate',
   description: 'Execute JavaScript code in the browser context',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -29,7 +29,7 @@ export const evaluateTool = {
 };
 
 export const domTool = {
-  name: 'kaptivemcp_dom',
+  name: 'kapturemcp_dom',
   description: 'Get outerHTML of the body or a specific element',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),

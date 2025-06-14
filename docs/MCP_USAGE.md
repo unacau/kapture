@@ -24,7 +24,7 @@ The server will start and display:
 Kapture MCP Server starting...
 WebSocket server listening on ws://localhost:61822
 MCP Server ready for connections
-Available MCP tools: kaptivemcp_navigate, kaptivemcp_go_back, ...
+Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...
 ```
 
 ### 2. Connect Chrome Tab
@@ -95,18 +95,18 @@ await client.connect(transport);
 
 ## Available Tools
 
-### kaptivemcp_list_tabs
+### kapturemcp_list_tabs
 List all connected browser tabs.
 
 **Parameters:** None
 
 **Example:**
 ```javascript
-const result = await client.callTool('kaptivemcp_list_tabs', {});
+const result = await client.callTool('kapturemcp_list_tabs', {});
 // Returns: { tabs: [{ tabId, url, title, connectedAt }] }
 ```
 
-### kaptivemcp_navigate
+### kapturemcp_navigate
 Navigate browser tab to a URL.
 
 **Parameters:**
@@ -116,26 +116,26 @@ Navigate browser tab to a URL.
 
 **Example:**
 ```javascript
-await client.callTool('kaptivemcp_navigate', {
+await client.callTool('kapturemcp_navigate', {
   tabId: 'tab-123',
   url: 'https://example.com',
   timeout: 30000
 });
 ```
 
-### kaptivemcp_go_back
+### kapturemcp_go_back
 Navigate back in browser history.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
 
-### kaptivemcp_go_forward
+### kapturemcp_go_forward
 Navigate forward in browser history.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
 
-### kaptivemcp_screenshot
+### kapturemcp_screenshot
 Capture a screenshot of the page.
 
 **Parameters:**
@@ -147,21 +147,21 @@ Capture a screenshot of the page.
 
 **Returns:** Base64 encoded image data
 
-### kaptivemcp_click
+### kapturemcp_click
 Click on a page element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
 - `selector` (string, required): CSS selector of element to click
 
-### kaptivemcp_hover
+### kapturemcp_hover
 Hover over a page element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
 - `selector` (string, required): CSS selector of element to hover
 
-### kaptivemcp_fill
+### kapturemcp_fill
 Fill an input field with text.
 
 **Parameters:**
@@ -169,7 +169,7 @@ Fill an input field with text.
 - `selector` (string, required): CSS selector of input field
 - `value` (string, required): Text to fill
 
-### kaptivemcp_select
+### kapturemcp_select
 Select an option from a dropdown.
 
 **Parameters:**
@@ -177,7 +177,7 @@ Select an option from a dropdown.
 - `selector` (string, required): CSS selector of select element
 - `value` (string, required): Value of option to select
 
-### kaptivemcp_evaluate
+### kapturemcp_evaluate
 Execute JavaScript in the browser context.
 
 **Parameters:**
@@ -186,7 +186,7 @@ Execute JavaScript in the browser context.
 
 **Returns:** Serialized result of execution
 
-### kaptivemcp_logs
+### kapturemcp_logs
 Retrieve console logs from the browser.
 
 **Parameters:**
@@ -195,7 +195,7 @@ Retrieve console logs from the browser.
 
 **Returns:** Array of log entries with timestamp, level, and message
 
-### kaptivemcp_dom
+### kapturemcp_dom
 Get outerHTML of the body or a specific element.
 
 **Parameters:**
@@ -214,35 +214,35 @@ Get outerHTML of the body or a specific element.
 
 ```javascript
 // List available tabs
-const { tabs } = await client.callTool('kaptivemcp_list_tabs', {});
+const { tabs } = await client.callTool('kapturemcp_list_tabs', {});
 const tabId = tabs[0].tabId;
 
 // Navigate to website
-await client.callTool('kaptivemcp_navigate', {
+await client.callTool('kapturemcp_navigate', {
   tabId,
   url: 'https://news.ycombinator.com'
 });
 
 // Get page title
-const result = await client.callTool('kaptivemcp_evaluate', {
+const result = await client.callTool('kapturemcp_evaluate', {
   tabId,
   code: 'document.title'
 });
 
 // Click on first article
-await client.callTool('kaptivemcp_click', {
+await client.callTool('kapturemcp_click', {
   tabId,
   selector: '.titleline a'
 });
 
 // Take screenshot
-const screenshot = await client.callTool('kaptivemcp_screenshot', {
+const screenshot = await client.callTool('kapturemcp_screenshot', {
   tabId,
   name: 'article-screenshot'
 });
 
 // Get article content HTML
-const domResult = await client.callTool('kaptivemcp_dom', {
+const domResult = await client.callTool('kapturemcp_dom', {
   tabId,
   selector: 'article'
 });
@@ -258,33 +258,33 @@ if (domResult.found) {
 
 ```javascript
 // Navigate to form
-await client.callTool('kaptivemcp_navigate', {
+await client.callTool('kapturemcp_navigate', {
   tabId,
   url: 'https://example.com/contact'
 });
 
 // Fill form fields
-await client.callTool('kaptivemcp_fill', {
+await client.callTool('kapturemcp_fill', {
   tabId,
   selector: '#name',
   value: 'John Doe'
 });
 
-await client.callTool('kaptivemcp_fill', {
+await client.callTool('kapturemcp_fill', {
   tabId,
   selector: '#email',
   value: 'john@example.com'
 });
 
 // Select dropdown option
-await client.callTool('kaptivemcp_select', {
+await client.callTool('kapturemcp_select', {
   tabId,
   selector: '#subject',
   value: 'general'
 });
 
 // Submit form
-await client.callTool('kaptivemcp_click', {
+await client.callTool('kapturemcp_click', {
   tabId,
   selector: 'button[type="submit"]'
 });
@@ -294,7 +294,7 @@ await client.callTool('kaptivemcp_click', {
 
 ```javascript
 // Execute some code that logs
-await client.callTool('kaptivemcp_evaluate', {
+await client.callTool('kapturemcp_evaluate', {
   tabId,
   code: `
     console.log('Starting process...');
@@ -304,7 +304,7 @@ await client.callTool('kaptivemcp_evaluate', {
 });
 
 // Retrieve console logs
-const { logs } = await client.callTool('kaptivemcp_logs', {
+const { logs } = await client.callTool('kapturemcp_logs', {
   tabId,
   max: 50
 });
@@ -319,7 +319,7 @@ logs.forEach(log => {
 
 ```javascript
 // Get page information
-const pageInfo = await client.callTool('kaptivemcp_evaluate', {
+const pageInfo = await client.callTool('kapturemcp_evaluate', {
   tabId,
   code: `
     ({
@@ -336,13 +336,13 @@ const pageInfo = await client.callTool('kaptivemcp_evaluate', {
 });
 
 // Scroll to bottom
-await client.callTool('kaptivemcp_evaluate', {
+await client.callTool('kapturemcp_evaluate', {
   tabId,
   code: 'window.scrollTo(0, document.body.scrollHeight)'
 });
 
 // Wait for element to appear
-await client.callTool('kaptivemcp_evaluate', {
+await client.callTool('kapturemcp_evaluate', {
   tabId,
   code: `
     await new Promise((resolve) => {
@@ -362,44 +362,44 @@ await client.callTool('kaptivemcp_evaluate', {
 
 ```javascript
 // Hover to reveal dropdown menu
-await client.callTool('kaptivemcp_hover', {
+await client.callTool('kapturemcp_hover', {
   tabId,
   selector: '.account-menu'
 });
 
 // Wait for menu to appear
-await client.callTool('kaptivemcp_evaluate', {
+await client.callTool('kapturemcp_evaluate', {
   tabId,
   code: 'await new Promise(r => setTimeout(r, 500))'
 });
 
 // Click login option
-await client.callTool('kaptivemcp_click', {
+await client.callTool('kapturemcp_click', {
   tabId,
   selector: '.dropdown-item[href="/login"]'
 });
 
 // Fill login form
-await client.callTool('kaptivemcp_fill', {
+await client.callTool('kapturemcp_fill', {
   tabId,
   selector: '#username',
   value: 'testuser@example.com'
 });
 
-await client.callTool('kaptivemcp_fill', {
+await client.callTool('kapturemcp_fill', {
   tabId,
   selector: '#password',
   value: 'securepassword123'
 });
 
 // Select remember me option
-await client.callTool('kaptivemcp_click', {
+await client.callTool('kapturemcp_click', {
   tabId,
   selector: 'input[type="checkbox"][name="remember"]'
 });
 
 // Submit form
-await client.callTool('kaptivemcp_click', {
+await client.callTool('kapturemcp_click', {
   tabId,
   selector: 'button[type="submit"]'
 });
@@ -414,7 +414,7 @@ These are actual failures that prevent the command from executing:
 
 ```javascript
 try {
-  await client.callTool('kaptivemcp_click', {
+  await client.callTool('kapturemcp_click', {
     tabId: 'invalid-tab',
     selector: 'button'
   });
@@ -429,7 +429,7 @@ For expected conditions like "element not found", tools return success with erro
 
 ```javascript
 // Click on element that may not exist
-const result = await client.callTool('kaptivemcp_click', {
+const result = await client.callTool('kapturemcp_click', {
   tabId,
   selector: '.optional-button'
 });
@@ -441,7 +441,7 @@ if (result.clicked) {
 }
 
 // Get DOM of element that may not exist
-const domResult = await client.callTool('kaptivemcp_dom', {
+const domResult = await client.callTool('kapturemcp_dom', {
   tabId,
   selector: '.dynamic-content'
 });
@@ -465,7 +465,7 @@ Common error codes:
 
 1. **Always check tab availability** before sending commands:
    ```javascript
-   const { tabs } = await client.callTool('kaptivemcp_list_tabs', {});
+   const { tabs } = await client.callTool('kapturemcp_list_tabs', {});
    if (tabs.length === 0) {
      throw new Error('No tabs connected');
    }
@@ -473,7 +473,7 @@ Common error codes:
 
 2. **Use appropriate timeouts** for navigation:
    ```javascript
-   await client.callTool('kaptivemcp_navigate', {
+   await client.callTool('kapturemcp_navigate', {
      tabId,
      url: 'https://slow-site.com',
      timeout: 60000 // 60 seconds for slow sites
@@ -483,7 +483,7 @@ Common error codes:
 3. **Handle dynamic content** with waits:
    ```javascript
    // Wait for element to appear
-   await client.callTool('kaptivemcp_evaluate', {
+   await client.callTool('kapturemcp_evaluate', {
      tabId,
      code: `
        await new Promise((resolve) => {
