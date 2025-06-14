@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Using Kapture with MCP Clients - Documentation</title>
+    <meta name="description" content="Learn how to use Kapture with Model Context Protocol (MCP) clients like Claude Desktop, Cline, or custom MCP implementations.">
+    <link rel="icon" type="image/png" href="assets/images/icon48.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a202c;
+            background: #ffffff;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 1000;
+            padding: 20px 0;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #667eea;
+        }
+
+        .doc-container {
+            max-width: 900px;
+            margin: 100px auto 80px;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            color: #1a202c;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #4a5568;
+            line-height: 1.8;
+        }
+
+        ul, ol {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            color: #4a5568;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        code {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+            color: #e53e3e;
+        }
+
+        pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .toc {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .toc h2 {
+            font-size: 1.25rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin-bottom: 8px;
+        }
+
+        .toc a {
+            color: #4a5568;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .toc a:hover {
+            color: #667eea;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            padding: 15px;
+            border-left: 4px solid #f59e0b;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .highlight strong {
+            color: #92400e;
+        }
+
+        .footer {
+            background: #1a202c;
+            color: white;
+            padding: 60px 20px 40px;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .doc-container {
+                margin-top: 80px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            pre {
+                padding: 15px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="index.html" class="logo">Kapture</a>
+            <ul class="nav-links">
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#how-it-works">How it Works</a></li>
+                <li><a href="index.html#tools">Tools</a></li>
+                <li><a href="MCP_USAGE.html">Docs</a></li>
+                <li><a href="https://github.com/williamkapke/kapture">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="doc-container">
+        <h1>Using Kapture with MCP Clients</h1>
+        
+        <p>This guide explains how to use Kapture with Model Context Protocol (MCP) clients like Claude Desktop, Cline, or custom MCP implementations.</p>
+
+        <div class="toc">
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#prerequisites">Prerequisites</a></li>
+                <li><a href="#setup">Setup</a></li>
+                <li><a href="#available-tools">Available Tools</a></li>
+                <li><a href="#usage-examples">Usage Examples</a></li>
+                <li><a href="#error-handling">Error Handling</a></li>
+                <li><a href="#best-practices">Best Practices</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+            </ul>
+        </div>
+
+        <h2 id="prerequisites">Prerequisites</h2>
+        <ol>
+            <li>Chrome browser with Kapture extension installed</li>
+            <li>Kapture MCP server running</li>
+            <li>MCP client (Claude Desktop, Cline, etc.)</li>
+        </ol>
+
+        <h2 id="setup">Setup</h2>
+
+        <h3>1. Start the Kapture MCP Server</h3>
+        <pre><code>cd kapture/server
+npm install
+npm run build
+npm start</code></pre>
+
+        <p>The server will start and display:</p>
+        <pre><code>Kapture MCP Server starting...
+WebSocket server listening on ws://localhost:61822
+MCP Server ready for connections
+Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...</code></pre>
+
+        <h3>2. Connect Chrome Tab</h3>
+        <ol>
+            <li>Open Chrome and navigate to any website</li>
+            <li>Open Chrome DevTools (F12)</li>
+            <li>Navigate to the "Kapture" panel</li>
+            <li>Click "Connect"</li>
+        </ol>
+
+        <p>The tab is now ready to receive commands.</p>
+
+        <h3>3. Configure Your MCP Client</h3>
+
+        <h4>Claude Desktop</h4>
+        <p>Add to your Claude Desktop config (<code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS):</p>
+        <pre><code>{
+  "mcpServers": {
+    "kapture": {
+      "command": "node",
+      "args": ["/path/to/kapture/server/dist/index.js"],
+      "env": {}
+    }
+  }
+}</code></pre>
+
+        <h4>Cline</h4>
+        <p>Add to your VS Code settings:</p>
+        <pre><code>{
+  "cline.mcpServers": {
+    "kapture": {
+      "command": "node",
+      "args": ["/path/to/kapture/server/dist/index.js"]
+    }
+  }
+}</code></pre>
+
+        <h4>Custom MCP Client</h4>
+        <p>Connect to the Kapture server via stdio:</p>
+        <pre><code>import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { spawn } from 'child_process';
+
+const transport = new StdioClientTransport({
+  command: 'node',
+  args: ['/path/to/kapture/server/dist/index.js']
+});
+
+const client = new Client({
+  name: 'my-mcp-client',
+  version: '1.0.0'
+}, {
+  capabilities: {}
+});
+
+await client.connect(transport);</code></pre>
+
+        <h2 id="available-tools">Available Tools</h2>
+
+        <h3>kapturemcp_list_tabs</h3>
+        <p>List all connected browser tabs.</p>
+        <p><strong>Parameters:</strong> None</p>
+        <p><strong>Example:</strong></p>
+        <pre><code>const result = await client.callTool('kapturemcp_list_tabs', {});
+// Returns: { tabs: [{ tabId, url, title, connectedAt }] }</code></pre>
+
+        <h3>kapturemcp_navigate</h3>
+        <p>Navigate browser tab to a URL.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>url</code> (string, required): URL to navigate to</li>
+            <li><code>timeout</code> (number, optional): Navigation timeout in ms (default: 30000)</li>
+        </ul>
+        <p><strong>Example:</strong></p>
+        <pre><code>await client.callTool('kapturemcp_navigate', {
+  tabId: 'tab-123',
+  url: 'https://example.com',
+  timeout: 30000
+});</code></pre>
+
+        <h3>kapturemcp_go_back</h3>
+        <p>Navigate back in browser history.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+        </ul>
+
+        <h3>kapturemcp_go_forward</h3>
+        <p>Navigate forward in browser history.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+        </ul>
+
+        <h3>kapturemcp_screenshot</h3>
+        <p>Capture a screenshot of the page.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>name</code> (string, required): Screenshot name</li>
+            <li><code>selector</code> (string, optional): CSS selector to capture</li>
+            <li><code>width</code> (number, optional): Viewport width</li>
+            <li><code>height</code> (number, optional): Viewport height</li>
+        </ul>
+        <p><strong>Returns:</strong> Base64 encoded image data</p>
+
+        <h3>kapturemcp_click</h3>
+        <p>Click on a page element.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>selector</code> (string, required): CSS selector of element to click</li>
+        </ul>
+
+        <h3>kapturemcp_hover</h3>
+        <p>Hover over a page element.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>selector</code> (string, required): CSS selector of element to hover</li>
+        </ul>
+
+        <h3>kapturemcp_fill</h3>
+        <p>Fill an input field with text.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>selector</code> (string, required): CSS selector of input field</li>
+            <li><code>value</code> (string, required): Text to fill</li>
+        </ul>
+
+        <h3>kapturemcp_select</h3>
+        <p>Select an option from a dropdown.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>selector</code> (string, required): CSS selector of select element</li>
+            <li><code>value</code> (string, required): Value of option to select</li>
+        </ul>
+
+        <h3>kapturemcp_evaluate</h3>
+        <p>Execute JavaScript in the browser context.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>code</code> (string, required): JavaScript code to execute</li>
+        </ul>
+        <p><strong>Returns:</strong> Serialized result of execution</p>
+
+        <h3>kapturemcp_logs</h3>
+        <p>Retrieve console logs from the browser.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>max</code> (number, optional): Maximum log entries (default: 100)</li>
+        </ul>
+        <p><strong>Returns:</strong> Array of log entries with timestamp, level, and message</p>
+
+        <h3>kapturemcp_dom</h3>
+        <p>Get outerHTML of the body or a specific element.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>selector</code> (string, optional): CSS selector of element (defaults to body)</li>
+        </ul>
+        <p><strong>Returns:</strong> Object with:</p>
+        <ul>
+            <li><code>found</code> (boolean): Whether element was found</li>
+            <li><code>html</code> (string): The outerHTML content (if found)</li>
+            <li><code>selector</code> (string): The selector used</li>
+            <li><code>error</code> (object): Error details if element not found</li>
+        </ul>
+
+        <h2 id="usage-examples">Usage Examples</h2>
+
+        <h3>Example 1: Web Scraping</h3>
+        <pre><code>// List available tabs
+const { tabs } = await client.callTool('kapturemcp_list_tabs', {});
+const tabId = tabs[0].tabId;
+
+// Navigate to website
+await client.callTool('kapturemcp_navigate', {
+  tabId,
+  url: 'https://news.ycombinator.com'
+});
+
+// Get page title
+const result = await client.callTool('kapturemcp_evaluate', {
+  tabId,
+  code: 'document.title'
+});
+
+// Click on first article
+await client.callTool('kapturemcp_click', {
+  tabId,
+  selector: '.titleline a'
+});
+
+// Take screenshot
+const screenshot = await client.callTool('kapturemcp_screenshot', {
+  tabId,
+  name: 'article-screenshot'
+});
+
+// Get article content HTML
+const domResult = await client.callTool('kapturemcp_dom', {
+  tabId,
+  selector: 'article'
+});
+
+if (domResult.found) {
+  console.log('Article HTML:', domResult.html);
+} else {
+  console.log('Article element not found');
+}</code></pre>
+
+        <h3>Example 2: Form Automation</h3>
+        <pre><code>// Navigate to form
+await client.callTool('kapturemcp_navigate', {
+  tabId,
+  url: 'https://example.com/contact'
+});
+
+// Fill form fields
+await client.callTool('kapturemcp_fill', {
+  tabId,
+  selector: '#name',
+  value: 'John Doe'
+});
+
+await client.callTool('kapturemcp_fill', {
+  tabId,
+  selector: '#email',
+  value: 'john@example.com'
+});
+
+// Select dropdown option
+await client.callTool('kapturemcp_select', {
+  tabId,
+  selector: '#subject',
+  value: 'general'
+});
+
+// Submit form
+await client.callTool('kapturemcp_click', {
+  tabId,
+  selector: 'button[type="submit"]'
+});</code></pre>
+
+        <h3>Example 3: Debugging with Console Logs</h3>
+        <pre><code>// Execute some code that logs
+await client.callTool('kapturemcp_evaluate', {
+  tabId,
+  code: `
+    console.log('Starting process...');
+    console.error('This is an error');
+    console.warn('This is a warning');
+  `
+});
+
+// Retrieve console logs
+const { logs } = await client.callTool('kapturemcp_logs', {
+  tabId,
+  max: 50
+});
+
+// Process logs
+logs.forEach(log => {
+  console.log(`[${log.level}] ${log.timestamp}: ${log.message}`);
+});</code></pre>
+
+        <h2 id="error-handling">Error Handling</h2>
+
+        <p>Tools handle errors in two ways:</p>
+
+        <h3>1. Fatal Errors (thrown as exceptions)</h3>
+        <p>These are actual failures that prevent the command from executing:</p>
+        <pre><code>try {
+  await client.callTool('kapturemcp_click', {
+    tabId: 'invalid-tab',
+    selector: 'button'
+  });
+} catch (error) {
+  console.error(error.message);
+  // "Tab invalid-tab not found"
+}</code></pre>
+
+        <h3>2. Graceful Errors (returned in response)</h3>
+        <p>For expected conditions like "element not found", tools return success with error details:</p>
+        <pre><code>// Click on element that may not exist
+const result = await client.callTool('kapturemcp_click', {
+  tabId,
+  selector: '.optional-button'
+});
+
+if (result.clicked) {
+  console.log('Button was clicked');
+} else if (result.error && result.error.code === 'ELEMENT_NOT_FOUND') {
+  console.log('Button not found on page');
+}</code></pre>
+
+        <p>Common error codes:</p>
+        <ul>
+            <li><code>TAB_NOT_FOUND</code>: Specified tab ID doesn't exist (thrown)</li>
+            <li><code>ELEMENT_NOT_FOUND</code>: CSS selector didn't match any elements (graceful)</li>
+            <li><code>INVALID_ELEMENT</code>: Element exists but wrong type (graceful)</li>
+            <li><code>OPTION_NOT_FOUND</code>: Select option value not found (graceful)</li>
+            <li><code>TIMEOUT</code>: Command exceeded timeout limit (thrown)</li>
+            <li><code>EXECUTION_ERROR</code>: JavaScript evaluation failed (thrown)</li>
+        </ul>
+
+        <h2 id="best-practices">Best Practices</h2>
+
+        <ol>
+            <li><strong>Always check tab availability</strong> before sending commands:
+            <pre><code>const { tabs } = await client.callTool('kapturemcp_list_tabs', {});
+if (tabs.length === 0) {
+  throw new Error('No tabs connected');
+}</code></pre>
+            </li>
+
+            <li><strong>Use appropriate timeouts</strong> for navigation:
+            <pre><code>await client.callTool('kapturemcp_navigate', {
+  tabId,
+  url: 'https://slow-site.com',
+  timeout: 60000 // 60 seconds for slow sites
+});</code></pre>
+            </li>
+
+            <li><strong>Handle dynamic content</strong> with waits:
+            <pre><code>// Wait for element to appear
+await client.callTool('kapturemcp_evaluate', {
+  tabId,
+  code: `
+    await new Promise((resolve) => {
+      const observer = new MutationObserver(() => {
+        if (document.querySelector('.dynamic-content')) {
+          observer.disconnect();
+          resolve();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  `
+});</code></pre>
+            </li>
+
+            <li><strong>Clean up resources</strong> when done:
+            <ul>
+                <li>Disconnect tabs when finished</li>
+                <li>Close the MCP server gracefully</li>
+            </ul>
+            </li>
+        </ol>
+
+        <h2 id="troubleshooting">Troubleshooting</h2>
+
+        <h3>No tabs appearing in list</h3>
+        <ul>
+            <li>Ensure Chrome tab is connected via DevTools Kapture panel</li>
+            <li>Check that WebSocket connection shows "Connected" status</li>
+            <li>Verify server is running on correct port (61822)</li>
+        </ul>
+
+        <h3>Commands timing out</h3>
+        <ul>
+            <li>Increase timeout parameter for slow operations</li>
+            <li>Check browser console for JavaScript errors</li>
+            <li>Ensure tab is still connected</li>
+        </ul>
+
+        <h3>Screenshots not working</h3>
+        <ul>
+            <li>Verify Chrome extension has proper permissions</li>
+            <li>Check that tab is in foreground</li>
+            <li>Try capturing without selector parameter first</li>
+        </ul>
+
+        <h3>Connection refused</h3>
+        <ul>
+            <li>Ensure server is running (<code>npm start</code> in server directory)</li>
+            <li>Check firewall settings for localhost:61822</li>
+            <li>Verify MCP client configuration points to correct path</li>
+        </ul>
+
+        <h3>"Unexpected token" or "not valid JSON" errors</h3>
+        <p>This typically means the server is outputting non-JSON content to stdout, which breaks the MCP protocol:</p>
+        <ul>
+            <li>Ensure you're using the built version: <code>npm run build</code> before starting</li>
+            <li>The server should NOT output any console.log messages when used with MCP clients</li>
+            <li>For debugging, use: <code>KAPTURE_DEBUG=1 node dist/index.js</code> (but not with MCP clients)</li>
+            <li>Or set <code>KAPTURE_LOG_FILE=/path/to/logfile.log</code> to log to a file</li>
+        </ul>
+
+        <h3>Debugging the MCP connection</h3>
+        <p>If you need to debug the server while using it with Claude Desktop:</p>
+        <ol>
+            <li>Create a separate debug script</li>
+            <li>Use environment variables to enable logging to stderr or a file</li>
+            <li>Never use <code>console.log</code> in MCP mode as it interferes with the protocol</li>
+        </ol>
+
+        <div class="highlight">
+            <strong>Need more help?</strong> Check out the <a href="https://github.com/williamkapke/kapture/issues">GitHub Issues</a> page or contribute to the project!
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="https://github.com/williamkapke/kapture">GitHub</a>
+            <a href="index.html">Home</a>
+            <a href="https://github.com/williamkapke/kapture/issues">Issues</a>
+            <a href="https://github.com/williamkapke/kapture#contributing">Contribute</a>
+        </div>
+    </footer>
+</body>
+</html>
