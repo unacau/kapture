@@ -10,11 +10,39 @@ class CommandExecutor {
     this.injectHelpers();
   }
 
+  // Validate CSS selector
+  validateSelector(selector) {
+    // Check for :contains() pseudo-selector
+    if (selector && selector.includes(':contains(')) {
+      return {
+        valid: false,
+        error: 'The :contains() pseudo-selector is not valid CSS and is not supported by browsers. Use XPath with contains() or use kapturemcp_evaluate to find elements with specific text content.'
+      };
+    }
+    
+    // Could add more validation here in the future
+    return { valid: true };
+  }
+
   // Inject helper functions into the page
   async injectHelpers() {
-    if (this.helpersInjected) return;
-
     try {
+      // First check if helpers already exist
+      const checkResult = await new Promise((resolve) => {
+        chrome.devtools.inspectedWindow.eval(
+          'typeof window.__kaptureHelpers !== "undefined"',
+          (result, error) => {
+            resolve(error ? false : result);
+          }
+        );
+      });
+
+      if (checkResult) {
+        this.helpersInjected = true;
+        return;
+      }
+
+      // Load and inject helpers
       const response = await fetch('page-helpers.js');
       const script = await response.text();
 
@@ -35,6 +63,8 @@ class CommandExecutor {
       });
     } catch (error) {
       console.error('Failed to load helpers:', error);
+      this.helpersInjected = false;
+      throw error;
     }
   }
 
@@ -275,6 +305,11 @@ class CommandExecutor {
 
     // If selector is provided, get element bounds first
     if (selector) {
+      // Validate selector
+      const validation = this.validateSelector(selector);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
       return new Promise(async (resolve, reject) => {
         await this.injectHelpers();
 
@@ -379,6 +414,12 @@ class CommandExecutor {
 
     if (!selector) {
       throw new Error('Selector is required for click');
+    }
+
+    // Validate selector
+    const validation = this.validateSelector(selector);
+    if (!validation.valid) {
+      throw new Error(validation.error);
     }
 
     const tabId = chrome.devtools.inspectedWindow.tabId;
@@ -632,6 +673,12 @@ class CommandExecutor {
       throw new Error('Value is required for fill');
     }
 
+    // Validate selector
+    const validation = this.validateSelector(selector);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
     return new Promise(async (resolve, reject) => {
       await this.injectHelpers();
 
@@ -671,6 +718,12 @@ class CommandExecutor {
       throw new Error('Value is required for select');
     }
 
+    // Validate selector
+    const validation = this.validateSelector(selector);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
     return new Promise(async (resolve, reject) => {
       await this.injectHelpers();
 
@@ -704,6 +757,12 @@ class CommandExecutor {
 
     if (!selector) {
       throw new Error('Selector is required for hover');
+    }
+
+    // Validate selector
+    const validation = this.validateSelector(selector);
+    if (!validation.valid) {
+      throw new Error(validation.error);
     }
 
     const tabId = chrome.devtools.inspectedWindow.tabId;
@@ -851,38 +910,75 @@ class CommandExecutor {
       throw new Error('Code is required for evaluate');
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      // Ensure helpers are injected
+      await this.injectHelpers();
+
+      // Wrap the user's code to capture and serialize the result
+      const wrappedCode = `
+        (function() {
+          try {
+            let result;
+            try {
+              // First try to evaluate the code as-is
+              result = eval(${JSON.stringify(code)});
+            } catch (error) {
+              // If it's an illegal return statement, wrap in a function
+              if (error.message && error.message.includes('Illegal return statement')) {
+                result = (function() { ${code} }).call(this);
+              } else {
+                // Re-throw other errors
+                throw error;
+              }
+            }
+            
+            // Check if helpers are available
+            if (typeof window.__kaptureHelpers !== 'undefined' && window.__kaptureHelpers.serializeValue) {
+              return { 
+                success: true, 
+                value: window.__kaptureHelpers.serializeValue(result) 
+              };
+            } else {
+              // Fallback to basic serialization
+              return { 
+                success: true, 
+                value: result 
+              };
+            }
+          } catch (error) {
+            return { 
+              success: false, 
+              error: {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+              }
+            };
+          }
+        })()
+      `;
 
       chrome.devtools.inspectedWindow.eval(
-        code,
+        wrappedCode,
         (result, error) => {
           console.log('Eval result:', result);
           console.log('Eval error:', error);
 
           if (error) {
             reject(new Error(`Evaluate failed: ${error.toString()}`));
-          } else if (result && result.error) {
-            reject(new Error(`Script error: ${result.error}`));
+          } else if (result && !result.success) {
+            // Script threw an error
+            reject(new Error(`Script error: ${result.error.message}`));
           } else {
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
               '({ url: window.location.href, title: document.title })',
               (navInfo) => {
-                if (result && result.hasOwnProperty('value')) {
-                  // Extract the value from our wrapper
-                  resolve({
-                    value: result.value,
-                    url: navInfo?.url || '',
-                    title: navInfo?.title || ''
-                  });
-                } else {
-                  // Fallback to returning the raw result
-                  resolve({
-                    value: result,
-                    url: navInfo?.url || '',
-                    title: navInfo?.title || ''
-                  });
-                }
+                resolve({
+                  value: result ? result.value : undefined,
+                  url: navInfo?.url || '',
+                  title: navInfo?.title || ''
+                });
               }
             );
           }
@@ -894,6 +990,14 @@ class CommandExecutor {
   // Get DOM outerHTML
   async getDom(params) {
     const { selector } = params;
+
+    // Validate selector if provided
+    if (selector) {
+      const validation = this.validateSelector(selector);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+    }
 
     return new Promise(async (resolve, reject) => {
       await this.injectHelpers();

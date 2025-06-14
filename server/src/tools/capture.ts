@@ -23,10 +23,10 @@ export const logsTool = {
 
 export const evaluateTool = {
   name: 'kapturemcp_evaluate',
-  description: 'Execute JavaScript code in the browser context',
+  description: 'Execute JavaScript code in the browser context. Return values are automatically serialized to JSON-safe format: functions become "[Function: name]", DOM elements include unique CSS selectors, NodeLists/HTMLCollections are converted to arrays with selectors, circular references are handled, etc.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
-    code: z.string().describe('JavaScript code to execute')
+    code: z.string().describe('JavaScript code to execute. The last expression is returned as the result.')
   }),
 };
 

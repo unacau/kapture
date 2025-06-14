@@ -226,6 +226,60 @@
       };
     },
     
+    // Generate unique CSS selector for an element
+    getUniqueSelector: function(element) {
+      if (!element || !(element instanceof Element)) return null;
+      
+      // If element has an ID, use it (unless it's empty or contains special chars)
+      if (element.id && /^[a-zA-Z][\w-]*$/.test(element.id)) {
+        // Check if ID is truly unique
+        if (document.querySelectorAll('#' + CSS.escape(element.id)).length === 1) {
+          return '#' + CSS.escape(element.id);
+        }
+      }
+      
+      // Build path from element to root
+      const path = [];
+      let current = element;
+      
+      while (current && current.nodeType === Node.ELEMENT_NODE) {
+        let selector = current.tagName.toLowerCase();
+        
+        // Add classes if available (but not too many)
+        if (current.classList.length > 0) {
+          const classes = Array.from(current.classList)
+            .filter(c => /^[a-zA-Z][\w-]*$/.test(c))
+            .slice(0, 3);
+          if (classes.length > 0) {
+            selector += '.' + classes.join('.');
+          }
+        }
+        
+        // Add nth-child if needed for uniqueness
+        if (current.parentElement) {
+          const siblings = Array.from(current.parentElement.children);
+          const sameTagSiblings = siblings.filter(s => s.tagName === current.tagName);
+          
+          if (sameTagSiblings.length > 1) {
+            const index = sameTagSiblings.indexOf(current) + 1;
+            selector += ':nth-of-type(' + index + ')';
+          }
+        }
+        
+        path.unshift(selector);
+        
+        // Stop if we've built a unique selector
+        const currentPath = path.join(' > ');
+        if (document.querySelectorAll(currentPath).length === 1) {
+          return currentPath;
+        }
+        
+        current = current.parentElement;
+      }
+      
+      return path.join(' > ');
+    },
+    
     // DOM operations
     getOuterHTML: function(selector) {
       if (!selector) {
@@ -257,6 +311,132 @@
     getLogs: function(max) {
       if (!window.__kaptureLogs) return [];
       return window.__kaptureLogs.slice(-max).reverse();
+    },
+    
+    // Safe serialization helper for evaluate results
+    serializeValue: function(value, depth = 0, maxDepth = 3, seen = new WeakSet()) {
+      // Handle primitive types
+      if (value === null || value === undefined) return value;
+      if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
+        return value;
+      }
+      
+      // Handle functions
+      if (typeof value === 'function') {
+        return '[Function: ' + (value.name || 'anonymous') + ']';
+      }
+      
+      // Handle symbols
+      if (typeof value === 'symbol') {
+        return value.toString();
+      }
+      
+      // Handle dates
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+      
+      // Handle regex
+      if (value instanceof RegExp) {
+        return value.toString();
+      }
+      
+      // Handle errors
+      if (value instanceof Error) {
+        return {
+          name: value.name,
+          message: value.message,
+          stack: value.stack
+        };
+      }
+      
+      // Handle DOM elements
+      if (value instanceof Element) {
+        const selector = this.getUniqueSelector(value);
+        return {
+          nodeType: 'Element',
+          selector: selector,
+          tagName: value.tagName,
+          id: value.id || undefined,
+          className: value.className || undefined,
+          attributes: Array.from(value.attributes).reduce((acc, attr) => {
+            acc[attr.name] = attr.value;
+            return acc;
+          }, {})
+        };
+      }
+      
+      // Handle other DOM nodes
+      if (value instanceof Node) {
+        return {
+          nodeType: value.nodeType === 3 ? 'Text' : 'Node'
+        };
+      }
+      
+      // Prevent infinite recursion
+      if (depth >= maxDepth) {
+        return '[Max depth reached]';
+      }
+      
+      // Handle circular references
+      if (typeof value === 'object' && seen.has(value)) {
+        return '[Circular reference]';
+      }
+      
+      // Mark object as seen
+      if (typeof value === 'object') {
+        seen.add(value);
+      }
+      
+      // Handle arrays
+      if (Array.isArray(value)) {
+        return value.map(item => this.serializeValue(item, depth + 1, maxDepth, seen));
+      }
+      
+      // Handle NodeList and HTMLCollection
+      if (value instanceof NodeList || value instanceof HTMLCollection) {
+        return {
+          nodeType: value instanceof NodeList ? 'NodeList' : 'HTMLCollection',
+          length: value.length,
+          items: Array.from(value).map(item => this.serializeValue(item, depth + 1, maxDepth, seen))
+        };
+      }
+      
+      // Handle typed arrays
+      if (ArrayBuffer.isView(value)) {
+        return {
+          type: value.constructor.name,
+          length: value.length,
+          data: '[Binary data]'
+        };
+      }
+      
+      // Handle other objects
+      if (typeof value === 'object') {
+        const result = {};
+        const keys = Object.keys(value);
+        
+        // Limit number of keys to prevent huge objects
+        const maxKeys = 100;
+        const limitedKeys = keys.slice(0, maxKeys);
+        
+        for (const key of limitedKeys) {
+          try {
+            result[key] = this.serializeValue(value[key], depth + 1, maxDepth, seen);
+          } catch (e) {
+            result[key] = '[Error accessing property]';
+          }
+        }
+        
+        if (keys.length > maxKeys) {
+          result['...'] = `${keys.length - maxKeys} more properties`;
+        }
+        
+        return result;
+      }
+      
+      // Fallback for unknown types
+      return String(value);
     }
   };
   
