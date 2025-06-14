@@ -10,6 +10,7 @@ const connectBtn = document.getElementById('connect-btn');
 
 const messagesList = document.getElementById('messages-list');
 const detailView = document.getElementById('detail-view');
+const divider = document.getElementById('divider');
 const logCountElement = document.getElementById('log-count');
 const clearLogsBtn = document.getElementById('clear-logs-btn');
 const headerClearBtn = document.getElementById('header-clear-btn');
@@ -151,6 +152,7 @@ function selectMessage(index) {
     
     detailView.innerHTML = detailHTML;
     detailView.classList.add('active');
+    divider.classList.add('active');
     
     // Add click handler for screenshot thumbnails
     const thumbnail = detailView.querySelector('.screenshot-thumbnail');
@@ -179,7 +181,38 @@ function selectMessage(index) {
   } else {
     selectedMessageIndex = null;
     detailView.classList.remove('active');
+    divider.classList.remove('active');
     detailView.innerHTML = '';
+  }
+}
+
+// Navigate through messages with arrow keys
+function navigateMessages(direction) {
+  const messageCount = messages.length;
+  if (messageCount === 0) return;
+  
+  // If no message is selected, start from the beginning or end
+  if (selectedMessageIndex === null) {
+    selectMessage(direction === -1 ? messageCount - 1 : 0);
+    return;
+  }
+  
+  // Calculate new index
+  let newIndex = selectedMessageIndex + direction;
+  
+  // Wrap around at boundaries
+  if (newIndex < 0) {
+    newIndex = messageCount - 1;
+  } else if (newIndex >= messageCount) {
+    newIndex = 0;
+  }
+  
+  selectMessage(newIndex);
+  
+  // Ensure the selected message is visible
+  const rows = messagesList.querySelectorAll('.message-row');
+  if (rows[newIndex]) {
+    rows[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 
@@ -452,11 +485,48 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     clearLogs();
   }
+  // Arrow key navigation
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    navigateMessages(e.key === 'ArrowUp' ? -1 : 1);
+  }
 });
 
 // Initialize
 updateConnectionStatus(false);
 updateLogCount();
+
+// Divider drag functionality
+let isDragging = false;
+let startY = 0;
+let startHeight = 0;
+
+divider.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  startY = e.clientY;
+  startHeight = detailView.offsetHeight;
+  divider.classList.add('dragging');
+  
+  // Prevent text selection during drag
+  document.body.style.userSelect = 'none';
+  e.preventDefault();
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  
+  const delta = startY - e.clientY;
+  const newHeight = Math.max(50, Math.min(startHeight + delta, window.innerHeight - 200));
+  detailView.style.height = newHeight + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+  if (isDragging) {
+    isDragging = false;
+    divider.classList.remove('dragging');
+    document.body.style.userSelect = '';
+  }
+});
 
 // Send tab info update to server
 function sendTabInfoUpdate(url, title) {

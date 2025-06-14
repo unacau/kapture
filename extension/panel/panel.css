@@ -422,10 +422,45 @@ body {
   }
 }
 
+/* Divider */
+.divider {
+  height: 5px;
+  background: #e0e0e0;
+  cursor: row-resize;
+  flex-shrink: 0;
+  display: none;
+  position: relative;
+}
+
+.divider.active {
+  display: block;
+}
+
+.divider:hover {
+  background: #ccc;
+}
+
+.divider.dragging {
+  background: #999;
+}
+
+@media (prefers-color-scheme: dark) {
+  .divider {
+    background: #444;
+  }
+  
+  .divider:hover {
+    background: #555;
+  }
+  
+  .divider.dragging {
+    background: #666;
+  }
+}
+
 /* Detail View */
 .detail-view {
   height: 200px;
-  border-top: 1px solid #ccc;
   background: #fafafa;
   overflow: auto;
   flex-shrink: 0;
