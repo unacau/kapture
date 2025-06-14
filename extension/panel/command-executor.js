@@ -271,7 +271,7 @@ class CommandExecutor {
 
   // Take screenshot
   async screenshot(params) {
-    const { selector } = params;
+    const { selector, scale } = params;
 
     // If selector is provided, get element bounds first
     if (selector) {
@@ -299,21 +299,31 @@ class CommandExecutor {
               return;
             }
 
-            // Send screenshot request with bounds
+            // Send screenshot request with bounds and scale
             chrome.runtime.sendMessage({
               type: 'capture-screenshot',
               tabId: chrome.devtools.inspectedWindow.tabId,
-              bounds: bounds
+              bounds: bounds,
+              scale: scale
             }, (response) => {
               if (chrome.runtime.lastError) {
                 reject(new Error(`Screenshot failed: ${chrome.runtime.lastError.message}`));
               } else if (response && response.error) {
                 reject(new Error(`Screenshot failed: ${response.error}`));
               } else if (response && response.dataUrl) {
-                resolve({
-                  dataUrl: response.dataUrl,
-                  timestamp: Date.now()
-                });
+                // Get current URL and title
+                chrome.devtools.inspectedWindow.eval(
+                  '({ url: window.location.href, title: document.title })',
+                  (navInfo) => {
+                    resolve({
+                      dataUrl: response.dataUrl,
+                      scale: response.scale || 1,
+                      timestamp: Date.now(),
+                      url: navInfo?.url || '',
+                      title: navInfo?.title || ''
+                    });
+                  }
+                );
               } else {
                 reject(new Error('Screenshot failed: No response from background script'));
               }
@@ -326,17 +336,27 @@ class CommandExecutor {
       return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({
           type: 'capture-screenshot',
-          tabId: chrome.devtools.inspectedWindow.tabId
+          tabId: chrome.devtools.inspectedWindow.tabId,
+          scale: scale
         }, (response) => {
           if (chrome.runtime.lastError) {
             reject(new Error(`Screenshot failed: ${chrome.runtime.lastError.message}`));
           } else if (response && response.error) {
             reject(new Error(`Screenshot failed: ${response.error}`));
           } else if (response && response.dataUrl) {
-            resolve({
-              dataUrl: response.dataUrl,
-              timestamp: Date.now()
-            });
+            // Get current URL and title
+            chrome.devtools.inspectedWindow.eval(
+              '({ url: window.location.href, title: document.title })',
+              (navInfo) => {
+                resolve({
+                  dataUrl: response.dataUrl,
+                  scale: response.scale || 1,
+                  timestamp: Date.now(),
+                  url: navInfo?.url || '',
+                  title: navInfo?.title || ''
+                });
+              }
+            );
           } else {
             reject(new Error('Screenshot failed: No response from background script'));
           }
@@ -379,14 +399,22 @@ class CommandExecutor {
         // Check if element was not found
         if (coords.error) {
           // Return success with element not found status
-          resolve({
-            selector: coords.selector,
-            clicked: false,
-            error: {
-              code: coords.code,
-              message: 'Element not found'
+          // Get current URL and title even for errors
+          chrome.devtools.inspectedWindow.eval(
+            '({ url: window.location.href, title: document.title })',
+            (navInfo) => {
+              resolve({
+                selector: coords.selector,
+                clicked: false,
+                error: {
+                  code: coords.code,
+                  message: 'Element not found'
+                },
+                url: navInfo?.url || '',
+                title: navInfo?.title || ''
+              });
             }
-          });
+          );
           return;
         }
 
@@ -490,12 +518,20 @@ class CommandExecutor {
         await chrome.debugger.detach({ tabId });
         debuggerAttached = false;
 
-        resolve({
-          selector: coords.selector,
-          tagName: coords.tagName,
-          text: coords.text,
-          clicked: true
-        });
+        // Get current URL and title
+        chrome.devtools.inspectedWindow.eval(
+          '({ url: window.location.href, title: document.title })',
+          (navInfo) => {
+            resolve({
+              selector: coords.selector,
+              tagName: coords.tagName,
+              text: coords.text,
+              clicked: true,
+              url: navInfo?.url || '',
+              title: navInfo?.title || ''
+            });
+          }
+        );
       } catch (error) {
         // Make sure to detach debugger on error
         if (debuggerAttached) {
@@ -524,21 +560,37 @@ class CommandExecutor {
         (result, error) => {
           if (!error && result && result.length > 0) {
             // Use logs from inspected window
-            resolve({
-              logs: result,
-              total: result.length
-            });
+            // Get current URL and title
+            chrome.devtools.inspectedWindow.eval(
+              '({ url: window.location.href, title: document.title })',
+              (navInfo) => {
+                resolve({
+                  logs: result,
+                  total: result.length,
+                  url: navInfo?.url || '',
+                  title: navInfo?.title || ''
+                });
+              }
+            );
           } else {
             // Fall back to local buffer
             const logs = this.consoleLogBuffer.slice(-max).reverse();
-            resolve({
-              logs: logs.map(log => ({
-                timestamp: log.timestamp,
-                level: log.level,
-                message: Array.isArray(log.args) ? log.args.join(' ') : String(log.args)
-              })),
-              total: this.consoleLogBuffer.length
-            });
+            // Get current URL and title
+            chrome.devtools.inspectedWindow.eval(
+              '({ url: window.location.href, title: document.title })',
+              (navInfo) => {
+                resolve({
+                  logs: logs.map(log => ({
+                    timestamp: log.timestamp,
+                    level: log.level,
+                    message: Array.isArray(log.args) ? log.args.join(' ') : String(log.args)
+                  })),
+                  total: this.consoleLogBuffer.length,
+                  url: navInfo?.url || '',
+                  title: navInfo?.title || ''
+                });
+              }
+            );
           }
         }
       );
@@ -581,8 +633,18 @@ class CommandExecutor {
           if (error) {
             reject(new Error(`Fill failed: ${error.toString()}`));
           } else {
-            // Always resolve, even if element not found or not fillable
-            resolve(result);
+            // Get current URL and title
+            chrome.devtools.inspectedWindow.eval(
+              '({ url: window.location.href, title: document.title })',
+              (navInfo) => {
+                // Always resolve, even if element not found or not fillable
+                resolve({
+                  ...result,
+                  url: navInfo?.url || '',
+                  title: navInfo?.title || ''
+                });
+              }
+            );
           }
         }
       );
@@ -610,8 +672,18 @@ class CommandExecutor {
           if (error) {
             reject(new Error(`Select failed: ${error.toString()}`));
           } else {
-            // Always resolve, even if element not found or option not found
-            resolve(result);
+            // Get current URL and title
+            chrome.devtools.inspectedWindow.eval(
+              '({ url: window.location.href, title: document.title })',
+              (navInfo) => {
+                // Always resolve, even if element not found or option not found
+                resolve({
+                  ...result,
+                  url: navInfo?.url || '',
+                  title: navInfo?.title || ''
+                });
+              }
+            );
           }
         }
       );
@@ -652,14 +724,22 @@ class CommandExecutor {
         // Check if element was not found
         if (coords.error) {
           // Return success with element not found status
-          resolve({
-            selector: coords.selector,
-            hovered: false,
-            error: {
-              code: coords.code,
-              message: 'Element not found'
+          // Get current URL and title even for errors
+          chrome.devtools.inspectedWindow.eval(
+            '({ url: window.location.href, title: document.title })',
+            (navInfo) => {
+              resolve({
+                selector: coords.selector,
+                hovered: false,
+                error: {
+                  code: coords.code,
+                  message: 'Element not found'
+                },
+                url: navInfo?.url || '',
+                title: navInfo?.title || ''
+              });
             }
-          });
+          );
           return;
         }
 
@@ -726,12 +806,20 @@ class CommandExecutor {
         await chrome.debugger.detach({ tabId });
         debuggerAttached = false;
 
-        resolve({
-          selector: coords.selector,
-          tagName: coords.tagName,
-          position: { x: coords.x, y: coords.y },
-          hovered: true
-        });
+        // Get current URL and title
+        chrome.devtools.inspectedWindow.eval(
+          '({ url: window.location.href, title: document.title })',
+          (navInfo) => {
+            resolve({
+              selector: coords.selector,
+              tagName: coords.tagName,
+              position: { x: coords.x, y: coords.y },
+              hovered: true,
+              url: navInfo?.url || '',
+              title: navInfo?.title || ''
+            });
+          }
+        );
       } catch (error) {
         // Make sure to detach debugger on error
         if (debuggerAttached) {
@@ -767,12 +855,28 @@ class CommandExecutor {
             reject(new Error(`Evaluate failed: ${error.toString()}`));
           } else if (result && result.error) {
             reject(new Error(`Script error: ${result.error}`));
-          } else if (result && result.hasOwnProperty('value')) {
-            // Extract the value from our wrapper
-            resolve(result.value);
           } else {
-            // Fallback to returning the raw result
-            resolve(result);
+            // Get current URL and title
+            chrome.devtools.inspectedWindow.eval(
+              '({ url: window.location.href, title: document.title })',
+              (navInfo) => {
+                if (result && result.hasOwnProperty('value')) {
+                  // Extract the value from our wrapper
+                  resolve({
+                    value: result.value,
+                    url: navInfo?.url || '',
+                    title: navInfo?.title || ''
+                  });
+                } else {
+                  // Fallback to returning the raw result
+                  resolve({
+                    value: result,
+                    url: navInfo?.url || '',
+                    title: navInfo?.title || ''
+                  });
+                }
+              }
+            );
           }
         }
       );
@@ -792,7 +896,17 @@ class CommandExecutor {
           if (error) {
             reject(new Error(`Get DOM failed: ${error.toString()}`));
           } else {
-            resolve(result);
+            // Get current URL and title
+            chrome.devtools.inspectedWindow.eval(
+              '({ url: window.location.href, title: document.title })',
+              (navInfo) => {
+                resolve({
+                  ...result,
+                  url: navInfo?.url || '',
+                  title: navInfo?.title || ''
+                });
+              }
+            );
           }
         }
       );

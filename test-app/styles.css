@@ -316,26 +316,66 @@ body {
 
 .tool-result {
   margin-top: 1rem;
-  padding: 0.75rem;
-  background: #f5f5f5;
   border: 1px solid #ddd;
   border-radius: 3px;
+  overflow: hidden;
+}
+
+.tool-result summary {
+  padding: 0.5rem 0.75rem;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tool-result summary::-webkit-details-marker {
+  display: none;
+}
+
+.tool-result summary::before {
+  content: '▶';
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.tool-result[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.tool-result.success summary {
+  background: #e8f5e9;
+  border-bottom: 1px solid #4caf50;
+  color: #2e7d32;
+}
+
+.tool-result.error summary {
+  background: #ffebee;
+  border-bottom: 1px solid #f44336;
+  color: #c62828;
+}
+
+.tool-result.warning summary {
+  background: #fff3e0;
+  border-bottom: 1px solid #ff9800;
+  color: #ef6c00;
+}
+
+.tool-result .result-content {
+  padding: 0.75rem;
+  background: #f8f8f8;
   font-family: monospace;
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 200px;
+  max-height: 300px;
   overflow-y: auto;
-}
-
-.tool-result.success {
-  background: #e8f5e9;
-  border-color: #4caf50;
-}
-
-.tool-result.error {
-  background: #ffebee;
-  border-color: #f44336;
+  margin: 0;
 }
 
 /* Console */

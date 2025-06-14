@@ -15,6 +15,8 @@ const headerClearBtn = document.getElementById('header-clear-btn');
 // State
 let ws = null;
 let isConnected = false;
+let isRetrying = false;
+let retryInterval = null;
 let tabId = null;
 let previousTabId = null;  // Store previous tab ID for reconnection
 let commandExecutor = null;
@@ -24,19 +26,32 @@ let selectedMessageIndex = null;
 
 
 // Update UI state
-function updateConnectionStatus(connected) {
+function updateConnectionStatus(connected, retrying = false) {
   isConnected = connected;
+  isRetrying = retrying;
   
   if (connected) {
     statusIndicator.classList.add('connected');
+    statusIndicator.classList.remove('retrying');
     statusText.textContent = 'Connected';
-    connectBtn.textContent = 'Disconnect';
+    connectBtn.innerHTML = 'Disconnect';
     connectBtn.classList.add('connected');
+    connectBtn.classList.remove('connecting');
+  } else if (retrying) {
+    statusIndicator.classList.remove('connected');
+    statusIndicator.classList.add('retrying');
+    statusText.textContent = 'Retrying Connection';
+    connectBtn.innerHTML = '<span class="spinner"></span>Connecting';
+    connectBtn.classList.remove('connected');
+    connectBtn.classList.add('connecting');
+    tabIdElement.textContent = 'Tab: -';
   } else {
     statusIndicator.classList.remove('connected');
+    statusIndicator.classList.remove('retrying');
     statusText.textContent = 'Disconnected';
-    connectBtn.textContent = 'Connect';
+    connectBtn.innerHTML = 'Connect';
     connectBtn.classList.remove('connected');
+    connectBtn.classList.remove('connecting');
     tabIdElement.textContent = 'Tab: -';
   }
 }
@@ -189,9 +204,14 @@ async function getCurrentTabInfo() {
 }
 
 // Connect to WebSocket server
-async function connect() {
+async function connect(fromRetry = false) {
   if (isConnected || ws) {
     return;
+  }
+  
+  // Only stop retrying if this is a manual connect
+  if (!fromRetry) {
+    stopRetrying();
   }
   
   try {
@@ -210,6 +230,8 @@ async function connect() {
     
     ws.onopen = () => {
       console.log('WebSocket connected');
+      // Stop retrying if we were
+      stopRetrying();
       
       // Register this tab (request previous ID if we have one)
       const registerMessage = {
@@ -282,29 +304,72 @@ async function connect() {
     
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
+      // Don't call disconnect here as onclose will handle it
     };
     
     ws.onclose = () => {
       console.log('WebSocket disconnected');
-      disconnect();
+      const shouldRetry = !isConnected && retryInterval !== null;
+      disconnect(shouldRetry);
+      // Start automatic retry if not already retrying
+      if (!retryInterval) {
+        startRetrying();
+      }
     };
     
   } catch (error) {
     console.error('Connection failed:', error);
-    disconnect();
+    const shouldRetry = retryInterval !== null;
+    disconnect(shouldRetry);
+    // Start automatic retry after failed connection if not already retrying
+    if (!retryInterval) {
+      startRetrying();
+    }
   }
 }
 
 // Disconnect from WebSocket
-function disconnect() {
+function disconnect(maintainRetryState = false) {
   if (ws) {
     ws.close();
     ws = null;
   }
   
-  updateConnectionStatus(false);
+  // Only update status if we're not maintaining retry state
+  if (!maintainRetryState) {
+    updateConnectionStatus(false, false);
+  }
+  
   commandExecutor = null;
   commandQueue = null;
+}
+
+// Start automatic retry
+function startRetrying() {
+  if (retryInterval) return; // Already retrying
+  
+  console.log('Starting automatic retry...');
+  updateConnectionStatus(false, true);
+  
+  // Try to connect immediately
+  connect(true);
+  
+  // Then retry every 2 seconds
+  retryInterval = setInterval(() => {
+    if (!isConnected && !ws) {
+      console.log('Retrying connection...');
+      connect(true);
+    }
+  }, 2000);
+}
+
+// Stop automatic retry
+function stopRetrying() {
+  if (retryInterval) {
+    clearInterval(retryInterval);
+    retryInterval = null;
+  }
+  updateConnectionStatus(false, false);
 }
 
 // Update log count display
@@ -337,9 +402,13 @@ function clearLogs() {
 // Connect button handler
 connectBtn.addEventListener('click', () => {
   if (isConnected) {
+    stopRetrying();
     disconnect();
+  } else if (isRetrying) {
+    stopRetrying();
   } else {
-    connect();
+    // Start retrying which will attempt immediate connection
+    startRetrying();
   }
 });
 

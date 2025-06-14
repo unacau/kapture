@@ -287,7 +287,11 @@ function createToolCard(tool) {
       if (schema.type === 'string' && name === 'code') {
         inputHtml = `<textarea id="${inputId}" ${isRequired ? 'required' : ''}></textarea>`;
       } else if (schema.type === 'number') {
-        inputHtml = `<input type="number" id="${inputId}" ${isRequired ? 'required' : ''}>`;
+        const min = schema.minimum !== undefined ? `min="${schema.minimum}"` : '';
+        const max = schema.maximum !== undefined ? `max="${schema.maximum}"` : '';
+        const step = name === 'scale' ? 'step="0.1"' : '';
+        const defaultValue = schema.default !== undefined ? `value="${schema.default}"` : '';
+        inputHtml = `<input type="number" id="${inputId}" ${isRequired ? 'required' : ''} ${min} ${max} ${step} ${defaultValue}>`;
       } else {
         inputHtml = `<input type="text" id="${inputId}" ${isRequired ? 'required' : ''}>`;
       }
@@ -310,7 +314,10 @@ function createToolCard(tool) {
         ${paramsHtml || '<p style="color: #999; font-size: 0.85rem;">No parameters needed</p>'}
       </div>
       <button class="tool-execute" data-tool="${tool.name}">Execute</button>
-      <div id="result-${tool.name}" class="tool-result" style="display: none;"></div>
+      <details id="result-${tool.name}" class="tool-result" style="display: none;">
+        <summary></summary>
+        <pre class="result-content"></pre>
+      </details>
     </div>
   `;
 }
@@ -344,13 +351,16 @@ async function executeTool(toolName, button) {
   if (!tool) return;
 
   const resultEl = document.getElementById(`result-${toolName}`);
+  const summaryEl = resultEl.querySelector('summary');
+  const contentEl = resultEl.querySelector('.result-content');
   
   try {
     button.disabled = true;
     button.textContent = 'Executing...';
     resultEl.style.display = 'block';
     resultEl.className = 'tool-result';
-    resultEl.textContent = 'Executing...';
+    summaryEl.textContent = 'Executing...';
+    contentEl.textContent = '';
 
     // Gather parameters
     const params = { tabId: selectedTabId };
@@ -362,7 +372,7 @@ async function executeTool(toolName, button) {
       const input = document.getElementById(`${toolName}-${name}`);
       if (input && input.value) {
         if (paramProps[name].type === 'number') {
-          params[name] = parseInt(input.value, 10);
+          params[name] = parseFloat(input.value);
         } else {
           params[name] = input.value;
         }
@@ -378,23 +388,80 @@ async function executeTool(toolName, button) {
     // Parse and display result
     if (result.content && result.content[0]) {
       const content = JSON.parse(result.content[0].text);
-      resultEl.textContent = JSON.stringify(content, null, 2);
+      
+      // Set summary based on content
+      if (content.error) {
+        summaryEl.textContent = `❌ Error: ${content.error.message || 'Command failed'}`;
+        resultEl.className = 'tool-result error';
+      } else if (content.clicked === false || content.hovered === false || content.filled === false || content.selected === false) {
+        summaryEl.textContent = '⚠️ Element not found';
+        resultEl.className = 'tool-result warning';
+      } else if (toolName === 'kaptivemcp_screenshot') {
+        summaryEl.textContent = '✅ Screenshot captured';
+      } else if (toolName === 'kaptivemcp_click') {
+        summaryEl.textContent = '✅ Clicked successfully';
+      } else if (toolName === 'kaptivemcp_hover') {
+        summaryEl.textContent = '✅ Hovered successfully';
+      } else if (toolName === 'kaptivemcp_fill') {
+        summaryEl.textContent = '✅ Filled successfully';
+      } else if (toolName === 'kaptivemcp_select') {
+        summaryEl.textContent = '✅ Selected successfully';
+      } else if (toolName === 'kaptivemcp_logs') {
+        summaryEl.textContent = `✅ Retrieved ${content.logs?.length || 0} logs`;
+      } else if (toolName === 'kaptivemcp_evaluate') {
+        summaryEl.textContent = '✅ Evaluated successfully';
+      } else if (toolName === 'kaptivemcp_dom') {
+        summaryEl.textContent = '✅ DOM retrieved';
+      } else {
+        summaryEl.textContent = '✅ Success';
+      }
+      
+      contentEl.textContent = JSON.stringify(content, null, 2);
+      
+      // Update local tab info if we got new URL/title
+      if (content.url && content.title && selectedTabId) {
+        const tab = currentTabs.find(t => t.tabId === selectedTabId);
+        if (tab && (tab.url !== content.url || tab.title !== content.title)) {
+          tab.url = content.url;
+          tab.title = content.title;
+          
+          // Update UI immediately
+          displayTabs();
+          
+          // Update URL input if it exists
+          const urlInput = document.getElementById('nav-url');
+          if (urlInput) {
+            urlInput.value = content.url;
+          }
+          
+          log(`Tab info updated: ${content.title}`);
+        }
+      }
       
       // Special handling for screenshots
       if (content.dataUrl) {
         const img = document.createElement('div');
         img.className = 'screenshot-preview';
-        img.innerHTML = `<img src="${content.dataUrl}" alt="Screenshot">`;
-        resultEl.appendChild(img);
+        const scaleInfo = content.scale && content.scale < 1 ? ` (scaled to ${content.scale * 100}%)` : '';
+        img.innerHTML = `
+          <img src="${content.dataUrl}" alt="Screenshot">
+          <div style="text-align: center; margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+            Screenshot captured${scaleInfo}
+          </div>
+        `;
+        // Append after the details element, not inside it
+        resultEl.parentNode.insertBefore(img, resultEl.nextSibling);
       }
     } else {
-      resultEl.textContent = JSON.stringify(result, null, 2);
+      summaryEl.textContent = '✅ Success';
+      contentEl.textContent = JSON.stringify(result, null, 2);
     }
     
     log(`${toolName} executed successfully`);
   } catch (error) {
     resultEl.className = 'tool-result error';
-    resultEl.textContent = `Error: ${error.message}`;
+    summaryEl.textContent = `❌ Error: ${error.message}`;
+    contentEl.textContent = error.stack || error.message;
     log(`${toolName} failed: ${error.message}`, 'error');
   } finally {
     button.disabled = false;

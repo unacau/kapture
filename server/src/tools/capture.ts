@@ -5,7 +5,8 @@ export const screenshotTool = {
   description: 'Capture a screenshot of the page or specific element',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
-    selector: z.string().optional().describe('CSS selector of element to capture (optional)')
+    selector: z.string().optional().describe('CSS selector of element to capture (optional)'),
+    scale: z.number().min(0.1).max(1).default(0.5).describe('Scale factor (0.1-1.0) to reduce screenshot size (default: 0.5)')
   }),
 };
 

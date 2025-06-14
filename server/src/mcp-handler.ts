@@ -105,12 +105,12 @@ export class MCPHandler {
     clearTimeout(pending.timeout);
     this.pendingCommands.delete(response.id);
 
-    // If this is a successful navigation response with URL/title, update tab registry
+    // If this is a successful response with URL/title, update tab registry
     if (response.success && response.result && pending.tabId) {
       const result = response.result;
-      if ((result.action === 'back' || result.action === 'forward' || result.navigated) && 
-          result.url && result.title) {
-        logger.log(`Updating tab ${pending.tabId} info after navigation: ${result.url}`);
+      // Update tab info whenever we get URL and title in the response
+      if (result.url && result.title) {
+        logger.log(`Updating tab ${pending.tabId} info: ${result.url}`);
         this.tabRegistry.updateTabInfo(pending.tabId, {
           url: result.url,
           title: result.title

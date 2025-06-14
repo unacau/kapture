@@ -12,6 +12,7 @@ import { MCPHandler } from './mcp-handler.js';
 import { setupTestEndpoint } from './test-commands.js';
 import { allTools } from './tools/index.js';
 import { zodToJsonSchema } from './tools/schema-converter.js';
+import { logger } from './logger.js';
 
 const PORT = 61822;
 
@@ -20,6 +21,13 @@ const tabRegistry = new TabRegistry();
 
 // Initialize WebSocket server for Chrome Extension connections
 const wss = new WebSocketServer({ port: PORT });
+
+// Add error handling for WebSocket server
+wss.on('error', (error) => {
+  logger.error('WebSocket server error:', error);
+  process.exit(1);
+});
+
 const wsManager = new WebSocketManager(wss, tabRegistry);
 
 // Initialize MCP handler
@@ -94,10 +102,18 @@ console.log = () => {}; // Disable console.log for MCP compatibility
 const testServer = setupTestEndpoint(wsManager, tabRegistry);
 
 // Start the MCP server with stdio transport
-const transport = new StdioServerTransport();
-await server.connect(transport);
+async function startServer() {
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    // Server is ready
+  } catch (error) {
+    logger.error('Failed to start MCP server:', error);
+    process.exit(1);
+  }
+}
 
-// Note: Server is ready but we can't log to console in MCP mode
+startServer();
 
 // Handle server shutdown
 process.on('SIGINT', () => {

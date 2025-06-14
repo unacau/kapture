@@ -4,14 +4,14 @@
 // Handle messages from DevTools panel
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'capture-screenshot') {
-    captureScreenshot(request.tabId, request.bounds)
-      .then(dataUrl => sendResponse({ dataUrl }))
+    captureScreenshot(request.tabId, request.bounds, request.scale)
+      .then(result => sendResponse(result))
       .catch(error => sendResponse({ error: error.message }));
     return true; // Will respond asynchronously
   }
 });
 
-async function captureScreenshot(tabId, bounds) {
+async function captureScreenshot(tabId, bounds, scale) {
   try {
     // First, make the tab active to ensure we can capture it
     await chrome.tabs.update(tabId, { active: true });
@@ -27,13 +27,20 @@ async function captureScreenshot(tabId, bounds) {
       format: 'png'
     });
     
-    // If no bounds specified, return full screenshot
+    // If no bounds specified, handle full screenshot with optional scaling
     if (!bounds) {
-      return fullDataUrl;
+      if (scale && scale < 1) {
+        return await scaleScreenshot(fullDataUrl, scale);
+      }
+      return { dataUrl: fullDataUrl, scale: scale || 1 };
     }
     
-    // Otherwise, crop to the specified element bounds
-    return await cropScreenshot(fullDataUrl, bounds);
+    // Otherwise, crop to the specified element bounds and optionally scale
+    const croppedDataUrl = await cropScreenshot(fullDataUrl, bounds);
+    if (scale && scale < 1) {
+      return await scaleScreenshot(croppedDataUrl, scale);
+    }
+    return { dataUrl: croppedDataUrl, scale: scale || 1 };
   } catch (error) {
     console.error('Screenshot capture error:', error);
     // If the error is about permissions, provide clearer message
@@ -87,6 +94,48 @@ async function cropScreenshot(dataUrl, bounds) {
     });
   } catch (error) {
     throw new Error(`Failed to crop screenshot: ${error.message}`);
+  }
+}
+
+async function scaleScreenshot(dataUrl, scaleFactor) {
+  try {
+    // Convert data URL to blob
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    
+    // Create bitmap from blob
+    const imageBitmap = await createImageBitmap(blob);
+    
+    // Calculate new dimensions
+    const newWidth = Math.round(imageBitmap.width * scaleFactor);
+    const newHeight = Math.round(imageBitmap.height * scaleFactor);
+    
+    // Create offscreen canvas for scaling
+    const canvas = new OffscreenCanvas(newWidth, newHeight);
+    const ctx = canvas.getContext('2d');
+    
+    // Enable image smoothing for better quality
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
+    // Draw the scaled image
+    ctx.drawImage(
+      imageBitmap,
+      0, 0, imageBitmap.width, imageBitmap.height,  // Source
+      0, 0, newWidth, newHeight                      // Destination
+    );
+    
+    // Convert back to blob then data URL
+    const scaledBlob = await canvas.convertToBlob({ type: 'image/png' });
+    const reader = new FileReader();
+    
+    return new Promise((resolve, reject) => {
+      reader.onloadend = () => resolve({ dataUrl: reader.result, scale: scaleFactor });
+      reader.onerror = () => reject(new Error('Failed to convert scaled image to data URL'));
+      reader.readAsDataURL(scaledBlob);
+    });
+  } catch (error) {
+    throw new Error(`Failed to scale screenshot: ${error.message}`);
   }
 }
 
