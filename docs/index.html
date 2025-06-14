@@ -193,6 +193,10 @@
             padding: 100px 0;
         }
 
+        .tools-section {
+            padding: 100px 0;
+        }
+
         .showcase-content {
             max-width: 1400px;
             margin: 0 auto;
@@ -455,15 +459,16 @@
         }
 
         .architecture-diagram {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
+            background: transparent;
+            padding: 20px;
             border-radius: 12px;
             text-align: center;
         }
 
-        .architecture-diagram pre {
-            font-size: 1.2rem;
-            color: #e2e8f0;
+        .architecture-diagram img {
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
         }
 
         .architecture-benefits ul {
@@ -487,10 +492,6 @@
             justify-content: center;
             color: #48bb78;
             flex-shrink: 0;
-        }
-
-        .tools-section {
-            background: #f7fafc;
         }
 
         .tools-showcase {
@@ -601,7 +602,6 @@
         <div class="nav-content">
             <div class="logo">Kapture</div>
             <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
                 <li><a href="#how-it-works">How it Works</a></li>
                 <li><a href="#tools">Tools</a></li>
                 <li><a href="MCP_USAGE.html">Docs</a></li>
@@ -616,7 +616,7 @@
 
         <div class="trust-badges">
             <div class="trust-badge">
-                <svg viewBox="0 0 24 24"><path d="M12 2L3.09 5.26C3.03 9.15 3.5 12.96 5.44 16.11C7.38 19.26 10.55 21.59 14.38 22.81L15 23L15.62 22.81C19.45 21.59 22.62 19.26 24.56 16.11C26.5 12.96 26.97 9.15 26.91 5.26L18 2L12 2M12 4.18L24 6.3C23.95 9.69 23.52 12.92 21.84 15.51C20.16 18.1 17.45 20.05 14.25 21.06L12 21.75L9.75 21.06C6.55 20.05 3.84 18.1 2.16 15.51C0.48 12.92 0.05 9.69 0 6.3L12 4.18M12 7L11 10L8 11L11 12L12 15L13 12L16 11L13 10L12 7Z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,3.18L19,6.3V11.22C19,12.92 18.5,14.65 17.65,16.17C16.5,18.24 14.75,19.95 12.73,20.85L12,21.17L11.27,20.85C9.25,19.95 7.5,18.24 6.35,16.17C5.5,14.65 5,12.92 5,11.22V6.3L12,3.18M12,7A3,3 0 0,0 9,10A3,3 0 0,0 12,13A3,3 0 0,0 15,10A3,3 0 0,0 12,7Z"/></svg>
                 <span>100% Open Source</span>
             </div>
             <div class="trust-badge">
@@ -643,6 +643,7 @@
 
     <!-- Screenshot Showcase Section -->
     <section class="showcase-section">
+        <!-- See Kapture in Action -->
         <div class="showcase-content">
             <div class="section-header">
                 <h2>See Kapture in Action</h2>
@@ -682,173 +683,10 @@
                 </div>
             </div>
 
-            <!-- Test App Showcase -->
-            <div class="test-app-showcase">
-                <div class="test-app-content">
-                    <h3>MCP Test Client Included</h3>
-                    <p>Kapture comes with a powerful Electron-based test application that lets developers connect to the MCP server and test commands as if they were an AI agent.</p>
-                    <p>Perfect for debugging, development, and understanding how AI agents will interact with your browser automation setup.</p>
-                    <ul class="test-app-features">
-                        <li>Test all 12 MCP tools interactively</li>
-                        <li>Real-time console output</li>
-                        <li>Parameter validation</li>
-                        <li>Connection status monitoring</li>
-                    </ul>
-                </div>
-                <div class="test-app-screenshot">
-                    <img src="assets/images/test-app-screenshot.png" alt="Kapture MCP Test Client showing interactive tool testing interface">
-                </div>
-            </div>
         </div>
     </section>
 
-    <section class="section problems-section">
-        <div class="container">
-            <div class="section-header">
-                <h2>Why Kapture?</h2>
-                <p>Browser automation is essential, but existing solutions have critical problems</p>
-            </div>
-
-            <div class="problem-cards">
-                <div class="problem-card">
-                    <h3>Unreliable Interactions</h3>
-                    <p>Traditional tools frequently fail to click elements or interact with modern web applications</p>
-                </div>
-                <div class="problem-card">
-                    <h3>Complex Setup</h3>
-                    <p>Most solutions require Selenium, Chrome drivers, or headless browser configurations</p>
-                </div>
-                <div class="problem-card">
-                    <h3>Poor Error Handling</h3>
-                    <p>Cryptic errors that are difficult for AI agents to understand and recover from</p>
-                </div>
-                <div class="problem-card">
-                    <h3>Connection Issues</h3>
-                    <p>WebSocket disconnections and lack of reconnection support</p>
-                </div>
-                <div class="problem-card">
-                    <h3>Limited Debugging</h3>
-                    <p>No easy way to test commands or see what's happening</p>
-                </div>
-            </div>
-
-            <div class="solution-box">
-                <h3>Kapture solves these problems</h3>
-                <p>A fresh approach built specifically for AI-driven automation</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="section" id="features">
-        <div class="container">
-            <div class="section-header">
-                <h2>Key Features</h2>
-                <p>Everything you need for reliable browser automation</p>
-            </div>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Reliable Control</h3>
-                    <ul class="feature-list">
-                        <li>DevTools-based architecture</li>
-                        <li>Sequential command execution</li>
-                        <li>Smart element detection</li>
-                        <li>Configurable timeouts</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🚀</div>
-                    <h3>Superior Performance</h3>
-                    <ul class="feature-list">
-                        <li>Direct Chrome API access</li>
-                        <li>Efficient screenshot capture</li>
-                        <li>Event-driven architecture</li>
-                        <li>Real-time WebSocket</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🛠️</div>
-                    <h3>Developer-Friendly</h3>
-                    <ul class="feature-list">
-                        <li>Built-in DevTools panel</li>
-                        <li>Visual command history</li>
-                        <li>Console log monitoring</li>
-                        <li>MCP Test App included</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Security & Privacy</h3>
-                    <ul class="feature-list">
-                        <li>Tab isolation</li>
-                        <li>Minimal permissions</li>
-                        <li>Local execution only</li>
-                        <li>Transparent operation</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="section architecture-section" id="how-it-works">
-        <div class="container">
-            <div class="section-header">
-                <h2 style="color: white;">How It Works</h2>
-                <p style="color: #cbd5e0;">Three-layer architecture for maximum reliability</p>
-            </div>
-
-            <div class="architecture-content">
-                <div class="architecture-diagram">
-                    <pre>AI Application
-    ↓ MCP
-MCP Server
-    ↓ WebSocket
-Chrome Extension
-    ↓ DevTools
-Your Browser</pre>
-                </div>
-
-                <div class="architecture-benefits">
-                    <ul>
-                        <li>
-                            <div class="icon">✓</div>
-                            <div>
-                                <strong>Clean Separation</strong><br>
-                                Each layer handles its responsibilities independently
-                            </div>
-                        </li>
-                        <li>
-                            <div class="icon">✓</div>
-                            <div>
-                                <strong>Graceful Error Handling</strong><br>
-                                Errors are caught and reported clearly at each layer
-                            </div>
-                        </li>
-                        <li>
-                            <div class="icon">✓</div>
-                            <div>
-                                <strong>Easy Debugging</strong><br>
-                                Monitor and test at any point in the stack
-                            </div>
-                        </li>
-                        <li>
-                            <div class="icon">✓</div>
-                            <div>
-                                <strong>Multiple Connections</strong><br>
-                                Support for concurrent browser sessions
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="section tools-section" id="tools">
+    <section class="tools-section" id="tools">
         <div class="container">
             <div class="section-header">
                 <h2>Available Tools</h2>
@@ -897,6 +735,110 @@ Your Browser</pre>
         </div>
     </section>
 
+    <section class="section problems-section">
+        <!-- Why Kapture? -->
+        <div class="container">
+            <div class="section-header">
+                <h2>What is wrong with other solutions?</h2>
+                <p>Browser automation is essential, but existing solutions have critical problems</p>
+            </div>
+
+            <div class="problem-cards">
+                <div class="problem-card">
+                    <h3>NOT Open Source</h3>
+                    <p>Some projects track your use and do not make the ENTIRE source code available</p>
+                </div>
+                <div class="problem-card">
+                    <h3>Unreliable Interactions</h3>
+                    <p>Traditional tools frequently fail to click elements or interact with modern web applications</p>
+                </div>
+                <div class="problem-card">
+                    <h3>Complex Setup</h3>
+                    <p>Some solutions require Selenium, Chrome drivers, or headless browser configurations</p>
+                </div>
+                <div class="problem-card">
+                    <h3>Poor Error Handling</h3>
+                    <p>Cryptic errors that are difficult for AI agents to understand and recover from</p>
+                </div>
+                <div class="problem-card">
+                    <h3>Connection Issues</h3>
+                    <p>WebSocket disconnections and lack of reconnection support</p>
+                </div>
+                <div class="problem-card">
+                    <h3>Limited Debugging</h3>
+                    <p>No easy way to test commands or see what's happening</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section class="section architecture-section" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2 style="color: white;">How It Works</h2>
+                <p style="color: #cbd5e0;">Three-layer architecture for maximum reliability</p>
+            </div>
+
+            <div class="architecture-content">
+                <div class="architecture-diagram">
+                    <img src="assets/images/HowKaptureWorks.png" alt="Kapture Architecture Diagram showing the flow from AI Applications through MCP Protocol to Kapture MCP Server, then via WebSockets to Chrome/Brave Browser Extensions and DevTools Panels" style="width: 100%; height: auto;">
+                </div>
+
+                <div class="architecture-benefits">
+                    <ul>
+                        <li>
+                            <div class="icon">✓</div>
+                            <div>
+                                <strong>Clean Separation</strong><br>
+                                Each layer handles its responsibilities independently
+                            </div>
+                        </li>
+                        <li>
+                            <div class="icon">✓</div>
+                            <div>
+                                <strong>Graceful Error Handling</strong><br>
+                                Errors are caught and reported clearly at each layer
+                            </div>
+                        </li>
+                        <li>
+                            <div class="icon">✓</div>
+                            <div>
+                                <strong>Easy Debugging</strong><br>
+                                Monitor and test at any point in the stack
+                            </div>
+                        </li>
+                        <li>
+                            <div class="icon">✓</div>
+                            <div>
+                                <strong>Multiple Connections</strong><br>
+                                Support for concurrent browser sessions
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Test App Showcase -->
+            <div class="test-app-showcase" style="margin-top: 80px;">
+                <div class="test-app-content">
+                    <h3>MCP Test Client Included</h3>
+                    <p>Kapture comes with a powerful Electron-based test application that lets developers connect to the MCP server and test commands as if they were an AI agent.</p>
+                    <p>Perfect for debugging, development, and understanding how AI agents will interact with your browser automation setup.</p>
+                    <ul class="test-app-features">
+                        <li>Test all 12 MCP tools interactively</li>
+                        <li>Real-time console output</li>
+                        <li>Parameter validation</li>
+                        <li>Connection status monitoring</li>
+                    </ul>
+                </div>
+                <div class="test-app-screenshot">
+                    <img src="assets/images/test-app-screenshot.png" alt="Kapture MCP Test Client showing interactive tool testing interface">
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="cta-section">
         <h2>Ready to automate?</h2>
         <p>Give your AI the power to browse the web</p>
@@ -904,7 +846,7 @@ Your Browser</pre>
             <a href="https://github.com/williamkapke/kapture/releases" class="btn btn-primary" style="background: white; color: #667eea;">
                 Download Kapture
             </a>
-            <a href="MCP_USAGE.html" class="btn btn-secondary" style="border-color: white; color: white;">
+            <a href="MCP_USAGE.html" class="btn btn-secondary" style="border: 2px solid white; color: white; background: transparent;">
                 Read Documentation
             </a>
         </div>
