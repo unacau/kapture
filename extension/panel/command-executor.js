@@ -1,6 +1,48 @@
 // Command Executor for Kapture
 // Handles execution of browser automation commands
 
+// Export helper injection function for reuse
+async function injectPageHelpers() {
+  try {
+    // First check if helpers already exist
+    const checkResult = await new Promise((resolve) => {
+      chrome.devtools.inspectedWindow.eval(
+        'typeof window.__kh !== "undefined"',
+        (result, error) => {
+          resolve(error ? false : result);
+        }
+      );
+    });
+
+    if (checkResult) {
+      return true;
+    }
+
+    // Load and inject helpers
+    const response = await fetch('page-helpers.js');
+    const script = await response.text();
+
+    await new Promise((resolve, reject) => {
+      chrome.devtools.inspectedWindow.eval(
+        script,
+        (result, error) => {
+          if (error) {
+            console.error('Failed to inject helpers:', error);
+            reject(error);
+          } else {
+            console.log('Kapture helpers injected successfully');
+            resolve(result);
+          }
+        }
+      );
+    });
+    return true;
+  } catch (error) {
+    console.error('Failed to load helpers:', error);
+    return false;
+  }
+}
+
 class CommandExecutor {
   constructor() {
     this.consoleLogBuffer = [];
@@ -31,45 +73,10 @@ class CommandExecutor {
 
   // Inject helper functions into the page
   async injectHelpers() {
-    try {
-      // First check if helpers already exist
-      const checkResult = await new Promise((resolve) => {
-        chrome.devtools.inspectedWindow.eval(
-          'typeof window.__kh !== "undefined"',
-          (result, error) => {
-            resolve(error ? false : result);
-          }
-        );
-      });
-
-      if (checkResult) {
-        this.helpersInjected = true;
-        return;
-      }
-
-      // Load and inject helpers
-      const response = await fetch('page-helpers.js');
-      const script = await response.text();
-
-      await new Promise((resolve, reject) => {
-        chrome.devtools.inspectedWindow.eval(
-          script,
-          (result, error) => {
-            if (error) {
-              console.error('Failed to inject helpers:', error);
-              reject(error);
-            } else {
-              this.helpersInjected = true;
-              console.log('Kapture helpers injected successfully');
-              resolve(result);
-            }
-          }
-        );
-      });
-    } catch (error) {
-      console.error('Failed to load helpers:', error);
-      this.helpersInjected = false;
-      throw error;
+    const success = await injectPageHelpers();
+    this.helpersInjected = success;
+    if (!success) {
+      throw new Error('Failed to inject page helpers');
     }
   }
 
@@ -1042,3 +1049,4 @@ class CommandExecutor {
 
 // Export for use in panel.js
 window.CommandExecutor = CommandExecutor;
+window.injectPageHelpers = injectPageHelpers;

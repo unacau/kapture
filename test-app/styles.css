@@ -485,14 +485,77 @@ body {
   margin: 0;
 }
 
+/* Tab Info Section */
+.tab-info-section {
+  background: #f8f8f8;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  padding: 0.75rem 1rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.tab-info-content {
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  width: 100%;
+}
+
+.tab-info-content .info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab-info-content .info-label {
+  font-weight: 500;
+  color: #444;
+}
+
+.tab-info-content .info-value {
+  color: #666;
+}
+
+.tab-info-content .url {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-info-content .info-placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* Console Divider */
+.console-divider {
+  height: 4px;
+  background: #ccc;
+  cursor: ns-resize;
+  position: relative;
+}
+
+.console-divider:hover {
+  background: #999;
+}
+
+.console-divider.dragging {
+  background: #3498db;
+}
+
 /* Console */
 .console {
   height: 150px;
   background: #1e1e1e;
   color: #d4d4d4;
-  border-top: 1px solid #333;
   display: flex;
   flex-direction: column;
+  min-height: 50px;
 }
 
 .console-header {

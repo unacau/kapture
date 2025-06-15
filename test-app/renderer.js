@@ -12,6 +12,9 @@ const refreshTabsBtn = document.getElementById('refresh-tabs');
 const tabListEl = document.getElementById('tab-list');
 const tabContentEl = document.getElementById('tab-content');
 const consoleEl = document.getElementById('console-output');
+const tabInfoEl = document.getElementById('tab-info-content');
+const consoleDividerEl = document.getElementById('console-divider');
+const consoleContainerEl = document.getElementById('console');
 
 // Tool forms state - store form data per tab
 const tabFormData = {};
@@ -181,6 +184,43 @@ function selectTab(tabId) {
   selectedTabId = tabId;
   displayTabs();
   displayTabContent();
+  updateTabInfo();
+}
+
+function updateTabInfo() {
+  const tab = currentTabs.find(t => t.tabId === selectedTabId);
+  
+  if (!tab) {
+    tabInfoEl.innerHTML = '<span class="info-placeholder">No tab selected</span>';
+    return;
+  }
+  
+  let infoHTML = '';
+  
+  // Tab ID
+  infoHTML += `<span class="info-item"><span class="info-label">Tab:</span> <span class="info-value">${tab.tabId}</span></span>`;
+  
+  // URL
+  if (tab.url) {
+    infoHTML += `<span class="info-item url"><span class="info-label">URL:</span> <span class="info-value" title="${tab.url}">${tab.url}</span></span>`;
+  }
+  
+  // DOM Size
+  if (tab.domSize) {
+    infoHTML += `<span class="info-item"><span class="info-label">DOM:</span> <span class="info-value">${(tab.domSize / 1024).toFixed(1)} KB</span></span>`;
+  }
+  
+  // Viewport
+  if (tab.viewportDimensions) {
+    infoHTML += `<span class="info-item"><span class="info-label">Viewport:</span> <span class="info-value">${tab.viewportDimensions.width}×${tab.viewportDimensions.height}</span></span>`;
+  }
+  
+  // Page Size
+  if (tab.fullPageDimensions) {
+    infoHTML += `<span class="info-item"><span class="info-label">Page:</span> <span class="info-value">${tab.fullPageDimensions.width}×${tab.fullPageDimensions.height}</span></span>`;
+  }
+  
+  tabInfoEl.innerHTML = infoHTML;
 }
 
 function displayTabContent() {
@@ -678,6 +718,7 @@ window.electronAPI.onMCPNotification((message) => {
     if (selectedTabId === tabId) {
       selectedTabId = null;
       displayTabContent();
+      updateTabInfo();
     }
 
     // Update UI
@@ -702,6 +743,10 @@ window.electronAPI.onMCPNotification((message) => {
     if (selectedTabId && !currentTabs.find(t => t.tabId === selectedTabId)) {
       selectedTabId = null;
       displayTabContent();
+      updateTabInfo();
+    } else if (selectedTabId) {
+      // Update tab info if selected tab still exists
+      updateTabInfo();
     }
   } else {
     log(`Notification: ${message.method}`, 'info');
@@ -719,6 +764,8 @@ window.electronAPI.onMCPDisconnected((data) => {
   currentTabs = [];
   selectedTabId = null;
   displayTabs();
+  displayTabContent();
+  updateTabInfo();
 
   // Attempt to reconnect
   setTimeout(() => {
@@ -737,6 +784,36 @@ window.electronAPI.onMCPError((data) => {
     refreshTabsBtn.disabled = true;
   } else {
     log(`Server error: ${data.message}`, 'error');
+  }
+});
+
+// Draggable console setup
+let isDragging = false;
+let startY = 0;
+let startHeight = 0;
+
+consoleDividerEl.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  startY = e.clientY;
+  startHeight = consoleContainerEl.offsetHeight;
+  consoleDividerEl.classList.add('dragging');
+  document.body.style.cursor = 'ns-resize';
+  e.preventDefault();
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  
+  const deltaY = startY - e.clientY;
+  const newHeight = Math.max(50, Math.min(window.innerHeight - 200, startHeight + deltaY));
+  consoleContainerEl.style.height = newHeight + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+  if (isDragging) {
+    isDragging = false;
+    consoleDividerEl.classList.remove('dragging');
+    document.body.style.cursor = '';
   }
 });
 

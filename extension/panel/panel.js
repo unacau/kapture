@@ -262,15 +262,15 @@ async function discoverServers() {
 
   // Sort discovered servers by port number for stable ordering
   discovered.sort((a, b) => a.port - b.port);
-  
+
   // Update discovered servers
   discoveredServers = discovered;
-  
+
   // If we discovered servers and don't have a port selected, select the first one
   if (discovered.length > 0 && !discoveredServers.find(s => s.port === selectedPort)) {
     selectedPort = discovered[0].port;
   }
-  
+
   updateServerDropdown();
 
   return discovered.length > 0;
@@ -280,7 +280,7 @@ async function discoverServers() {
 function updateServerDropdown() {
   // Build list of servers to show
   const serversToShow = [...discoveredServers];
-  
+
   // If connected, ensure the connected server is in the list
   if (connectedServerInfo && isConnected) {
     // Check if connected server is already in discovered list
@@ -290,7 +290,7 @@ function updateServerDropdown() {
       serversToShow.unshift(connectedServerInfo);
     }
   }
-  
+
   // Sort all servers by port for consistent ordering
   serversToShow.sort((a, b) => a.port - b.port);
 
@@ -298,15 +298,15 @@ function updateServerDropdown() {
   const currentOptions = Array.from(serverDropdown.options);
   const currentValues = currentOptions.map(opt => opt.value);
   const newValues = serversToShow.map(s => s.port.toString());
-  
+
   // Check if we need to update (different servers or different order)
   const needsUpdate = serversToShow.length === 0 && currentOptions.length > 0 ||
                      serversToShow.length > 0 && currentOptions.length === 0 ||
                      JSON.stringify(currentValues) !== JSON.stringify(newValues) ||
-                     currentOptions.some((opt, i) => 
+                     currentOptions.some((opt, i) =>
                        serversToShow[i] && opt.textContent !== serversToShow[i].label
                      );
-  
+
   if (!needsUpdate) {
     // Just ensure the selection is correct
     if (selectedPort) {
@@ -317,7 +317,7 @@ function updateServerDropdown() {
 
   // Store whether dropdown is open and current scroll position
   const isOpen = document.activeElement === serverDropdown;
-  
+
   // Clear and rebuild
   serverDropdown.innerHTML = '';
 
@@ -343,7 +343,7 @@ function updateServerDropdown() {
       serverDropdown.value = selectedPort;
     }
   }
-  
+
   // If dropdown was open, keep it open
   if (isOpen) {
     serverDropdown.focus();
@@ -383,6 +383,9 @@ function stopDiscovery() {
 
 // Get current tab info
 async function getCurrentTabInfo() {
+  // Ensure helpers are injected first
+  await window.injectPageHelpers();
+
   return new Promise((resolve) => {
     if (!chrome.devtools || !chrome.devtools.inspectedWindow) {
       console.error('DevTools API not available');
@@ -391,7 +394,7 @@ async function getCurrentTabInfo() {
     }
 
     chrome.devtools.inspectedWindow.eval(
-      'window.__kh ? window.__kh.getTabInfo() : ({ url: window.location.href, title: document.title })',
+      'window.__kh.getTabInfo()',
       (result, error) => {
         if (error) {
           console.error('Failed to get tab info:', error);
@@ -495,7 +498,7 @@ async function connect(fromRetry = false) {
           updateConnectionStatus(true);
           // Update dropdown to show connected server
           updateServerDropdown();
-          
+
           // Start monitoring for tab changes
           startTabMonitoring();
 
@@ -584,7 +587,7 @@ function disconnect(maintainRetryState = false) {
   commandExecutor = null;
   commandQueue = null;
   connectedServerInfo = null; // Clear connected server info
-  
+
   // Stop monitoring tab changes
   stopTabMonitoring();
 
@@ -787,7 +790,7 @@ function startTabMonitoring() {
       sendTabInfoUpdate(info);
     }
   });
-  
+
   // Listen for navigation events
   if (!navigationListener) {
     navigationListener = (url) => {
@@ -806,7 +809,7 @@ function startTabMonitoring() {
     };
     chrome.devtools.network.onNavigated.addListener(navigationListener);
   }
-  
+
   // Also periodically check for title changes (some SPAs update title without navigation)
   if (!monitoringInterval) {
     monitoringInterval = setInterval(() => {
@@ -828,12 +831,12 @@ function stopTabMonitoring() {
     chrome.devtools.network.onNavigated.removeListener(navigationListener);
     navigationListener = null;
   }
-  
+
   if (monitoringInterval) {
     clearInterval(monitoringInterval);
     monitoringInterval = null;
   }
-  
+
   lastKnownUrl = null;
   lastKnownTitle = null;
 }
