@@ -1,0 +1,91 @@
+# Kapture MCP Server
+
+MCP server for Kapture browser automation. This server enables AI assistants like Claude to control web browsers through the Kapture Chrome extension.
+
+## Quick Start
+
+### Run with npx (no installation required)
+
+```bash
+npx kapture-mcp-server
+```
+
+### Run with custom port
+
+```bash
+npx kapture-mcp-server --port 61823
+```
+
+### Install globally
+
+```bash
+npm install -g kapture-mcp-server
+kapture-server
+```
+
+### Install locally in a project
+
+```bash
+npm install kapture-mcp-server
+```
+
+## Usage with Claude Desktop
+
+Add to your Claude Desktop configuration:
+
+```json
+{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}
+```
+
+Or if you installed it globally:
+
+```json
+{
+  "mcpServers": {
+    "kapture": {
+      "command": "kapture-server"
+    }
+  }
+}
+```
+
+## Command Line Options
+
+- `--port <number>` - Specify WebSocket port (default: 61822)
+
+## Requirements
+
+- Node.js 18 or higher
+- Chrome browser with Kapture extension installed
+
+## How it Works
+
+1. The MCP server starts and listens on the specified port
+2. The Kapture Chrome extension connects to the server via WebSocket
+3. AI assistants can now control the browser through MCP tools
+
+## Available MCP Tools
+
+- `kapturemcp_list_tabs` - List connected browser tabs
+- `kapturemcp_navigate` - Navigate to URL
+- `kapturemcp_screenshot` - Capture screenshots
+- `kapturemcp_click` - Click elements
+- `kapturemcp_fill` - Fill input fields
+- `kapturemcp_evaluate` - Execute JavaScript
+- And more...
+
+## Documentation
+
+For full documentation and Chrome extension installation, visit:
+https://github.com/williamkapke/kapture
+
+## License
+
+MIT
