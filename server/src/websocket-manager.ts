@@ -164,13 +164,16 @@ export class WebSocketManager {
       }
     }
 
-    // Register the new connection with the assigned ID
-    this.tabRegistry.register(assignedTabId, ws);
+    // Register the new connection with the assigned ID (without triggering callback yet)
+    this.tabRegistry.registerWithoutCallback(assignedTabId, ws);
 
     // Update tab info if provided
     if (url || title) {
       this.tabRegistry.updateTabInfo(assignedTabId, { url, title });
     }
+    
+    // Now trigger the connect callback after tab info is set
+    this.tabRegistry.triggerConnectCallback(assignedTabId);
 
     // Send acknowledgment with the assigned tab ID and MCP client info
     const registeredMessage: any = {

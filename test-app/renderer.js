@@ -1,9 +1,9 @@
 // Renderer process for Kapture MCP Test Client
 let connected = false;
 let currentTools = [];
+let currentResources = [];
 let currentTabs = [];
 let selectedTabId = null;
-let tabPollingInterval = null;
 
 // DOM elements
 const statusEl = document.getElementById('status');
@@ -45,12 +45,12 @@ async function connectToServer() {
       log(`MCP server connected successfully on port ${port}`, 'info');
       log(`Server capabilities: ${JSON.stringify(result.capabilities)}`, 'info');
 
-      // Auto-discover tools
+      // Auto-discover tools and resources
       await discoverTools();
-      await refreshTabs();
-
-      // Start polling for tabs if none found
-      startTabPolling();
+      await discoverResources();
+      
+      // Don't poll - we'll get notifications when tabs connect
+      log('Waiting for tab connections...', 'info');
     } else {
       throw new Error(result.error || 'Failed to connect to server');
     }
@@ -84,32 +84,18 @@ async function discoverTools() {
   }
 }
 
-// Tab polling management
-function startTabPolling() {
-  // Don't start if already polling
-  if (tabPollingInterval) return;
-
-  // Only poll if no tabs are connected
-  if (currentTabs.length === 0) {
-    log('Starting automatic tab discovery...');
-    tabPollingInterval = setInterval(async () => {
-      // Only poll if still connected and no tabs
-      if (connected && currentTabs.length === 0) {
-        await refreshTabs(true); // true = silent mode
-      } else {
-        stopTabPolling();
-      }
-    }, 1000);
+// Resource discovery
+async function discoverResources() {
+  try {
+    log('Discovering available resources...');
+    const response = await window.electronAPI.sendMCPRequest('resources/list');
+    currentResources = response.resources || [];
+    log(`Found ${currentResources.length} resources`);
+  } catch (error) {
+    log(`Failed to discover resources: ${error.message}`, 'error');
   }
 }
 
-function stopTabPolling() {
-  if (tabPollingInterval) {
-    clearInterval(tabPollingInterval);
-    tabPollingInterval = null;
-    log('Stopped automatic tab discovery');
-  }
-}
 
 // Tab management
 refreshTabsBtn.addEventListener('click', () => refreshTabs(false));
@@ -117,25 +103,19 @@ refreshTabsBtn.addEventListener('click', () => refreshTabs(false));
 async function refreshTabs(silent = false) {
   try {
     if (!silent) {
-      log('Refreshing tabs...');
+      log('Querying tabs resource...');
     }
-    const result = await callTool('kapturemcp_list_tabs', {});
-    const content = JSON.parse(result.content[0].text);
-    const newTabs = content.tabs || [];
+    
+    const response = await window.electronAPI.sendMCPRequest('resources/read', {
+      uri: 'kapture://tabs'
+    });
+    
+    // Parse the resource data
+    const newTabs = response.contents && response.contents[0] 
+      ? JSON.parse(response.contents[0].text)
+      : [];
 
-    // Show MCP client info if available
-    if (content.mcpClient && content.mcpClient.name) {
-      const clientInfo = `${content.mcpClient.name} v${content.mcpClient.version || '?'}`;
-      if (!silent) {
-        log(`MCP Client: ${clientInfo}`);
-      }
-    }
-
-    // Check if we found new tabs
-    if (currentTabs.length === 0 && newTabs.length > 0) {
-      log(`Found ${newTabs.length} connected tab${newTabs.length > 1 ? 's' : ''}!`);
-      stopTabPolling();
-    } else if (!silent) {
+    if (!silent) {
       log(`Found ${newTabs.length} connected tabs`);
     }
 
@@ -155,18 +135,10 @@ async function refreshTabs(silent = false) {
       selectedTabId = null;
       displayTabContent();
     }
-
-    // If no tabs, start polling
-    if (currentTabs.length === 0) {
-      startTabPolling();
-    }
   } catch (error) {
     if (!silent) {
-      log(`Failed to refresh tabs: ${error.message}`, 'error');
+      log(`Failed to query tabs resource: ${error.message}`, 'error');
     }
-    currentTabs = [];
-    displayTabs();
-    startTabPolling();
   }
 }
 
@@ -241,9 +213,17 @@ function displayTabContent() {
     .map(tool => createToolCard(tool))
     .join('');
 
+  // Create resource cards
+  const resourcesHtml = currentResources
+    .map(resource => createResourceCard(resource))
+    .join('');
+
   tabContentEl.innerHTML = `
     ${navBarHtml}
-    <div class="tools-grid">${toolsHtml}</div>
+    <div class="tools-grid">
+      ${toolsHtml}
+      ${resourcesHtml}
+    </div>
   `;
 
   // Add navigation event listeners
@@ -355,6 +335,17 @@ function createToolCard(tool) {
   `;
 }
 
+function createResourceCard(resource) {
+  return `
+    <div class="tool-widget">
+      <h3>${resource.uri}</h3>
+      <p>${resource.description || resource.name}</p>
+      <button class="btn-primary resource-query" data-resource="${resource.uri}">Query resource</button>
+      <div class="resource-result" id="result-${resource.uri.replace(/[^a-zA-Z0-9]/g, '-')}"></div>
+    </div>
+  `;
+}
+
 function addToolEventListeners() {
   // Save form data on input
   tabContentEl.querySelectorAll('input, textarea').forEach(input => {
@@ -389,6 +380,14 @@ function addToolEventListeners() {
     btn.addEventListener('click', async (e) => {
       const toolName = e.target.dataset.tool;
       await executeTool(toolName, e.target);
+    });
+  });
+
+  // Resource query buttons
+  tabContentEl.querySelectorAll('.resource-query').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const resourceUri = e.target.dataset.resource;
+      await queryResource(resourceUri, e.target);
     });
   });
 }
@@ -560,6 +559,37 @@ async function callTool(name, args) {
   });
 }
 
+async function queryResource(resourceUri, button) {
+  const resultId = `result-${resourceUri.replace(/[^a-zA-Z0-9]/g, '-')}`;
+  const resultDiv = document.getElementById(resultId);
+  
+  try {
+    button.disabled = true;
+    button.textContent = 'Querying...';
+    resultDiv.innerHTML = '<p style="color: #666;">Loading...</p>';
+    
+    const response = await window.electronAPI.sendMCPRequest('resources/read', {
+      uri: resourceUri
+    });
+    
+    // Display the result
+    if (response.contents && response.contents[0]) {
+      const data = JSON.parse(response.contents[0].text);
+      resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    } else {
+      resultDiv.innerHTML = '<p class="error">No data returned</p>';
+    }
+    
+    log(`Successfully queried resource: ${resourceUri}`, 'info');
+  } catch (error) {
+    log(`Failed to query resource ${resourceUri}: ${error.message}`, 'error');
+    resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Query resource';
+  }
+}
+
 // Execute navigation commands
 async function executeNavigation(action, url = null) {
   try {
@@ -639,10 +669,26 @@ window.electronAPI.onMCPNotification((message) => {
 
     // Update UI
     displayTabs();
-
-    // Start polling if no tabs left
-    if (currentTabs.length === 0) {
-      startTabPolling();
+  } else if (message.method === 'kapturemcp/tabs_changed' && message.params) {
+    // Handle tabs list change notification
+    const { tabs } = message.params;
+    log(`Tabs list changed: ${tabs.length} tabs`, 'info');
+    
+    // Update current tabs
+    currentTabs = tabs;
+    
+    // Update UI
+    displayTabs();
+    
+    // If no tab selected and we have tabs, select the first one
+    if (!selectedTabId && currentTabs.length > 0) {
+      selectTab(currentTabs[0].tabId);
+    }
+    
+    // If selected tab is gone, clear selection
+    if (selectedTabId && !currentTabs.find(t => t.tabId === selectedTabId)) {
+      selectedTabId = null;
+      displayTabContent();
     }
   } else {
     log(`Notification: ${message.method}`, 'info');
@@ -655,9 +701,6 @@ window.electronAPI.onMCPDisconnected((data) => {
   statusEl.classList.remove('connected');
   statusTextEl.textContent = 'Disconnected';
   refreshTabsBtn.disabled = true;
-
-  // Stop polling
-  stopTabPolling();
 
   // Clear tabs and content
   currentTabs = [];

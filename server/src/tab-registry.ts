@@ -14,6 +14,8 @@ export class TabRegistry {
   private tabs: Map<string, TabConnection> = new Map();
   private nextTabId: number = 1;
   private disconnectCallback?: (tabId: string) => Promise<void>;
+  private connectCallback?: (tabId: string) => Promise<void>;
+  private updateCallback?: (tabId: string) => Promise<void>;
 
   // Assign a new tab ID or validate requested ID
   assignTabId(requestedId?: string): string {
@@ -54,6 +56,32 @@ export class TabRegistry {
     
     this.tabs.set(tabId, connection);
     logger.log(`Tab registered: ${tabId}`);
+    
+    // Call the connect callback if set
+    if (this.connectCallback) {
+      this.connectCallback(tabId).catch(err => {
+        logger.error(`Error in connect callback for tab ${tabId}:`, err);
+      });
+    }
+  }
+
+  registerWithoutCallback(tabId: string, ws: WebSocket): void {
+    const connection: TabConnection = {
+      tabId,
+      ws,
+      connectedAt: Date.now(),
+    };
+    
+    this.tabs.set(tabId, connection);
+    logger.log(`Tab registered: ${tabId}`);
+  }
+
+  triggerConnectCallback(tabId: string): void {
+    if (this.connectCallback) {
+      this.connectCallback(tabId).catch(err => {
+        logger.error(`Error in connect callback for tab ${tabId}:`, err);
+      });
+    }
   }
 
   unregister(tabId: string): void {
@@ -88,8 +116,18 @@ export class TabRegistry {
   updateTabInfo(tabId: string, info: { url?: string; title?: string }): void {
     const connection = this.tabs.get(tabId);
     if (connection) {
+      const hadChange = (info.url !== undefined && connection.url !== info.url) ||
+                       (info.title !== undefined && connection.title !== info.title);
+      
       if (info.url !== undefined) connection.url = info.url;
       if (info.title !== undefined) connection.title = info.title;
+      
+      // Call the update callback if there was a change
+      if (hadChange && this.updateCallback) {
+        this.updateCallback(tabId).catch(err => {
+          logger.error(`Error in update callback for tab ${tabId}:`, err);
+        });
+      }
     }
   }
 
@@ -106,5 +144,13 @@ export class TabRegistry {
 
   setDisconnectCallback(callback: (tabId: string) => Promise<void>): void {
     this.disconnectCallback = callback;
+  }
+
+  setConnectCallback(callback: (tabId: string) => Promise<void>): void {
+    this.connectCallback = callback;
+  }
+
+  setUpdateCallback(callback: (tabId: string) => Promise<void>): void {
+    this.updateCallback = callback;
   }
 }

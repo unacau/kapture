@@ -137,7 +137,7 @@ export class MCPHandler {
     }
   }
 
-  private listTabs(): any {
+  listTabs(): any {
     const tabs = this.tabRegistry.getAll().map(tab => ({
       tabId: tab.tabId,
       url: tab.url,
