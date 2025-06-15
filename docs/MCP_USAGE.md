@@ -12,6 +12,16 @@ This guide explains how to use Kapture with Model Context Protocol (MCP) clients
 
 ### 1. Start the Kapture MCP Server
 
+The server is typically started automatically by your MCP client (Claude Desktop, Cline, etc.) when configured properly. 
+
+If you need to run it manually:
+
+**Option 1: Using npx (no installation required)**
+```bash
+npx kapture-mcp-server
+```
+
+**Option 2: From source**
 ```bash
 cd kapture/server
 npm install
@@ -42,13 +52,25 @@ The tab is now ready to receive commands.
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
+**Using npx (Recommended)**
+```json
+{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}
+```
+
+**Using local installation**
 ```json
 {
   "mcpServers": {
     "kapture": {
       "command": "node",
-      "args": ["/path/to/kapture/server/dist/index.js"],
-      "env": {}
+      "args": ["/path/to/kapture/server/dist/index.js"]
     }
   }
 }
@@ -58,12 +80,53 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 Add to your VS Code settings:
 
+**Using npx (Recommended)**
+```json
+{
+  "cline.mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}
+```
+
+**Using local installation**
 ```json
 {
   "cline.mcpServers": {
     "kapture": {
       "command": "node",
       "args": ["/path/to/kapture/server/dist/index.js"]
+    }
+  }
+}
+```
+
+#### Multiple AI Clients
+
+If running multiple AI clients simultaneously, use different ports:
+
+**Claude Desktop** (default port 61822):
+```json
+{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}
+```
+
+**Cline** (port 61823):
+```json
+{
+  "cline.mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server", "--port", "61823"]
     }
   }
 }
@@ -76,8 +139,14 @@ Connect to the Kapture server via stdio:
 ```javascript
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { spawn } from 'child_process';
 
+// Using npx
+const transport = new StdioClientTransport({
+  command: 'npx',
+  args: ['kapture-mcp-server']
+});
+
+// Or using local installation
 const transport = new StdioClientTransport({
   command: 'node',
   args: ['/path/to/kapture/server/dist/index.js']

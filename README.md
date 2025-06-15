@@ -73,6 +73,19 @@ npm start -- --port 61823
 
 Add to your Claude Desktop config:
 
+### Option 1: Using npx (Recommended - No installation required)
+```json
+{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}
+```
+
+### Option 2: Local installation
 ```json
 {
   "mcpServers": {
@@ -86,22 +99,33 @@ Add to your Claude Desktop config:
 
 ### Running Multiple Instances
 
-To run multiple Kapture instances (e.g., for different AI clients), specify different ports:
+If you're using multiple AI clients (e.g., Claude Desktop and Cline), each should use a different port:
 
+**Claude Desktop** (using default port 61822):
 ```json
 {
   "mcpServers": {
-    "kapture-main": {
-      "command": "node",
-      "args": ["/path/to/kapture/server/dist/index.js", "--port", "61822"]
-    },
-    "kapture-secondary": {
-      "command": "node",
-      "args": ["/path/to/kapture/server/dist/index.js", "--port", "61823"]
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
     }
   }
 }
 ```
+
+**Cline/VS Code** (using port 61823):
+```json
+{
+  "cline.mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server", "--port", "61823"]
+    }
+  }
+}
+```
+
+This allows multiple AI clients to control different browser tabs simultaneously without conflict.
 
 Then ask Claude to interact with web pages:
 - "Navigate to example.com and take a screenshot"
