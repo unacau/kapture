@@ -30,10 +30,10 @@ graph TD
     CS -->|DOM Access| WP[Web Page]
     CS -->|chrome.runtime.sendMessage| BG
     
-    style DP fill:#bfb,stroke:#333,stroke-width:2px
-    style BG fill:#fbf,stroke:#333,stroke-width:2px
-    style CS fill:#ffb,stroke:#333,stroke-width:2px
-    style WP fill:#fbb,stroke:#333,stroke-width:2px
+    style DP fill:#2e7d32,stroke:#1b5e20,stroke-width:2px,color:#fff
+    style BG fill:#1976d2,stroke:#0d47a1,stroke-width:2px,color:#fff
+    style CS fill:#f57c00,stroke:#e65100,stroke-width:2px,color:#fff
+    style WP fill:#d32f2f,stroke:#b71c1c,stroke-width:2px,color:#fff
 ```
 
 ### Message Flow
