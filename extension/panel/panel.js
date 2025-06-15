@@ -383,30 +383,23 @@ function stopDiscovery() {
 
 // Get current tab info
 async function getCurrentTabInfo() {
-  // Ensure helpers are injected first
-  await window.injectPageHelpers();
-
-  return new Promise((resolve) => {
-    if (!chrome.devtools || !chrome.devtools.inspectedWindow) {
-      console.error('DevTools API not available');
-      resolve(null);
-      return;
+  try {
+    // Ensure content script is ready
+    await window.MessagePassing.ensureContentScript();
+    
+    // Get tab info via message passing
+    const result = await window.MessagePassing.executeInPage('getTabInfo', {});
+    
+    // Add the tab ID from the DevTools API
+    if (chrome.devtools && chrome.devtools.inspectedWindow) {
+      result.id = chrome.devtools.inspectedWindow.tabId;
     }
-
-    chrome.devtools.inspectedWindow.eval(
-      'window.__kh.getTabInfo()',
-      (result, error) => {
-        if (error) {
-          console.error('Failed to get tab info:', error);
-          resolve(null);
-        } else {
-          // Add the tab ID from the DevTools API
-          result.id = chrome.devtools.inspectedWindow.tabId;
-          resolve(result);
-        }
-      }
-    );
-  });
+    
+    return result;
+  } catch (error) {
+    console.error('Failed to get tab info:', error);
+    return null;
+  }
 }
 
 // Connect to WebSocket server
@@ -629,10 +622,17 @@ function stopRetrying() {
 }
 
 // Update log count display
-function updateLogCount() {
-  if (commandExecutor) {
-    const logCount = commandExecutor.consoleLogBuffer.length;
-    logCountElement.textContent = `Log length: ${logCount}`;
+async function updateLogCount() {
+  if (commandExecutor && isConnected) {
+    try {
+      // Get log count from content script
+      const logsResult = await window.MessagePassing.executeInPage('getLogs', { max: 0 });
+      const logCount = logsResult.logs ? logsResult.logs.length : 0;
+      logCountElement.textContent = `Log length: ${logCount}`;
+    } catch (error) {
+      // If we can't get logs, just show 0
+      logCountElement.textContent = `Log length: 0`;
+    }
   } else {
     logCountElement.textContent = `Log length: 0`;
   }
@@ -648,10 +648,14 @@ function clearMessages() {
 }
 
 // Clear console logs
-function clearLogs() {
-  if (commandExecutor) {
-    commandExecutor.clearLogs();
-    updateLogCount();
+async function clearLogs() {
+  if (commandExecutor && isConnected) {
+    try {
+      await window.MessagePassing.executeInPage('clearLogs', {});
+      updateLogCount();
+    } catch (error) {
+      console.error('Failed to clear logs:', error);
+    }
   }
 }
 

@@ -1,60 +1,23 @@
 // Command Executor for Kapture
 // Handles execution of browser automation commands
 
-// Export helper injection function for reuse
-async function injectPageHelpers() {
-  try {
-    // First check if helpers already exist
-    const checkResult = await new Promise((resolve) => {
-      chrome.devtools.inspectedWindow.eval(
-        'typeof window.__kh !== "undefined"',
-        (result, error) => {
-          resolve(error ? false : result);
-        }
-      );
-    });
-
-    if (checkResult) {
-      return true;
-    }
-
-    // Load and inject helpers
-    const response = await fetch('page-helpers.js');
-    const script = await response.text();
-
-    await new Promise((resolve, reject) => {
-      chrome.devtools.inspectedWindow.eval(
-        script,
-        (result, error) => {
-          if (error) {
-            console.error('Failed to inject helpers:', error);
-            reject(error);
-          } else {
-            console.log('Kapture helpers injected successfully');
-            resolve(result);
-          }
-        }
-      );
-    });
-    return true;
-  } catch (error) {
-    console.error('Failed to load helpers:', error);
-    return false;
-  }
-}
 
 class CommandExecutor {
   constructor() {
-    this.consoleLogBuffer = [];
-    this.maxLogEntries = 1000;
-    this.helpersInjected = false;
-    this.setupConsoleCapture();
-    this.injectHelpers();
+    // Note: Console log capture is now handled by the content script
   }
 
-  // Helper to get full tab info including dimensions
-  getTabInfoCode() {
-    return 'window.__kh.getTabInfo()';
+  // Helper function to get tab info with consistent error handling
+  async getTabInfoWithCommand(commandResult) {
+    try {
+      const tabInfo = await window.MessagePassing.executeInPage('getTabInfo', {});
+      return {
+        ...commandResult,
+        ...tabInfo
+      };
+    } catch (error) {
+      throw new Error(`Command succeeded but failed to get tab info: ${error.message}`);
+    }
   }
 
   // Validate CSS selector
@@ -69,90 +32,6 @@ class CommandExecutor {
 
     // Could add more validation here in the future
     return { valid: true };
-  }
-
-  // Inject helper functions into the page
-  async injectHelpers() {
-    const success = await injectPageHelpers();
-    this.helpersInjected = success;
-    if (!success) {
-      throw new Error('Failed to inject page helpers');
-    }
-  }
-
-  // Setup console log capturing
-  setupConsoleCapture() {
-    const self = this;
-
-
-    // Also capture through DevTools console API if available
-    if (chrome.devtools && chrome.devtools.inspectedWindow) {
-      // Inject console capture script
-      const captureScript = `
-        (function() {
-          if (window.__kaptureConsoleSetup) return;
-          window.__kaptureConsoleSetup = true;
-          
-          const originalLog = console.log;
-          const originalError = console.error;
-          const originalWarn = console.warn;
-          const originalInfo = console.info;
-          
-          function sendToDevTools(level, args) {
-            // Convert arguments to strings
-            const stringArgs = Array.from(args).map(arg => {
-              try {
-                if (typeof arg === 'object') {
-                  return JSON.stringify(arg, null, 2);
-                }
-                return String(arg);
-              } catch (e) {
-                return '[Object - cannot stringify]';
-              }
-            });
-            
-            // Store in a global array that DevTools can access
-            if (!window.__kaptureLogs) window.__kaptureLogs = [];
-            window.__kaptureLogs.push({
-              timestamp: Date.now(),
-              level: level,
-              message: stringArgs.join(' ')
-            });
-            
-            // Keep only last 1000 entries
-            if (window.__kaptureLogs.length > 1000) {
-              window.__kaptureLogs.shift();
-            }
-          }
-          
-          console.log = function(...args) {
-            sendToDevTools('log', args);
-            return originalLog.apply(console, args);
-          };
-          
-          console.error = function(...args) {
-            sendToDevTools('error', args);
-            return originalError.apply(console, args);
-          };
-          
-          console.warn = function(...args) {
-            sendToDevTools('warn', args);
-            return originalWarn.apply(console, args);
-          };
-          
-          console.info = function(...args) {
-            sendToDevTools('info', args);
-            return originalInfo.apply(console, args);
-          };
-        })();
-      `;
-
-      chrome.devtools.inspectedWindow.eval(captureScript, (result, error) => {
-        if (error) {
-          console.error('Failed to inject console capture:', error);
-        }
-      });
-    }
   }
 
   // Execute a command
@@ -211,113 +90,38 @@ class CommandExecutor {
       throw new Error('URL is required for navigation');
     }
 
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error('Navigation timeout'));
-      }, timeout);
-
-      chrome.devtools.inspectedWindow.eval(
-        `window.location.href = ${JSON.stringify(url)}`,
-        (result, error) => {
-          clearTimeout(timeoutId);
-
-          if (error) {
-            reject(new Error(`Navigation failed: ${error.toString()}`));
-          } else {
-            // Wait for navigation to complete and get new URL/title
-            setTimeout(() => {
-              chrome.devtools.inspectedWindow.eval(
-                this.getTabInfoCode(),
-                (navInfo, navError) => {
-                  if (navError) {
-                    resolve({ url, navigated: true });
-                  } else {
-                    resolve({
-                      navigated: true,
-                      url: navInfo.url,
-                      title: navInfo.title,
-                      domSize: navInfo.domSize,
-                      fullPageDimensions: navInfo.fullPageDimensions,
-                      viewportDimensions: navInfo.viewportDimensions
-                    });
-                  }
-                }
-              );
-            }, 500);
-          }
-        }
-      );
-    });
+    try {
+      const result = await window.MessagePassing.executeInPage('navigate', { url }, timeout);
+      // Wait a bit for navigation to complete, then get updated tab info
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return await this.getTabInfoWithCommand({ navigated: true });
+    } catch (error) {
+      throw new Error(`Navigation failed: ${error.message}`);
+    }
   }
 
   // Go back in history
   async goBack(params) {
-    return new Promise((resolve, reject) => {
-      chrome.devtools.inspectedWindow.eval(
-        'window.history.back()',
-        (result, error) => {
-          if (error) {
-            reject(new Error(`Go back failed: ${error.toString()}`));
-          } else {
-            // Wait for navigation to complete and get new URL/title
-            setTimeout(() => {
-              chrome.devtools.inspectedWindow.eval(
-                this.getTabInfoCode(),
-                (navInfo, navError) => {
-                  if (navError) {
-                    resolve({ action: 'back' });
-                  } else {
-                    resolve({
-                      action: 'back',
-                      url: navInfo.url,
-                      title: navInfo.title,
-                      domSize: navInfo.domSize,
-                      fullPageDimensions: navInfo.fullPageDimensions,
-                      viewportDimensions: navInfo.viewportDimensions
-                    });
-                  }
-                }
-              );
-            }, 300);
-          }
-        }
-      );
-    });
+    try {
+      const result = await window.MessagePassing.executeInPage('goBack', {});
+      // Wait a bit for navigation to complete, then get updated tab info
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return await this.getTabInfoWithCommand({ action: 'back' });
+    } catch (error) {
+      throw new Error(`Go back failed: ${error.message}`);
+    }
   }
 
   // Go forward in history
   async goForward(params) {
-    return new Promise((resolve, reject) => {
-      chrome.devtools.inspectedWindow.eval(
-        'window.history.forward()',
-        (result, error) => {
-          if (error) {
-            reject(new Error(`Go forward failed: ${error.toString()}`));
-          } else {
-            // Wait for navigation to complete and get new URL/title
-            setTimeout(() => {
-              chrome.devtools.inspectedWindow.eval(
-                this.getTabInfoCode(),
-                (navInfo, navError) => {
-                  if (navError) {
-                    resolve({ action: 'forward' });
-                  } else {
-                    resolve({
-                      action: 'forward',
-                      url: navInfo.url,
-                      title: navInfo.title,
-                      domSize: navInfo.domSize,
-                      fullPageDimensions: navInfo.fullPageDimensions,
-                      viewportDimensions: navInfo.viewportDimensions
-                    });
-                  }
-                }
-              );
-            }, 300);
-          }
-        }
-      );
-    });
+    try {
+      const result = await window.MessagePassing.executeInPage('goForward', {});
+      // Wait a bit for navigation to complete, then get updated tab info
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return await this.getTabInfoWithCommand({ action: 'forward' });
+    } catch (error) {
+      throw new Error(`Go forward failed: ${error.message}`);
+    }
   }
 
   // Take screenshot
@@ -332,64 +136,57 @@ class CommandExecutor {
         throw new Error(validation.error);
       }
       return new Promise(async (resolve, reject) => {
-        await this.injectHelpers();
-
         // Get element bounds
-        chrome.devtools.inspectedWindow.eval(
-          `window.__kh.getElementBounds(${JSON.stringify(selector)})`,
-          (bounds, error) => {
-            if (error) {
-              reject(new Error(`Failed to get element bounds: ${error.toString()}`));
-              return;
-            }
+        let bounds;
+        try {
+          bounds = await window.MessagePassing.executeInPage('getElementBounds', { selector });
+        } catch (error) {
+          reject(new Error(`Failed to get element bounds: ${error.message}`));
+          return;
+        }
 
-            // Check if element was not found
-            if (bounds && bounds.error) {
-              resolve({
-                selector: bounds.selector,
-                error: {
-                  code: bounds.code,
-                  message: 'Element not found'
-                }
-              });
-              return;
+        // Check if element was not found
+        if (bounds && bounds.error) {
+          resolve({
+            selector: bounds.selector,
+            error: {
+              code: bounds.code,
+              message: 'Element not found'
             }
+          });
+          return;
+        }
 
-            // Send screenshot request with bounds and scale
-            chrome.runtime.sendMessage({
-              type: 'capture-screenshot',
-              tabId: chrome.devtools.inspectedWindow.tabId,
-              bounds: bounds,
-              scale: scale,
-              format: format,
-              quality: quality
-            }, (response) => {
-              if (chrome.runtime.lastError) {
-                reject(new Error(`Screenshot failed: ${chrome.runtime.lastError.message}`));
-              } else if (response && response.error) {
-                reject(new Error(`Screenshot failed: ${response.error}`));
-              } else if (response && response.dataUrl) {
-                // Get current URL and title
-                chrome.devtools.inspectedWindow.eval(
-                  this.getTabInfoCode(),
-                  (navInfo) => {
-                    resolve({
-                      dataUrl: response.dataUrl,
-                      scale: response.scale || 1,
-                      format: response.format || 'png',
-                      quality: response.quality,
-                      timestamp: Date.now(),
-                      url: navInfo?.url || '',
-                      title: navInfo?.title || ''
-                    });
-                  }
-                );
-              } else {
-                reject(new Error('Screenshot failed: No response from background script'));
-              }
+        // Send screenshot request with bounds and scale
+        chrome.runtime.sendMessage({
+          type: 'capture-screenshot',
+          tabId: chrome.devtools.inspectedWindow.tabId,
+          bounds: bounds,
+          scale: scale,
+          format: format,
+          quality: quality
+        }, async (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(`Screenshot failed: ${chrome.runtime.lastError.message}`));
+          } else if (response && response.error) {
+            reject(new Error(`Screenshot failed: ${response.error}`));
+          } else if (response && response.dataUrl) {
+            // Get current URL and title
+            this.getTabInfoWithCommand({
+              dataUrl: response.dataUrl,
+              scale: response.scale || 1,
+              format: response.format || 'png',
+              quality: response.quality,
+              timestamp: Date.now()
+            }).then(result => {
+              resolve(result);
+            }).catch(err => {
+              reject(err);
             });
+          } else {
+            reject(new Error('Screenshot failed: No response from background script'));
           }
-        );
+        });
       });
     } else {
       // Full page screenshot
@@ -407,20 +204,17 @@ class CommandExecutor {
             reject(new Error(`Screenshot failed: ${response.error}`));
           } else if (response && response.dataUrl) {
             // Get current URL and title
-            chrome.devtools.inspectedWindow.eval(
-              this.getTabInfoCode(),
-              (navInfo) => {
-                resolve({
-                  dataUrl: response.dataUrl,
-                  scale: response.scale || 1,
-                  format: response.format || 'png',
-                  quality: response.quality,
-                  timestamp: Date.now(),
-                  url: navInfo?.url || '',
-                  title: navInfo?.title || ''
-                });
-              }
-            );
+            this.getTabInfoWithCommand({
+              dataUrl: response.dataUrl,
+              scale: response.scale || 1,
+              format: response.format || 'png',
+              quality: response.quality,
+              timestamp: Date.now()
+            }).then(result => {
+              resolve(result);
+            }).catch(err => {
+              reject(err);
+            });
           } else {
             reject(new Error('Screenshot failed: No response from background script'));
           }
@@ -449,55 +243,36 @@ class CommandExecutor {
       let debuggerAttached = false;
 
       try {
-        // Ensure helpers are injected
-        await this.injectHelpers();
-
         // First, get element coordinates and info
-        const coords = await new Promise((resolve, reject) => {
-          chrome.devtools.inspectedWindow.eval(
-            `window.__kh.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
-            (result, error) => {
-              if (error) {
-                reject(new Error(`Failed to get element position: ${error.toString()}`));
-              } else {
-                resolve(result);
-              }
-            }
-          );
-        });
+        let coords;
+        try {
+          coords = await window.MessagePassing.executeInPage('scrollAndGetElementPosition', { selector });
+        } catch (error) {
+          throw new Error(`Failed to get element position: ${error.message}`);
+        }
 
         // Check if element was not found
         if (coords.error) {
           // Return success with element not found status
-          // Get current URL and title even for errors
-          chrome.devtools.inspectedWindow.eval(
-            this.getTabInfoCode(),
-            (navInfo) => {
-              resolve({
-                selector: coords.selector,
-                clicked: false,
-                error: {
-                  code: coords.code,
-                  message: 'Element not found'
-                },
-                url: navInfo?.url || '',
-                title: navInfo?.title || ''
-              });
-            }
-          );
+          // Return success with element not found status
+          try {
+            const result = await this.getTabInfoWithCommand({
+              selector: coords.selector,
+              clicked: false,
+              error: {
+                code: coords.code,
+                message: 'Element not found'
+              }
+            });
+            resolve(result);
+          } catch (err) {
+            reject(err);
+          }
           return;
         }
 
         // Create visual cursor
-        await new Promise((resolve, reject) => {
-          chrome.devtools.inspectedWindow.eval(
-            `window.__kh.createCursor()`,
-            (result, error) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          );
-        });
+        await window.MessagePassing.executeInPage('showCursor', {});
 
         // Attach debugger
         await chrome.debugger.attach({ tabId }, '1.3');
@@ -516,12 +291,7 @@ class CommandExecutor {
           const currentY = startY + (coords.y - startY) * easeProgress;
 
           // Update visual cursor position
-          await new Promise((resolve) => {
-            chrome.devtools.inspectedWindow.eval(
-              `window.__kh.moveCursor(${currentX}, ${currentY})`,
-              () => resolve()
-            );
-          });
+          await window.MessagePassing.executeInPage('moveCursor', { x: currentX, y: currentY });
 
           await chrome.debugger.sendCommand(
             { tabId },
@@ -554,12 +324,7 @@ class CommandExecutor {
         );
 
         // Visual feedback - make cursor pulse
-        await new Promise((resolve) => {
-          chrome.devtools.inspectedWindow.eval(
-            `window.__kh.pulseCursor()`,
-            () => resolve()
-          );
-        });
+        await window.MessagePassing.executeInPage('pulseCursor', {});
 
         await new Promise(r => setTimeout(r, 50));
 
@@ -578,10 +343,7 @@ class CommandExecutor {
 
         // Remove cursor after a short delay
         setTimeout(() => {
-          chrome.devtools.inspectedWindow.eval(
-            `window.__kh.removeCursor()`,
-            () => {}
-          );
+          window.MessagePassing.executeInPage('hideCursor', {});
         }, 1000);
 
         // Detach debugger
@@ -589,19 +351,17 @@ class CommandExecutor {
         debuggerAttached = false;
 
         // Get current URL and title
-        chrome.devtools.inspectedWindow.eval(
-          this.getTabInfoCode(),
-          (navInfo) => {
-            resolve({
-              selector: coords.selector,
-              tagName: coords.tagName,
-              text: coords.text,
-              clicked: true,
-              url: navInfo?.url || '',
-              title: navInfo?.title || ''
-            });
-          }
-        );
+        try {
+          const result = await this.getTabInfoWithCommand({
+            selector: coords.selector,
+            tagName: coords.tagName,
+            text: coords.text,
+            clicked: true
+          });
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
       } catch (error) {
         // Make sure to detach debugger on error
         if (debuggerAttached) {
@@ -621,65 +381,11 @@ class CommandExecutor {
   async getLogs(params) {
     const { max = 100 } = params;
 
-    // First, try to get logs from the inspected window
-    return new Promise(async (resolve) => {
-      await this.injectHelpers();
-
-      chrome.devtools.inspectedWindow.eval(
-        `window.__kh.getLogs(${max})`,
-        (result, error) => {
-          if (!error && result && result.length > 0) {
-            // Use logs from inspected window
-            // Get current URL and title
-            chrome.devtools.inspectedWindow.eval(
-              this.getTabInfoCode(),
-              (navInfo) => {
-                resolve({
-                  logs: result,
-                  total: result.length,
-                  url: navInfo?.url || '',
-                  title: navInfo?.title || ''
-                });
-              }
-            );
-          } else {
-            // Fall back to local buffer
-            const logs = this.consoleLogBuffer.slice(-max).reverse();
-            // Get current URL and title
-            chrome.devtools.inspectedWindow.eval(
-              this.getTabInfoCode(),
-              (navInfo) => {
-                resolve({
-                  logs: logs.map(log => ({
-                    timestamp: log.timestamp,
-                    level: log.level,
-                    message: Array.isArray(log.args) ? log.args.join(' ') : String(log.args)
-                  })),
-                  total: this.consoleLogBuffer.length,
-                  url: navInfo?.url || '',
-                  title: navInfo?.title || ''
-                });
-              }
-            );
-          }
-        }
-      );
+    const logsResult = await window.MessagePassing.executeInPage('getLogs', { max });
+    return await this.getTabInfoWithCommand({
+      logs: logsResult.logs || [],
+      total: logsResult.logs ? logsResult.logs.length : 0
     });
-  }
-
-  // Add log entry to buffer
-  addLogEntry(entry) {
-    this.consoleLogBuffer.push(entry);
-
-    // Maintain buffer size
-    if (this.consoleLogBuffer.length > this.maxLogEntries) {
-      this.consoleLogBuffer.shift();
-    }
-  }
-
-  // Clear log buffer
-  clearLogs() {
-    this.consoleLogBuffer = [];
   }
 
   // Fill input element
@@ -700,31 +406,12 @@ class CommandExecutor {
       throw new Error(validation.error);
     }
 
-    return new Promise(async (resolve, reject) => {
-      await this.injectHelpers();
-
-      chrome.devtools.inspectedWindow.eval(
-        `window.__kh.fillElement(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
-        (result, error) => {
-          if (error) {
-            reject(new Error(`Fill failed: ${error.toString()}`));
-          } else {
-            // Get current URL and title
-            chrome.devtools.inspectedWindow.eval(
-              this.getTabInfoCode(),
-              (navInfo) => {
-                // Always resolve, even if element not found or not fillable
-                resolve({
-                  ...result,
-                  url: navInfo?.url || '',
-                  title: navInfo?.title || ''
-                });
-              }
-            );
-          }
-        }
-      );
-    });
+    try {
+      const result = await window.MessagePassing.executeInPage('fill', { selector, value });
+      return await this.getTabInfoWithCommand(result);
+    } catch (error) {
+      throw new Error(`Fill failed: ${error.message}`);
+    }
   }
 
   // Select option from dropdown
@@ -745,31 +432,12 @@ class CommandExecutor {
       throw new Error(validation.error);
     }
 
-    return new Promise(async (resolve, reject) => {
-      await this.injectHelpers();
-
-      chrome.devtools.inspectedWindow.eval(
-        `window.__kh.selectOption(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
-        (result, error) => {
-          if (error) {
-            reject(new Error(`Select failed: ${error.toString()}`));
-          } else {
-            // Get current URL and title
-            chrome.devtools.inspectedWindow.eval(
-              this.getTabInfoCode(),
-              (navInfo) => {
-                // Always resolve, even if element not found or option not found
-                resolve({
-                  ...result,
-                  url: navInfo?.url || '',
-                  title: navInfo?.title || ''
-                });
-              }
-            );
-          }
-        }
-      );
-    });
+    try {
+      const result = await window.MessagePassing.executeInPage('select', { selector, value });
+      return await this.getTabInfoWithCommand(result);
+    } catch (error) {
+      throw new Error(`Select failed: ${error.message}`);
+    }
   }
 
   // Hover over element
@@ -792,55 +460,35 @@ class CommandExecutor {
       let debuggerAttached = false;
 
       try {
-        // Ensure helpers are injected
-        await this.injectHelpers();
-
         // First, get element coordinates
-        const coords = await new Promise((resolve, reject) => {
-          chrome.devtools.inspectedWindow.eval(
-            `window.__kh.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
-            (result, error) => {
-              if (error) {
-                reject(new Error(`Failed to get element position: ${error.toString()}`));
-              } else {
-                resolve(result);
-              }
-            }
-          );
-        });
+        let coords;
+        try {
+          coords = await window.MessagePassing.executeInPage('scrollAndGetElementPosition', { selector });
+        } catch (error) {
+          throw new Error(`Failed to get element position: ${error.message}`);
+        }
 
         // Check if element was not found
         if (coords.error) {
           // Return success with element not found status
-          // Get current URL and title even for errors
-          chrome.devtools.inspectedWindow.eval(
-            this.getTabInfoCode(),
-            (navInfo) => {
-              resolve({
-                selector: coords.selector,
-                hovered: false,
-                error: {
-                  code: coords.code,
-                  message: 'Element not found'
-                },
-                url: navInfo?.url || '',
-                title: navInfo?.title || ''
-              });
-            }
-          );
+          try {
+            const result = await this.getTabInfoWithCommand({
+              selector: coords.selector,
+              hovered: false,
+              error: {
+                code: coords.code,
+                message: 'Element not found'
+              }
+            });
+            resolve(result);
+          } catch (err) {
+            reject(err);
+          }
           return;
         }
 
         // Create visual cursor
-        await new Promise((resolve, reject) => {
-          chrome.devtools.inspectedWindow.eval(
-            `window.__kh.createCursor()`,
-            (result, error) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          );
-        });
+        await window.MessagePassing.executeInPage('showCursor', {});
 
         // Attach debugger
         await chrome.debugger.attach({ tabId }, '1.3');
@@ -859,12 +507,7 @@ class CommandExecutor {
           const currentY = startY + (coords.y - startY) * easeProgress;
 
           // Update visual cursor position
-          await new Promise((resolve) => {
-            chrome.devtools.inspectedWindow.eval(
-              `window.__kh.moveCursor(${currentX}, ${currentY})`,
-              () => resolve()
-            );
-          });
+          await window.MessagePassing.executeInPage('moveCursor', { x: currentX, y: currentY });
 
           await chrome.debugger.sendCommand(
             { tabId },
@@ -884,10 +527,7 @@ class CommandExecutor {
 
         // Remove cursor after a short delay
         setTimeout(() => {
-          chrome.devtools.inspectedWindow.eval(
-            `window.__kh.removeCursor()`,
-            () => {}
-          );
+          window.MessagePassing.executeInPage('hideCursor', {});
         }, 1000);
 
         // Detach debugger
@@ -895,19 +535,17 @@ class CommandExecutor {
         debuggerAttached = false;
 
         // Get current URL and title
-        chrome.devtools.inspectedWindow.eval(
-          this.getTabInfoCode(),
-          (navInfo) => {
-            resolve({
-              selector: coords.selector,
-              tagName: coords.tagName,
-              position: { x: coords.x, y: coords.y },
-              hovered: true,
-              url: navInfo?.url || '',
-              title: navInfo?.title || ''
-            });
-          }
-        );
+        try {
+          const result = await this.getTabInfoWithCommand({
+            selector: coords.selector,
+            tagName: coords.tagName,
+            position: { x: coords.x, y: coords.y },
+            hovered: true
+          });
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
       } catch (error) {
         // Make sure to detach debugger on error
         if (debuggerAttached) {
@@ -932,12 +570,134 @@ class CommandExecutor {
     }
 
     return new Promise(async (resolve, reject) => {
-      // Ensure helpers are injected
-      await this.injectHelpers();
-
       // Wrap the user's code to capture and serialize the result
       const wrappedCode = `
         (function() {
+          // Inline helper functions
+          const getUniqueSelector = function(element) {
+            if (!element || !(element instanceof Element)) return null;
+            if (element.id && /^[a-zA-Z][\\w-]*$/.test(element.id)) {
+              if (document.querySelectorAll('#' + CSS.escape(element.id)).length === 1) {
+                return '#' + CSS.escape(element.id);
+              }
+            }
+            const path = [];
+            let current = element;
+            while (current && current.nodeType === Node.ELEMENT_NODE) {
+              let selector = current.tagName.toLowerCase();
+              if (current.classList.length > 0) {
+                const classes = Array.from(current.classList)
+                  .filter(c => /^[a-zA-Z][\\w-]*$/.test(c))
+                  .slice(0, 3);
+                if (classes.length > 0) {
+                  selector += '.' + classes.join('.');
+                }
+              }
+              if (current.parentElement) {
+                const siblings = Array.from(current.parentElement.children);
+                const sameTagSiblings = siblings.filter(s => s.tagName === current.tagName);
+                if (sameTagSiblings.length > 1) {
+                  const index = sameTagSiblings.indexOf(current) + 1;
+                  selector += ':nth-of-type(' + index + ')';
+                }
+              }
+              path.unshift(selector);
+              const currentPath = path.join(' > ');
+              if (document.querySelectorAll(currentPath).length === 1) {
+                return currentPath;
+              }
+              current = current.parentElement;
+            }
+            return path.join(' > ');
+          };
+
+          const serializeValue = function(value, depth = 0, maxDepth = 3, seen = new WeakSet()) {
+            if (value === null || value === undefined) return value;
+            if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
+              return value;
+            }
+            if (typeof value === 'function') {
+              return '[Function: ' + (value.name || 'anonymous') + ']';
+            }
+            if (typeof value === 'symbol') {
+              return value.toString();
+            }
+            if (value instanceof Date) {
+              return value.toISOString();
+            }
+            if (value instanceof RegExp) {
+              return value.toString();
+            }
+            if (value instanceof Error) {
+              return {
+                name: value.name,
+                message: value.message,
+                stack: value.stack
+              };
+            }
+            if (value instanceof Element) {
+              const selector = getUniqueSelector(value);
+              return {
+                nodeType: 'ELEMENT_NODE',
+                selector: selector,
+                tagName: value.tagName,
+                id: value.id || undefined,
+                className: value.className || undefined,
+                attributes: Array.from(value.attributes).reduce((acc, attr) => {
+                  acc[attr.name] = attr.value;
+                  return acc;
+                }, {})
+              };
+            }
+            if (depth >= maxDepth) {
+              return '[Max depth reached]';
+            }
+            if (typeof value === 'object' && seen.has(value)) {
+              return '[Circular reference]';
+            }
+            if (typeof value === 'object') {
+              seen.add(value);
+            }
+            if (Array.isArray(value)) {
+              return value.map(item => serializeValue(item, depth + 1, maxDepth, seen));
+            }
+            if (value instanceof NodeList || value instanceof HTMLCollection) {
+              return {
+                nodeType: value instanceof NodeList ? 'NodeList' : 'HTMLCollection',
+                length: value.length,
+                items: Array.from(value).map(item => serializeValue(item, depth + 1, maxDepth, seen))
+              };
+            }
+            if (ArrayBuffer.isView(value)) {
+              return {
+                type: value.constructor.name,
+                length: value.length,
+                data: '[Binary data]'
+              };
+            }
+            if (typeof value === 'object') {
+              const result = {};
+              const keys = Object.keys(value);
+              const maxKeys = 100;
+              const limitedKeys = keys.slice(0, maxKeys);
+              for (const key of limitedKeys) {
+                try {
+                  const serialized = serializeValue(value[key], depth + 1, maxDepth, seen);
+                  if (serialized !== undefined && serialized !== null) {
+                    result[key] = serialized;
+                  }
+                } catch (e) {
+                  result[key] = '[Error accessing property]';
+                }
+              }
+              if (keys.length > maxKeys) {
+                result['...'] = keys.length - maxKeys + ' more properties';
+              }
+              return result;
+            }
+            return String(value);
+          };
+
           try {
             let result;
             try {
@@ -953,19 +713,10 @@ class CommandExecutor {
               }
             }
             
-            // Check if helpers are available
-            if (typeof window.__kh !== 'undefined' && window.__kh.serializeValue) {
-              return { 
-                success: true, 
-                value: window.__kh.serializeValue(result) 
-              };
-            } else {
-              // Fallback to basic serialization
-              return { 
-                success: true, 
-                value: result 
-              };
-            }
+            return { 
+              success: true, 
+              value: serializeValue(result)
+            };
           } catch (error) {
             return { 
               success: false, 
@@ -981,27 +732,22 @@ class CommandExecutor {
 
       chrome.devtools.inspectedWindow.eval(
         wrappedCode,
-        (result, error) => {
-          console.log('Eval result:', result);
-          console.log('Eval error:', error);
-
+        async (result, error) => {
           if (error) {
             reject(new Error(`Evaluate failed: ${error.toString()}`));
           } else if (result && !result.success) {
             // Script threw an error
             reject(new Error(`${result.error.name}: ${result.error.message}`));
           } else {
-            // Get current URL and title
-            chrome.devtools.inspectedWindow.eval(
-              this.getTabInfoCode(),
-              (navInfo) => {
-                resolve({
-                  value: result ? result.value : undefined,
-                  url: navInfo?.url || '',
-                  title: navInfo?.title || ''
-                });
-              }
-            );
+            try {
+              // Get current tab info and merge with result
+              const finalResult = await this.getTabInfoWithCommand({
+                value: result ? result.value : undefined
+              });
+              resolve(finalResult);
+            } catch (err) {
+              reject(err);
+            }
           }
         }
       );
@@ -1020,33 +766,14 @@ class CommandExecutor {
       }
     }
 
-    return new Promise(async (resolve, reject) => {
-      await this.injectHelpers();
-
-      chrome.devtools.inspectedWindow.eval(
-        `window.__kh.getOuterHTML(${JSON.stringify(selector || '')})`,
-        (result, error) => {
-          if (error) {
-            reject(new Error(`Get DOM failed: ${error.toString()}`));
-          } else {
-            // Get current URL and title
-            chrome.devtools.inspectedWindow.eval(
-              this.getTabInfoCode(),
-              (navInfo) => {
-                resolve({
-                  ...result,
-                  url: navInfo?.url || '',
-                  title: navInfo?.title || ''
-                });
-              }
-            );
-          }
-        }
-      );
-    });
+    try {
+      const result = await window.MessagePassing.executeInPage('getOuterHTML', { selector: selector || '' });
+      return await this.getTabInfoWithCommand(result);
+    } catch (error) {
+      throw new Error(`Get DOM failed: ${error.message}`);
+    }
   }
 }
 
 // Export for use in panel.js
 window.CommandExecutor = CommandExecutor;
-window.injectPageHelpers = injectPageHelpers;

@@ -1,13 +1,103 @@
 // Background service worker for Kapture extension
-// Handles screenshot capture for DevTools panel
+// Handles screenshot capture and message routing between DevTools panel and content scripts
 
-// Handle messages from DevTools panel
+// Track content script readiness per tab
+const contentScriptReady = new Map();
+
+// Handle messages from DevTools panel and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'capture-screenshot') {
     captureScreenshot(request.tabId, request.bounds, request.scale, request.format, request.quality)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ error: error.message }));
     return true; // Will respond asynchronously
+  }
+
+  // Track when content scripts are ready
+  if (request.type === 'kapture-content-script-ready') {
+    const tabId = sender.tab?.id || request.tabId;
+    if (tabId) {
+      contentScriptReady.set(parseInt(tabId), true);
+    }
+    return;
+  }
+
+  // Route commands from DevTools to content scripts
+  if (request.type === 'kapture-command') {
+    const tabId = parseInt(request.tabId);
+    
+    // Check if content script is ready
+    if (!contentScriptReady.get(tabId)) {
+      // Try to inject content script programmatically
+      chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        files: ['content-script.js']
+      }).then(() => {
+        // After injection, forward the command
+        chrome.tabs.sendMessage(tabId, request, (response) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({
+              type: 'kapture-response',
+              requestId: request.requestId,
+              success: false,
+              error: {
+                message: chrome.runtime.lastError.message,
+                code: 'MESSAGING_ERROR'
+              }
+            });
+          } else {
+            sendResponse(response);
+          }
+        });
+      }).catch(error => {
+        sendResponse({
+          type: 'kapture-response',
+          requestId: request.requestId,
+          success: false,
+          error: {
+            message: `Failed to inject content script: ${error.message}`,
+            code: 'INJECTION_ERROR'
+          }
+        });
+      });
+    } else {
+      // Content script is ready, forward the command
+      chrome.tabs.sendMessage(tabId, request, (response) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({
+            type: 'kapture-response',
+            requestId: request.requestId,
+            success: false,
+            error: {
+              message: chrome.runtime.lastError.message,
+              code: 'MESSAGING_ERROR'
+            }
+          });
+        } else {
+          sendResponse(response);
+        }
+      });
+    }
+    
+    return true; // Will respond asynchronously
+  }
+
+  // Forward responses from content scripts back to DevTools
+  if (request.type === 'kapture-response') {
+    // This is handled by the DevTools panel directly
+    return;
+  }
+});
+
+// Clean up when tabs are closed
+chrome.tabs.onRemoved.addListener((tabId) => {
+  contentScriptReady.delete(tabId);
+});
+
+// Clean up on navigation (content script will need to reload)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === 'loading') {
+    contentScriptReady.delete(tabId);
   }
 });
 
