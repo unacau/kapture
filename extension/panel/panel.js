@@ -3,9 +3,9 @@
 // DOM elements
 const statusIndicator = document.getElementById('status-indicator');
 const statusText = statusIndicator.querySelector('.status-text');
+const statusTextHover = statusIndicator.querySelector('.status-text-hover');
 const statusDot = statusIndicator.querySelector('.status-dot');
 const tabIdElement = document.getElementById('tab-id');
-const connectBtn = document.getElementById('connect-btn');
 const serverDropdown = document.getElementById('server-dropdown');
 
 const messagesList = document.getElementById('messages-list');
@@ -18,6 +18,7 @@ const headerClearBtn = document.getElementById('header-clear-btn');
 // State
 let ws = null;
 let isConnected = false;
+let isConnecting = false;  // Prevent duplicate connections
 let isRetrying = false;
 let retryInterval = null;
 let tabId = null;
@@ -28,9 +29,11 @@ let messages = [];
 let selectedMessageIndex = null;
 let isManualDisconnect = false;  // Track if user manually disconnected
 let discoveredServers = [];
-let selectedPort = 61822;
+let selectedPort = null;  // Start with null instead of default port
 let discoveryInterval = null;
+let hasDiscoveredOnce = false;  // Track if we've run discovery at least once
 let connectedServerInfo = null; // Store info about connected server
+let reconnectTimeout = null; // Store timeout for server switching
 
 
 // Update UI state
@@ -42,24 +45,25 @@ function updateConnectionStatus(connected, retrying = false) {
     statusIndicator.classList.add('connected');
     statusIndicator.classList.remove('retrying');
     statusText.textContent = 'Connected';
-    connectBtn.innerHTML = 'Disconnect';
-    connectBtn.classList.add('connected');
-    connectBtn.classList.remove('connecting');
+    statusTextHover.textContent = 'Disconnect';
   } else if (retrying) {
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.add('retrying');
-    statusText.textContent = 'Retrying Connection';
-    connectBtn.innerHTML = '<span class="spinner"></span>Connecting';
-    connectBtn.classList.remove('connected');
-    connectBtn.classList.add('connecting');
+    statusText.textContent = 'Retrying';
+    statusTextHover.textContent = 'Stop';
+    tabIdElement.textContent = 'Tab: -';
+  } else if (!hasDiscoveredOnce || (discoveredServers.length === 0 && !selectedPort)) {
+    // Still searching for servers
+    statusIndicator.classList.remove('connected');
+    statusIndicator.classList.remove('retrying');
+    statusText.textContent = 'Searching...';
+    statusTextHover.textContent = 'Searching...';
     tabIdElement.textContent = 'Tab: -';
   } else {
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.remove('retrying');
     statusText.textContent = 'Disconnected';
-    connectBtn.innerHTML = 'Connect';
-    connectBtn.classList.remove('connected');
-    connectBtn.classList.remove('connecting');
+    statusTextHover.textContent = 'Connect';
     tabIdElement.textContent = 'Tab: -';
   }
 }
@@ -265,13 +269,23 @@ async function discoverServers() {
 
   // Update discovered servers
   discoveredServers = discovered;
+  hasDiscoveredOnce = true;  // Mark that we've completed at least one discovery
 
   // If we discovered servers and don't have a port selected, select the first one
-  if (discovered.length > 0 && !discoveredServers.find(s => s.port === selectedPort)) {
+  const shouldAutoConnect = discovered.length > 0 && !selectedPort;
+  if (shouldAutoConnect) {
     selectedPort = discovered[0].port;
   }
 
   updateServerDropdown();
+  
+  // Update connection status to reflect current state
+  updateConnectionStatus(isConnected, isRetrying);
+
+  // Auto-connect to the first discovered server if we just selected it
+  if (shouldAutoConnect && !isConnected && !isRetrying) {
+    startRetrying();
+  }
 
   return discovered.length > 0;
 }
@@ -352,6 +366,9 @@ function updateServerDropdown() {
 
 // Start discovery process
 function startDiscovery() {
+  // Update status to show we're searching
+  updateConnectionStatus(false, false);
+  
   // Initial discovery
   discoverServers().then(found => {
     // If we're retrying and found servers, connect to the first one
@@ -404,9 +421,12 @@ async function getCurrentTabInfo() {
 
 // Connect to WebSocket server
 async function connect(fromRetry = false) {
-  if (isConnected || ws) {
+  if (isConnected || ws || isConnecting) {
     return;
   }
+
+  // Set connecting flag to prevent duplicate connections
+  isConnecting = true;
 
   // Reset manual disconnect flag when connecting
   isManualDisconnect = false;
@@ -435,6 +455,7 @@ async function connect(fromRetry = false) {
 
     ws.onopen = () => {
       console.log('WebSocket connected');
+      isConnecting = false;  // Clear connecting flag
       // Stop retrying if we were
       stopRetrying();
 
@@ -491,6 +512,11 @@ async function connect(fromRetry = false) {
             connectedServerInfo = null;
           }
 
+          // Cancel any pending reconnect timeout
+          if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = null;
+          }
           updateConnectionStatus(true);
           // Update dropdown to show connected server
           updateServerDropdown();
@@ -544,11 +570,13 @@ async function connect(fromRetry = false) {
 
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
+      isConnecting = false;  // Clear connecting flag on error
       // Don't call disconnect here as onclose will handle it
     };
 
     ws.onclose = () => {
       console.log('WebSocket disconnected');
+      isConnecting = false;  // Clear connecting flag on close
       const shouldRetry = !isConnected && retryInterval !== null;
       disconnect(shouldRetry);
       // Start automatic retry only if not manually disconnected
@@ -559,6 +587,7 @@ async function connect(fromRetry = false) {
 
   } catch (error) {
     console.error('Connection failed:', error);
+    isConnecting = false;  // Clear connecting flag on exception
     const shouldRetry = retryInterval !== null;
     disconnect(shouldRetry);
     // Start automatic retry after failed connection only if not manually disconnected
@@ -660,41 +689,54 @@ async function clearLogs() {
 }
 
 // Connect button handler
-connectBtn.addEventListener('click', () => {
-  // If no server is selected but default port exists, use it
-  if (!selectedPort && discoveredServers.length === 0) {
-    selectedPort = 61822;
-  }
-
-  if (isConnected) {
-    isManualDisconnect = true;  // Mark as manual disconnect
-    stopRetrying();
-    disconnect();
-  } else if (isRetrying) {
-    isManualDisconnect = true;  // Stop retrying is also manual
-    stopRetrying();
-  } else {
-    // Start retrying which will attempt immediate connection
-    startRetrying();
-  }
-});
-
 // Server dropdown handler
 serverDropdown.addEventListener('change', (e) => {
   const newPort = parseInt(e.target.value);
   if (newPort && newPort !== selectedPort) {
     selectedPort = newPort;
+    isManualDisconnect = false; // Auto-connect when selecting a server
 
-    // If connected, disconnect and reconnect to new server
-    if (isConnected) {
-      isManualDisconnect = false; // Auto-reconnect to new server
+    // If connected to a different server, disconnect first
+    if (isConnected || isRetrying) {
       stopRetrying();
       disconnect();
+      // Cancel any pending reconnect
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
       // Small delay before reconnecting
-      setTimeout(() => {
-        connect(false); // Connect directly without retry UI
+      reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = null;
+        startRetrying(); // Start connection with retry
       }, 100);
+    } else {
+      // Not connected, start connection
+      startRetrying();
     }
+  }
+});
+
+// Status indicator button handler
+statusIndicator.addEventListener('click', () => {
+  if (!selectedPort) {
+    // No server selected, can't do anything
+    return;
+  }
+
+  if (isConnected) {
+    // Disconnect
+    isManualDisconnect = true;
+    stopRetrying();
+    disconnect();
+  } else if (isRetrying) {
+    // Stop retrying
+    isManualDisconnect = true;
+    stopRetrying();
+  } else {
+    // Connect
+    isManualDisconnect = false;
+    startRetrying();
   }
 });
 
@@ -722,10 +764,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Initialize
-updateConnectionStatus(false);
 updateLogCount();
 
-// Start server discovery on load
+// Start server discovery on load (this will update connection status)
 startDiscovery();
 
 // Divider drag functionality

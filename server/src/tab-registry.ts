@@ -114,6 +114,26 @@ export class TabRegistry {
   getAll(): TabConnection[] {
     return Array.from(this.tabs.values());
   }
+  
+  // Get only tabs with open WebSocket connections
+  getActiveTabs(): TabConnection[] {
+    return Array.from(this.tabs.values()).filter(
+      tab => tab.ws.readyState === WebSocket.OPEN
+    );
+  }
+  
+  // Clean up any tabs with closed WebSocket connections
+  cleanupClosedConnections(): number {
+    let cleaned = 0;
+    for (const [tabId, connection] of this.tabs.entries()) {
+      if (connection.ws.readyState !== WebSocket.OPEN) {
+        this.tabs.delete(tabId);
+        cleaned++;
+        logger.log(`Cleaned up closed connection for tab ${tabId}`);
+      }
+    }
+    return cleaned;
+  }
 
   findByWebSocket(ws: WebSocket): TabConnection | undefined {
     for (const connection of this.tabs.values()) {

@@ -9,17 +9,17 @@
   <div class="panel-container">
     <!-- Header -->
     <div class="header">
-      <button class="connect-btn" id="connect-btn">Connect</button>
+      <button class="status-indicator" id="status-indicator">
+        <span class="status-dot"></span>
+        <span class="status-text">Disconnected</span>
+        <span class="status-text-hover">Connect</span>
+      </button>
       <div class="server-dropdown-container">
         <select id="server-dropdown" class="server-dropdown" disabled>
           <option value="">No servers found</option>
         </select>
       </div>
       <div class="tab-id" id="tab-id">Tab: -</div>
-      <div class="status-indicator" id="status-indicator">
-        <span class="status-dot"></span>
-        <span class="status-text">Disconnected</span>
-      </div>
     </div>
 
     <!-- Messages List -->
@@ -32,7 +32,7 @@
       
       <div class="messages-list" id="messages-list">
         <div class="empty-state">
-          No messages yet. Click Connect to start.
+          No messages yet. Select a server to connect.
         </div>
       </div>
     </div>

@@ -83,8 +83,7 @@ For each additional client, increment the port number:
 1. Open Chrome and navigate to different websites in separate tabs
 2. Open DevTools (F12) in each tab
 3. Go to the "Kapture" panel
-4. Select the appropriate server from the dropdown (or use auto-discovery)
-5. Click "Connect"
+4. Select the appropriate server from the dropdown to connect automatically
 
 Each tab will connect to its designated AI assistant's server.
 

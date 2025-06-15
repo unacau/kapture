@@ -66,7 +66,7 @@ npm start
 1. Launch the app - MCP server starts automatically
 2. Open Chrome with the Kapture extension installed
 3. Navigate to any webpage and open DevTools
-4. Go to the Kapture panel and click "Connect"
+4. Go to the Kapture panel and select the server to connect
 5. The connection to the tab appears instantly in test-app's
 
 ### Tool Execution

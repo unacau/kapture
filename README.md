@@ -69,8 +69,7 @@ npm start -- --port 61823
 2. Open Chrome/Brave Developer Tools
 3. Navigate to "Kapture" panel
 4. The extension will automatically discover available servers (ports 61822-61832)
-5. Select a server from the dropdown (or leave default)
-6. Click "Connect"
+5. Select a server from the dropdown to connect automatically
 
 ## Using with Claude Desktop
 

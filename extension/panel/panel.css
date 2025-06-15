@@ -42,7 +42,7 @@ body {
   flex-shrink: 0;
 }
 
-.header .status-indicator {
+.header .tab-id {
   margin-left: auto;
 }
 
@@ -58,6 +58,54 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: inherit;
+  color: inherit;
+  transition: all 0.2s;
+  position: relative;
+  min-width: 120px;
+}
+
+/* Always show as button when disconnected */
+.status-indicator:not(.connected):not(.retrying) {
+  background: #e3e3e3;
+  border-color: #d0d0d0;
+}
+
+.status-indicator:hover {
+  background: #d5d5d5;
+  border-color: #c0c0c0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .status-indicator:not(.connected):not(.retrying) {
+    background: #3e3e42;
+    border-color: #555;
+  }
+  
+  .status-indicator:hover {
+    background: #4a4a4e;
+    border-color: #666;
+  }
+}
+
+/* Hide hover text by default, show normal text */
+.status-indicator .status-text-hover {
+  display: none;
+}
+
+/* On hover, hide normal text and show hover text */
+.status-indicator:hover .status-text {
+  display: none;
+}
+
+.status-indicator:hover .status-text-hover {
+  display: inline;
 }
 
 .status-dot {
@@ -216,65 +264,6 @@ body {
 }
 
 /* Connect Button */
-.connect-btn {
-  padding: 3px 12px;
-  border: 1px solid #1a73e8;
-  background: #1a73e8;
-  color: white;
-  border-radius: 3px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.connect-btn:hover {
-  background: #1557b0;
-  border-color: #1557b0;
-}
-
-.connect-btn.connected {
-  background: #e8f5e9;
-  border-color: #4caf50;
-  color: #2e7d32;
-}
-
-.connect-btn.connected:hover {
-  background: #c8e6c9;
-}
-
-@media (prefers-color-scheme: dark) {
-  .connect-btn {
-    background: #1a73e8;
-    border-color: #1a73e8;
-    color: white;
-  }
-
-  .connect-btn:hover {
-    background: #1557b0;
-    border-color: #1557b0;
-  }
-
-  .connect-btn.connected {
-    background: #1b5e20;
-    border-color: #4caf50;
-    color: #a5d6a7;
-  }
-}
-
-/* Connecting state */
-.connect-btn.connecting {
-  background: #ff9800;
-  border-color: #ff9800;
-  cursor: default;
-}
-
-.connect-btn.connecting:hover {
-  background: #ff9800;
-  border-color: #ff9800;
-}
 
 /* Spinner */
 .spinner {

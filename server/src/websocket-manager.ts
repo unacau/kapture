@@ -93,9 +93,11 @@ export class WebSocketManager {
         clearInterval(pingInterval);
         const connection = this.tabRegistry.findByWebSocket(ws);
         if (connection) {
+          logger.log(`WebSocket closing for tab ${connection.tabId}`);
           this.tabRegistry.unregister(connection.tabId);
+        } else {
+          logger.log('WebSocket connection closed but no tab found');
         }
-        logger.log('WebSocket connection closed');
       });
 
       ws.on('error', (error) => {
@@ -168,9 +170,11 @@ export class WebSocketManager {
     // Check if we need to close an old connection with the same ID
     if (requestedTabId && requestedTabId === assignedTabId) {
       const existing = this.tabRegistry.get(assignedTabId);
-      if (existing) {
-        // Close the old connection
-        existing.ws.close();
+      if (existing && existing.ws !== ws) {
+        // Terminate the old connection immediately
+        existing.ws.terminate();
+        // Immediately unregister to free up the tab ID
+        this.tabRegistry.unregister(assignedTabId);
       }
     }
 
@@ -216,6 +220,10 @@ export class WebSocketManager {
     }));
 
     logger.log(`Tab ${assignedTabId} registered${requestedTabId && requestedTabId !== assignedTabId ? ` (requested: ${requestedTabId})` : ''}. Active tabs: ${this.tabRegistry.getActiveTabCount()}`);
+    
+    // Log all currently registered tabs
+    const allTabs = this.tabRegistry.getAll();
+    logger.log(`Current tabs in registry: ${allTabs.map(t => `${t.tabId}(${t.ws.readyState === WebSocket.OPEN ? 'open' : 'closed'})`).join(', ')}`);
   }
 
   sendCommand(tabId: string, command: any): void {

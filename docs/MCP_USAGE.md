@@ -50,7 +50,7 @@ Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...
 1. Open Chrome and navigate to any website
 2. Open Chrome DevTools (F12)
 3. Navigate to the "Kapture" panel
-4. Click "Connect"
+4. Select a server from the dropdown (it will connect automatically)
 
 The tab is now ready to receive commands.
 
