@@ -7,26 +7,97 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { WebSocketServer } from 'ws';
+import { createServer } from 'http';
 import { TabRegistry } from './tab-registry.js';
 import { WebSocketManager } from './websocket-manager.js';
 import { MCPHandler } from './mcp-handler.js';
-import { setupTestEndpoint } from './test-commands.js';
 import { allTools } from './tools/index.js';
 import { zodToJsonSchema } from './tools/schema-converter.js';
 import { logger } from './logger.js';
 
-const PORT = 61822;
+// Parse command line arguments
+function parseArgs() {
+  const args = process.argv.slice(2);
+  let port = 61822;
+  
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === '--port' || args[i] === '-p') && args[i + 1]) {
+      const parsedPort = parseInt(args[i + 1], 10);
+      if (!isNaN(parsedPort) && parsedPort >= 1 && parsedPort <= 65535) {
+        port = parsedPort;
+        i++; // Skip next argument
+      } else {
+        logger.error(`Invalid port number: ${args[i + 1]}`);
+        process.exit(1);
+      }
+    } else if (args[i] === '--help' || args[i] === '-h') {
+      console.log('Kapture MCP Server');
+      console.log('Usage: node dist/index.js [options]');
+      console.log('');
+      console.log('Options:');
+      console.log('  -p, --port <number>  WebSocket port (default: 61822)');
+      console.log('  -h, --help          Show this help message');
+      process.exit(0);
+    }
+  }
+  
+  return { port };
+}
+
+const { port: PORT } = parseArgs();
 
 // Initialize tab registry with disconnect callback
 const tabRegistry = new TabRegistry();
 
-// Initialize WebSocket server for Chrome Extension connections
-const wss = new WebSocketServer({ port: PORT });
+// Create HTTP server for both discovery endpoint and WebSocket
+const httpServer = createServer((req, res) => {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-// Add error handling for WebSocket server
-wss.on('error', (error) => {
-  logger.error('WebSocket server error:', error);
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // Discovery endpoint
+  if (req.url === '/' && req.method === 'GET') {
+    // Only return server info if MCP client has connected
+    if (mcpClientInfo.name) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        mcpClient: mcpClientInfo
+      }));
+    } else {
+      // Return 503 Service Unavailable if no MCP client connected yet
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        error: 'MCP client not connected',
+        status: 'waiting'
+      }));
+    }
+    return;
+  }
+
+  // 404 for any other paths
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
+});
+
+// Initialize WebSocket server attached to HTTP server
+const wss = new WebSocketServer({ server: httpServer });
+
+// Add error handling for HTTP server
+httpServer.on('error', (error) => {
+  logger.error('HTTP server error:', error);
   process.exit(1);
+});
+
+// Start listening
+httpServer.listen(PORT, () => {
+  logger.log(`Server listening on port ${PORT} (HTTP + WebSocket)`);
 });
 
 const wsManager = new WebSocketManager(wss, tabRegistry);
@@ -34,22 +105,6 @@ const wsManager = new WebSocketManager(wss, tabRegistry);
 // Initialize MCP handler
 const mcpHandler = new MCPHandler(wsManager, tabRegistry);
 
-// Set up tab disconnect notification handler
-tabRegistry.setDisconnectCallback(async (tabId: string) => {
-  logger.log(`Sending tab disconnect notification for tab ${tabId}`);
-  try {
-    // Send a custom notification about tab disconnection
-    await server.notification({
-      method: 'kapturemcp/tab_disconnected',
-      params: {
-        tabId,
-        timestamp: Date.now()
-      }
-    });
-  } catch (error) {
-    logger.error('Failed to send tab disconnect notification:', error);
-  }
-});
 
 // Connect WebSocket responses to MCP handler
 wsManager.setResponseHandler((response) => {
@@ -141,8 +196,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Setup test HTTP endpoint for Phase 2 testing
-const testServer = setupTestEndpoint(wsManager, tabRegistry);
 
 // Set up tab disconnect notification
 tabRegistry.setDisconnectCallback(async (tabId: string) => {
@@ -178,9 +231,8 @@ startServer();
 // Handle server shutdown
 process.on('SIGINT', () => {
   mcpHandler.cleanup();
-  testServer.close();
   wsManager.shutdown();
-  wss.close(() => {
+  httpServer.close(() => {
     process.exit(0);
   });
 });

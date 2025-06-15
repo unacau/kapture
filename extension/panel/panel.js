@@ -5,8 +5,8 @@ const statusIndicator = document.getElementById('status-indicator');
 const statusText = statusIndicator.querySelector('.status-text');
 const statusDot = statusIndicator.querySelector('.status-dot');
 const tabIdElement = document.getElementById('tab-id');
-const mcpClientElement = document.getElementById('mcp-client');
 const connectBtn = document.getElementById('connect-btn');
+const serverDropdown = document.getElementById('server-dropdown');
 
 const messagesList = document.getElementById('messages-list');
 const detailView = document.getElementById('detail-view');
@@ -27,13 +27,17 @@ let commandQueue = null;
 let messages = [];
 let selectedMessageIndex = null;
 let isManualDisconnect = false;  // Track if user manually disconnected
+let discoveredServers = [];
+let selectedPort = 61822;
+let discoveryInterval = null;
+let connectedServerInfo = null; // Store info about connected server
 
 
 // Update UI state
 function updateConnectionStatus(connected, retrying = false) {
   isConnected = connected;
   isRetrying = retrying;
-  
+
   if (connected) {
     statusIndicator.classList.add('connected');
     statusIndicator.classList.remove('retrying');
@@ -49,7 +53,6 @@ function updateConnectionStatus(connected, retrying = false) {
     connectBtn.classList.remove('connected');
     connectBtn.classList.add('connecting');
     tabIdElement.textContent = 'Tab: -';
-    mcpClientElement.textContent = '';
   } else {
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.remove('retrying');
@@ -58,7 +61,6 @@ function updateConnectionStatus(connected, retrying = false) {
     connectBtn.classList.remove('connected');
     connectBtn.classList.remove('connecting');
     tabIdElement.textContent = 'Tab: -';
-    mcpClientElement.textContent = '';
   }
 }
 
@@ -70,41 +72,41 @@ function addMessage(direction, data) {
     data,
     timestamp
   };
-  
+
   messages.push(message);
-  
+
   // Remove empty state if present
   const emptyState = messagesList.querySelector('.empty-state');
   if (emptyState) {
     emptyState.remove();
   }
-  
+
   // Create message row
   const row = document.createElement('div');
   row.className = `message-row ${direction}`;
   row.dataset.index = messages.length - 1;
-  
+
   const arrow = document.createElement('div');
   arrow.className = 'message-arrow';
   arrow.textContent = direction === 'outgoing' ? '↑' : '↓';
-  
+
   const messageData = document.createElement('div');
   messageData.className = 'message-data';
   messageData.textContent = JSON.stringify(data);
-  
+
   const messageTime = document.createElement('div');
   messageTime.className = 'message-time';
   messageTime.textContent = formatTime(timestamp);
-  
+
   row.appendChild(arrow);
   row.appendChild(messageData);
   row.appendChild(messageTime);
-  
+
   // Add click handler
   row.addEventListener('click', () => selectMessage(parseInt(row.dataset.index)));
-  
+
   messagesList.appendChild(row);
-  
+
   // Auto-scroll to bottom
   messagesList.scrollTop = messagesList.scrollHeight;
 }
@@ -123,21 +125,21 @@ function selectMessage(index) {
   // Update selected state
   const rows = messagesList.querySelectorAll('.message-row');
   rows.forEach(row => row.classList.remove('selected'));
-  
+
   if (index >= 0 && index < messages.length) {
     rows[index].classList.add('selected');
     selectedMessageIndex = index;
-    
+
     // Show detail view
     const message = messages[index];
     let detailHTML = `<pre class="detail-content">${JSON.stringify(message.data, null, 2)}</pre>`;
-    
+
     // Check if this is a screenshot response
-    if (message.data && 
-        message.data.type === 'response' && 
-        message.data.success && 
-        message.data.result && 
-        message.data.result.dataUrl && 
+    if (message.data &&
+        message.data.type === 'response' &&
+        message.data.success &&
+        message.data.result &&
+        message.data.result.dataUrl &&
         message.data.result.dataUrl.startsWith('data:image/')) {
       // Add thumbnail for screenshot
       detailHTML += `
@@ -149,11 +151,11 @@ function selectMessage(index) {
         </div>
       `;
     }
-    
+
     detailView.innerHTML = detailHTML;
     detailView.classList.add('active');
     divider.classList.add('active');
-    
+
     // Add click handler for screenshot thumbnails
     const thumbnail = detailView.querySelector('.screenshot-thumbnail');
     if (thumbnail) {
@@ -162,13 +164,13 @@ function selectMessage(index) {
           // Convert data URL to blob
           const response = await fetch(thumbnail.src);
           const blob = await response.blob();
-          
+
           // Create blob URL
           const blobUrl = URL.createObjectURL(blob);
-          
+
           // Open in new tab
           const newTab = window.open(blobUrl, '_blank');
-          
+
           // Clean up blob URL after a delay
           setTimeout(() => {
             URL.revokeObjectURL(blobUrl);
@@ -190,29 +192,192 @@ function selectMessage(index) {
 function navigateMessages(direction) {
   const messageCount = messages.length;
   if (messageCount === 0) return;
-  
+
   // If no message is selected, start from the beginning or end
   if (selectedMessageIndex === null) {
     selectMessage(direction === -1 ? messageCount - 1 : 0);
     return;
   }
-  
+
   // Calculate new index
   let newIndex = selectedMessageIndex + direction;
-  
+
   // Wrap around at boundaries
   if (newIndex < 0) {
     newIndex = messageCount - 1;
   } else if (newIndex >= messageCount) {
     newIndex = 0;
   }
-  
+
   selectMessage(newIndex);
-  
+
   // Ensure the selected message is visible
   const rows = messagesList.querySelectorAll('.message-row');
   if (rows[newIndex]) {
     rows[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// Server discovery
+async function discoverServers() {
+  const startPort = 61822;
+  const endPort = 61832;
+  const discovered = [];
+
+  // Try to fetch from each port in parallel
+  const promises = [];
+  for (let port = startPort; port <= endPort; port++) {
+    promises.push(
+      fetch(`http://localhost:${port}/`, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => {
+        // Only process 200 OK responses
+        if (response.ok) {
+          return response.json();
+        }
+        return null;
+      })
+      .then(data => {
+        if (data && data.mcpClient) {
+          discovered.push({
+            port,
+            mcpClient: data.mcpClient,
+            label: `${data.mcpClient.name} ${data.mcpClient.version} (${port})`
+          });
+        }
+      })
+      .catch(() => {
+        // Silently ignore connection failures
+      })
+    );
+  }
+
+  // Wait for all requests to complete
+  await Promise.allSettled(promises);
+
+  // Sort discovered servers by port number for stable ordering
+  discovered.sort((a, b) => a.port - b.port);
+  
+  // Update discovered servers
+  discoveredServers = discovered;
+  
+  // If we discovered servers and don't have a port selected, select the first one
+  if (discovered.length > 0 && !discoveredServers.find(s => s.port === selectedPort)) {
+    selectedPort = discovered[0].port;
+  }
+  
+  updateServerDropdown();
+
+  return discovered.length > 0;
+}
+
+// Update server dropdown UI
+function updateServerDropdown() {
+  // Build list of servers to show
+  const serversToShow = [...discoveredServers];
+  
+  // If connected, ensure the connected server is in the list
+  if (connectedServerInfo && isConnected) {
+    // Check if connected server is already in discovered list
+    const alreadyInList = serversToShow.find(s => s.port === connectedServerInfo.port);
+    if (!alreadyInList) {
+      // Add connected server to the beginning of the list
+      serversToShow.unshift(connectedServerInfo);
+    }
+  }
+  
+  // Sort all servers by port for consistent ordering
+  serversToShow.sort((a, b) => a.port - b.port);
+
+  // Get current options to check if update is needed
+  const currentOptions = Array.from(serverDropdown.options);
+  const currentValues = currentOptions.map(opt => opt.value);
+  const newValues = serversToShow.map(s => s.port.toString());
+  
+  // Check if we need to update (different servers or different order)
+  const needsUpdate = serversToShow.length === 0 && currentOptions.length > 0 ||
+                     serversToShow.length > 0 && currentOptions.length === 0 ||
+                     JSON.stringify(currentValues) !== JSON.stringify(newValues) ||
+                     currentOptions.some((opt, i) => 
+                       serversToShow[i] && opt.textContent !== serversToShow[i].label
+                     );
+  
+  if (!needsUpdate) {
+    // Just ensure the selection is correct
+    if (selectedPort) {
+      serverDropdown.value = selectedPort;
+    }
+    return;
+  }
+
+  // Store whether dropdown is open and current scroll position
+  const isOpen = document.activeElement === serverDropdown;
+  
+  // Clear and rebuild
+  serverDropdown.innerHTML = '';
+
+  if (serversToShow.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No servers found';
+    serverDropdown.appendChild(option);
+    serverDropdown.disabled = true;
+  } else {
+    serverDropdown.disabled = false;
+
+    // Add all servers to dropdown
+    serversToShow.forEach(server => {
+      const option = document.createElement('option');
+      option.value = server.port;
+      option.textContent = server.label;
+      serverDropdown.appendChild(option);
+    });
+
+    // Select the currently selected port
+    if (selectedPort) {
+      serverDropdown.value = selectedPort;
+    }
+  }
+  
+  // If dropdown was open, keep it open
+  if (isOpen) {
+    serverDropdown.focus();
+  }
+}
+
+// Start discovery process
+function startDiscovery() {
+  // Initial discovery
+  discoverServers().then(found => {
+    // If we're retrying and found servers, connect to the first one
+    if (found && isRetrying && !isConnected) {
+      connect(true);
+    }
+  });
+
+  // Set up interval for continuous discovery
+  discoveryInterval = setInterval(async () => {
+    // Only discover if not connected
+    if (!isConnected) {
+      const found = await discoverServers();
+      // If we're retrying and found servers, connect
+      if (found && isRetrying && !isConnected) {
+        connect(true);
+      }
+    }
+  }, 3000);
+}
+
+// Stop discovery process
+function stopDiscovery() {
+  if (discoveryInterval) {
+    clearInterval(discoveryInterval);
+    discoveryInterval = null;
   }
 }
 
@@ -224,7 +389,7 @@ async function getCurrentTabInfo() {
       resolve(null);
       return;
     }
-    
+
     chrome.devtools.inspectedWindow.eval(
       "({ url: window.location.href, title: document.title })",
       (result, error) => {
@@ -246,15 +411,15 @@ async function connect(fromRetry = false) {
   if (isConnected || ws) {
     return;
   }
-  
+
   // Reset manual disconnect flag when connecting
   isManualDisconnect = false;
-  
+
   // Only stop retrying if this is a manual connect
   if (!fromRetry) {
     stopRetrying();
   }
-  
+
   try {
     // Get current tab info (optional - don't fail if unavailable)
     let tabInfo = await getCurrentTabInfo();
@@ -265,66 +430,81 @@ async function connect(fromRetry = false) {
         title: 'unknown'
       };
     }
-    
+
+    // Stop discovery when connecting
+    stopDiscovery();
+
     // Create WebSocket connection
-    ws = new WebSocket('ws://localhost:61822');
-    
+    ws = new WebSocket(`ws://localhost:${selectedPort}`);
+
     ws.onopen = () => {
       console.log('WebSocket connected');
       // Stop retrying if we were
       stopRetrying();
-      
+
       // Register this tab (request previous ID if we have one)
       const registerMessage = {
         type: 'register',
         url: tabInfo.url,
         title: tabInfo.title
       };
-      
+
       // Include previous tab ID if reconnecting
       if (previousTabId) {
         registerMessage.requestedTabId = previousTabId;
       }
-      
+
       ws.send(JSON.stringify(registerMessage));
       addMessage('outgoing', registerMessage);
-      
+
       // Initialize command executor and queue
       commandExecutor = new CommandExecutor();
       commandQueue = new CommandQueue(commandExecutor);
-      
+
       // Update log count periodically
       setInterval(updateLogCount, 1000);
     };
-    
+
     ws.onmessage = async (event) => {
       try {
         const message = JSON.parse(event.data);
         console.log('Received message:', message);
-        
+
         addMessage('incoming', message);
-        
+
         if (message.type === 'registered') {
           // Server has assigned us a tab ID
           tabId = message.tabId;
           previousTabId = tabId;  // Store for reconnection
           tabIdElement.textContent = `Tab: ${tabId}`;
-          
-          // Display MCP client info if provided
+
+          // Store connected server info if provided
           if (message.mcpClient && message.mcpClient.name) {
-            mcpClientElement.textContent = `via ${message.mcpClient.name} v${message.mcpClient.version || '?'}`;
+            connectedServerInfo = {
+              port: selectedPort,
+              mcpClient: message.mcpClient,
+              label: `${message.mcpClient.name} ${message.mcpClient.version || '?'} (${selectedPort})`
+            };
           } else {
-            mcpClientElement.textContent = '';
+            connectedServerInfo = null;
           }
-          
+
           updateConnectionStatus(true);
-          
+          // Update dropdown to show connected server
+          updateServerDropdown();
+
         } else if (message.type === 'mcp-client-update') {
-          // Update MCP client info when it connects later
+          // Update connected server info when MCP client connects later
           if (message.mcpClient && message.mcpClient.name) {
-            mcpClientElement.textContent = `via ${message.mcpClient.name} v${message.mcpClient.version || '?'}`;
+            connectedServerInfo = {
+              port: selectedPort,
+              mcpClient: message.mcpClient,
+              label: `${message.mcpClient.name} ${message.mcpClient.version || '?'} (${selectedPort})`
+            };
+            // Update dropdown to show the new server info
+            updateServerDropdown();
           }
-          
+
         } else if (message.type === 'command') {
           // Execute command
           try {
@@ -356,12 +536,12 @@ async function connect(fromRetry = false) {
         console.error('Failed to handle message:', error);
       }
     };
-    
+
     ws.onerror = (error) => {
       console.error('WebSocket error:', error);
       // Don't call disconnect here as onclose will handle it
     };
-    
+
     ws.onclose = () => {
       console.log('WebSocket disconnected');
       const shouldRetry = !isConnected && retryInterval !== null;
@@ -371,7 +551,7 @@ async function connect(fromRetry = false) {
         startRetrying();
       }
     };
-    
+
   } catch (error) {
     console.error('Connection failed:', error);
     const shouldRetry = retryInterval !== null;
@@ -389,26 +569,32 @@ function disconnect(maintainRetryState = false) {
     ws.close();
     ws = null;
   }
-  
+
   // Only update status if we're not maintaining retry state
   if (!maintainRetryState) {
     updateConnectionStatus(false, false);
   }
-  
+
   commandExecutor = null;
   commandQueue = null;
+  connectedServerInfo = null; // Clear connected server info
+
+  // Restart discovery when disconnected
+  if (!isConnected) {
+    startDiscovery();
+  }
 }
 
 // Start automatic retry
 function startRetrying() {
   if (retryInterval) return; // Already retrying
-  
+
   console.log('Starting automatic retry...');
   updateConnectionStatus(false, true);
-  
+
   // Try to connect immediately
   connect(true);
-  
+
   // Then retry every 2 seconds
   retryInterval = setInterval(() => {
     if (!isConnected && !ws) {
@@ -456,6 +642,11 @@ function clearLogs() {
 
 // Connect button handler
 connectBtn.addEventListener('click', () => {
+  // If no server is selected but default port exists, use it
+  if (!selectedPort && discoveredServers.length === 0) {
+    selectedPort = 61822;
+  }
+
   if (isConnected) {
     isManualDisconnect = true;  // Mark as manual disconnect
     stopRetrying();
@@ -466,6 +657,25 @@ connectBtn.addEventListener('click', () => {
   } else {
     // Start retrying which will attempt immediate connection
     startRetrying();
+  }
+});
+
+// Server dropdown handler
+serverDropdown.addEventListener('change', (e) => {
+  const newPort = parseInt(e.target.value);
+  if (newPort && newPort !== selectedPort) {
+    selectedPort = newPort;
+
+    // If connected, disconnect and reconnect to new server
+    if (isConnected) {
+      isManualDisconnect = false; // Auto-reconnect to new server
+      stopRetrying();
+      disconnect();
+      // Small delay before reconnecting
+      setTimeout(() => {
+        connect(false); // Connect directly without retry UI
+      }, 100);
+    }
   }
 });
 
@@ -480,7 +690,7 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     clearMessages();
   }
-  // Cmd+L or Ctrl+L to clear console logs  
+  // Cmd+L or Ctrl+L to clear console logs
   else if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
     e.preventDefault();
     clearLogs();
@@ -496,6 +706,9 @@ document.addEventListener('keydown', (e) => {
 updateConnectionStatus(false);
 updateLogCount();
 
+// Start server discovery on load
+startDiscovery();
+
 // Divider drag functionality
 let isDragging = false;
 let startY = 0;
@@ -506,7 +719,7 @@ divider.addEventListener('mousedown', (e) => {
   startY = e.clientY;
   startHeight = detailView.offsetHeight;
   divider.classList.add('dragging');
-  
+
   // Prevent text selection during drag
   document.body.style.userSelect = 'none';
   e.preventDefault();
@@ -514,7 +727,7 @@ divider.addEventListener('mousedown', (e) => {
 
 document.addEventListener('mousemove', (e) => {
   if (!isDragging) return;
-  
+
   const delta = startY - e.clientY;
   const newHeight = Math.max(50, Math.min(startHeight + delta, window.innerHeight - 200));
   detailView.style.height = newHeight + 'px';

@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // MCP connection
   connectMCP: () => ipcRenderer.invoke('mcp-connect'),
   disconnectMCP: () => ipcRenderer.invoke('mcp-disconnect'),
+  getPort: () => ipcRenderer.invoke('get-port'),
   
   // MCP requests
   sendMCPRequest: (method, params) => ipcRenderer.invoke('mcp-request', method, params),

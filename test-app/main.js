@@ -7,6 +7,41 @@ let mcpProcess;
 let messageId = 1;
 const pendingRequests = new Map();
 
+// Parse command line arguments
+function parseArgs() {
+  const args = process.argv.slice(2);
+  let port = 61822;
+  let dev = false;
+  
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === '--port' || args[i] === '-p') && args[i + 1]) {
+      const parsedPort = parseInt(args[i + 1], 10);
+      if (!isNaN(parsedPort) && parsedPort >= 1 && parsedPort <= 65535) {
+        port = parsedPort;
+        i++; // Skip next argument
+      } else {
+        console.error(`Invalid port number: ${args[i + 1]}`);
+        process.exit(1);
+      }
+    } else if (args[i] === '--dev') {
+      dev = true;
+    } else if (args[i] === '--help' || args[i] === '-h') {
+      console.log('Kapture Test App');
+      console.log('Usage: npm start -- [options]');
+      console.log('');
+      console.log('Options:');
+      console.log('  -p, --port <number>  WebSocket port (default: 61822)');
+      console.log('  --dev               Open DevTools on startup');
+      console.log('  -h, --help          Show this help message');
+      process.exit(0);
+    }
+  }
+  
+  return { port, dev };
+}
+
+const { port: wsPort, dev: isDev } = parseArgs();
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -20,7 +55,7 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
-  if (process.argv.includes('--dev')) {
+  if (isDev) {
     mainWindow.webContents.openDevTools();
   }
 
@@ -171,18 +206,18 @@ ipcMain.handle('mcp-connect', async () => {
 
     // Check if port is in use and prompt to kill
     const portInUse = await new Promise((resolve) => {
-      exec(`lsof -ti tcp:61822`, (error, stdout) => {
+      exec(`lsof -ti tcp:${wsPort}`, (error, stdout) => {
         resolve(!error && stdout.trim());
       });
     });
 
     if (portInUse) {
-      // Kill any process using port 61822 (e.g., from Claude Desktop)
-      await killProcessOnPort(61822);
+      // Kill any process using the specified port
+      await killProcessOnPort(wsPort);
 
       // Check again if port is still in use (user might have cancelled)
       const stillInUse = await new Promise((resolve) => {
-        exec(`lsof -ti tcp:61822`, (error, stdout) => {
+        exec(`lsof -ti tcp:${wsPort}`, (error, stdout) => {
           resolve(!error && stdout.trim());
         });
       });
@@ -191,7 +226,7 @@ ipcMain.handle('mcp-connect', async () => {
         // User cancelled the kill dialog
         return {
           success: false,
-          error: 'Port 61822 is still in use. Please close the existing server or choose to kill it.'
+          error: `Port ${wsPort} is still in use. Please close the existing server or choose to kill it.`
         };
       }
     }
@@ -212,6 +247,7 @@ ipcMain.handle('mcp-connect', async () => {
     // Build node arguments
     const nodeArgs = isDebugging ? ['--inspect=localhost:9030'] : [];
     nodeArgs.push(serverPath);
+    nodeArgs.push('--port', wsPort.toString());
 
     mcpProcess = spawn('node', nodeArgs, {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -330,6 +366,10 @@ ipcMain.handle('mcp-connect', async () => {
 ipcMain.handle('mcp-disconnect', async () => {
   // Do nothing - server stays running with the app
   return { success: true };
+});
+
+ipcMain.handle('get-port', () => {
+  return wsPort;
 });
 
 ipcMain.handle('mcp-request', async (event, method, params) => {

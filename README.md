@@ -48,14 +48,26 @@ cd test-app
 npm run dev
 ```
 
-The server starts a WebSocket server on port 61822.
+The server starts on port 61822 by default. You can specify a custom port:
+
+```bash
+# Server
+cd server
+npm start -- --port 61823
+
+# Test App
+cd test-app
+npm start -- --port 61823
+```
 
 ### 4. Connect via DevTools
 
 1. Open any website in Chrome
 2. Open Chrome/Brave Developer Tools
 3. Navigate to "Kapture" panel
-4. Click "Connect"
+4. The extension will automatically discover available servers (ports 61822-61832)
+5. Select a server from the dropdown (or leave default)
+6. Click "Connect"
 
 ## Using with Claude Desktop
 
@@ -67,6 +79,25 @@ Add to your Claude Desktop config:
     "kapture": {
       "command": "node",
       "args": ["/path/to/kapture/server/dist/index.js"]
+    }
+  }
+}
+```
+
+### Running Multiple Instances
+
+To run multiple Kapture instances (e.g., for different AI clients), specify different ports:
+
+```json
+{
+  "mcpServers": {
+    "kapture-main": {
+      "command": "node",
+      "args": ["/path/to/kapture/server/dist/index.js", "--port", "61822"]
+    },
+    "kapture-secondary": {
+      "command": "node",
+      "args": ["/path/to/kapture/server/dist/index.js", "--port", "61823"]
     }
   }
 }
@@ -131,6 +162,8 @@ After making changes:
 
 ## DevTools Panel Features
 
+- **Server Discovery** - Automatically finds available servers on ports 61822-61832
+- **Server Selection** - Dropdown to choose between multiple running servers
 - **Connection Status** - Real-time server connection indicator
 - **Tab Info** - Current tab ID and URL display
 - **Command Testing** - Manual command execution interface
@@ -141,7 +174,9 @@ After making changes:
 ## Troubleshooting
 
 ### Connection Issues
-- Verify server is running on port 61822
+- The extension will automatically scan for servers on ports 61822-61832
+- If no servers are found, verify the server is running
+- Check the server dropdown to see which servers were discovered
 - Check browser console for errors
 - Enable MCP Server debug logging: `KAPTURE_DEBUG=1 npm start`
 

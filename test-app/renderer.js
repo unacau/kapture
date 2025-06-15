@@ -36,10 +36,13 @@ async function connectToServer() {
     if (result.success) {
       connected = true;
       statusEl.classList.add('connected');
-      statusTextEl.textContent = 'Server Running';
+      
+      // Get the port number
+      const port = await window.electronAPI.getPort();
+      statusTextEl.textContent = `Server Running (Port ${port})`;
       refreshTabsBtn.disabled = false;
 
-      log('MCP server connected successfully', 'info');
+      log(`MCP server connected successfully on port ${port}`, 'info');
       log(`Server capabilities: ${JSON.stringify(result.capabilities)}`, 'info');
 
       // Auto-discover tools
