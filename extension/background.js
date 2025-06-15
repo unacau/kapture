@@ -4,6 +4,9 @@
 // Track content script readiness per tab
 const contentScriptReady = new Map();
 
+// Track DevTools panel connections per tab
+const devToolsConnections = new Map();
+
 // Handle messages from DevTools panel and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'capture-screenshot') {
@@ -19,6 +22,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (tabId) {
       contentScriptReady.set(parseInt(tabId), true);
     }
+    return;
+  }
+  
+  // Forward tab info updates from content script to DevTools panel
+  if (request.type === 'kapture-tab-info-update' && sender.tab) {
+    const tabId = sender.tab.id;
+    const connection = devToolsConnections.get(tabId);
+    if (connection) {
+      connection.postMessage({
+        type: 'tab-info-update',
+        tabInfo: request.tabInfo
+      });
+    }
+    return;
+  }
+  
+  // Forward console log entries from content script to DevTools panel
+  if (request.type === 'kapture-console-log' && sender.tab) {
+    const tabId = sender.tab.id;
+    const connection = devToolsConnections.get(tabId);
+    if (connection) {
+      connection.postMessage({
+        type: 'console-log',
+        logEntry: request.logEntry
+      });
+    }
+    return;
+  }
+  
+  // Register DevTools panel connection
+  if (request.type === 'register-devtools-panel') {
+    // This will be handled by onConnect listener below
     return;
   }
 
@@ -89,9 +124,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+// Handle connections from DevTools panels
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'devtools-panel') {
+    // Extract tab ID from the port name or first message
+    port.onMessage.addListener((msg) => {
+      if (msg.type === 'register' && msg.tabId) {
+        const tabId = parseInt(msg.tabId);
+        devToolsConnections.set(tabId, port);
+        
+        // Clean up when port disconnects
+        port.onDisconnect.addListener(() => {
+          devToolsConnections.delete(tabId);
+        });
+      }
+    });
+  }
+});
+
 // Clean up when tabs are closed
 chrome.tabs.onRemoved.addListener((tabId) => {
   contentScriptReady.delete(tabId);
+  devToolsConnections.delete(tabId);
 });
 
 // Clean up on navigation (content script will need to reload)

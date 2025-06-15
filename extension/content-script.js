@@ -518,6 +518,12 @@
       if (window.__kaptureLogs.length > 1000) {
         window.__kaptureLogs.shift();
       }
+      
+      // Send real-time console log update
+      chrome.runtime.sendMessage({
+        type: 'kapture-console-log',
+        logEntry: entry
+      });
     }
 
     console.log = function(...args) {
@@ -731,4 +737,110 @@
   chrome.runtime.sendMessage({
     type: 'kapture-content-script-ready'
   });
+
+  // Real-time tab info monitoring
+  let scrollDebounceTimer = null;
+  let resizeDebounceTimer = null;
+  let lastSentTabInfo = null;
+  
+  // Helper to check if tab info has changed
+  function hasTabInfoChanged(newInfo, oldInfo) {
+    if (!oldInfo) return true;
+    return JSON.stringify(newInfo) !== JSON.stringify(oldInfo);
+  }
+  
+  // Send tab info update to background script
+  function sendTabInfoUpdate() {
+    const tabInfo = helpers.getTabInfo();
+    if (hasTabInfoChanged(tabInfo, lastSentTabInfo)) {
+      lastSentTabInfo = tabInfo;
+      chrome.runtime.sendMessage({
+        type: 'kapture-tab-info-update',
+        tabInfo: tabInfo
+      });
+    }
+  }
+
+  // Debounced scroll handler (wait for scroll to settle)
+  function handleScroll() {
+    clearTimeout(scrollDebounceTimer);
+    scrollDebounceTimer = setTimeout(() => {
+      sendTabInfoUpdate();
+    }, 300); // Send update 300ms after scrolling stops
+  }
+
+  // Debounced resize handler
+  function handleResize() {
+    clearTimeout(resizeDebounceTimer);
+    resizeDebounceTimer = setTimeout(() => {
+      sendTabInfoUpdate();
+    }, 500); // Send update 500ms after resizing stops
+  }
+
+  // Listen for scroll events
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  
+  // Listen for resize events
+  window.addEventListener('resize', handleResize);
+  
+  // Listen for visibility changes (immediate)
+  document.addEventListener('visibilitychange', () => {
+    sendTabInfoUpdate();
+  });
+  
+  // Listen for title changes (immediate)
+  const titleObserver = new MutationObserver(() => {
+    sendTabInfoUpdate();
+  });
+  const titleElement = document.querySelector('title');
+  if (titleElement) {
+    titleObserver.observe(titleElement, { 
+      childList: true, 
+      characterData: true, 
+      subtree: true 
+    });
+  } else {
+    // If no title element exists yet, watch for it
+    const headObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeName === 'TITLE') {
+            titleObserver.observe(node, { 
+              childList: true, 
+              characterData: true, 
+              subtree: true 
+            });
+            headObserver.disconnect();
+            break;
+          }
+        }
+      }
+    });
+    const head = document.querySelector('head');
+    if (head) {
+      headObserver.observe(head, { childList: true });
+    }
+  }
+  
+  // Listen for history changes (immediate)
+  window.addEventListener('popstate', () => {
+    sendTabInfoUpdate();
+  });
+  
+  // Override pushState and replaceState to catch programmatic navigation
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+  
+  history.pushState = function() {
+    originalPushState.apply(history, arguments);
+    setTimeout(sendTabInfoUpdate, 0); // Allow URL to update
+  };
+  
+  history.replaceState = function() {
+    originalReplaceState.apply(history, arguments);
+    setTimeout(sendTabInfoUpdate, 0); // Allow URL to update
+  };
+  
+  // Send initial tab info
+  sendTabInfoUpdate();
 })();

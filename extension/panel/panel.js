@@ -790,8 +790,48 @@ let lastKnownScrollX = null;
 let lastKnownScrollY = null;
 let monitoringInterval = null;
 
+// Background script connection for real-time updates
+let backgroundPort = null;
+
+// Establish connection to background script
+function connectToBackground() {
+  if (!backgroundPort) {
+    backgroundPort = chrome.runtime.connect({ name: 'devtools-panel' });
+    
+    // Register with our tab ID
+    if (chrome.devtools && chrome.devtools.inspectedWindow) {
+      backgroundPort.postMessage({
+        type: 'register',
+        tabId: chrome.devtools.inspectedWindow.tabId
+      });
+    }
+    
+    // Handle incoming messages
+    backgroundPort.onMessage.addListener((msg) => {
+      if (msg.type === 'tab-info-update' && msg.tabInfo) {
+        console.log('Received real-time tab info update:', msg.tabInfo);
+        sendTabInfoUpdate(msg.tabInfo);
+      } else if (msg.type === 'console-log' && msg.logEntry) {
+        // Real-time console log received
+        // The log is already captured in the content script's __kaptureLogs array
+        // Just update the log count display
+        updateLogCount();
+      }
+    });
+    
+    // Handle disconnection
+    backgroundPort.onDisconnect.addListener(() => {
+      backgroundPort = null;
+      // Try to reconnect after a delay
+      setTimeout(connectToBackground, 1000);
+    });
+  }
+}
+
 // Start monitoring for tab changes
 function startTabMonitoring() {
+  // Connect to background script for real-time updates
+  connectToBackground();
   // Store initial values and send immediate update
   getCurrentTabInfo().then(info => {
     if (info) {
@@ -830,37 +870,7 @@ function startTabMonitoring() {
     chrome.devtools.network.onNavigated.addListener(navigationListener);
   }
 
-  // Also periodically check for changes (title, scroll, visibility, etc.)
-  if (!monitoringInterval) {
-    monitoringInterval = setInterval(() => {
-      getCurrentTabInfo().then(info => {
-        if (info) {
-          let hasChanged = false;
-          
-          // Check URL/title changes
-          if (info.url !== lastKnownUrl || info.title !== lastKnownTitle) {
-            hasChanged = true;
-            lastKnownUrl = info.url;
-            lastKnownTitle = info.title;
-          }
-          
-          // Check scroll position changes
-          if (info.scrollPosition && 
-              (info.scrollPosition.x !== lastKnownScrollX || 
-               info.scrollPosition.y !== lastKnownScrollY)) {
-            hasChanged = true;
-            lastKnownScrollX = info.scrollPosition.x;
-            lastKnownScrollY = info.scrollPosition.y;
-          }
-          
-          if (hasChanged) {
-            console.log('Tab info changed during monitoring - sending update');
-            sendTabInfoUpdate(info);
-          }
-        }
-      });
-    }, 2000); // Check every 2 seconds
-  }
+  // We no longer need polling since we have real-time updates from content script
 }
 
 // Stop monitoring for tab changes
@@ -870,9 +880,9 @@ function stopTabMonitoring() {
     navigationListener = null;
   }
 
-  if (monitoringInterval) {
-    clearInterval(monitoringInterval);
-    monitoringInterval = null;
+  if (backgroundPort) {
+    backgroundPort.disconnect();
+    backgroundPort = null;
   }
 
   lastKnownUrl = null;
