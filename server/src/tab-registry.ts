@@ -8,6 +8,9 @@ export interface TabConnection {
   title?: string;
   connectedAt: number;
   lastPing?: number;
+  domSize?: number;
+  fullPageDimensions?: { width: number; height: number };
+  viewportDimensions?: { width: number; height: number };
 }
 
 export class TabRegistry {
@@ -113,14 +116,26 @@ export class TabRegistry {
     return undefined;
   }
 
-  updateTabInfo(tabId: string, info: { url?: string; title?: string }): void {
+  updateTabInfo(tabId: string, info: { 
+    url?: string; 
+    title?: string;
+    domSize?: number;
+    fullPageDimensions?: { width: number; height: number };
+    viewportDimensions?: { width: number; height: number };
+  }): void {
     const connection = this.tabs.get(tabId);
     if (connection) {
       const hadChange = (info.url !== undefined && connection.url !== info.url) ||
-                       (info.title !== undefined && connection.title !== info.title);
+                       (info.title !== undefined && connection.title !== info.title) ||
+                       (info.domSize !== undefined && connection.domSize !== info.domSize) ||
+                       (info.fullPageDimensions !== undefined) ||
+                       (info.viewportDimensions !== undefined);
       
       if (info.url !== undefined) connection.url = info.url;
       if (info.title !== undefined) connection.title = info.title;
+      if (info.domSize !== undefined) connection.domSize = info.domSize;
+      if (info.fullPageDimensions !== undefined) connection.fullPageDimensions = info.fullPageDimensions;
+      if (info.viewportDimensions !== undefined) connection.viewportDimensions = info.viewportDimensions;
       
       // Call the update callback if there was a change
       if (hadChange && this.updateCallback) {

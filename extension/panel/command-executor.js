@@ -10,6 +10,23 @@ class CommandExecutor {
     this.injectHelpers();
   }
 
+  // Helper to get full tab info including dimensions
+  getTabInfoCode() {
+    return `({
+      url: window.location.href,
+      title: document.title,
+      domSize: document.documentElement.outerHTML.length,
+      fullPageDimensions: {
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight
+      },
+      viewportDimensions: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      }
+    })`;
+  }
+
   // Validate CSS selector
   validateSelector(selector) {
     // Check for :contains() pseudo-selector
@@ -215,7 +232,7 @@ class CommandExecutor {
             // Wait for navigation to complete and get new URL/title
             setTimeout(() => {
               chrome.devtools.inspectedWindow.eval(
-                '({ url: window.location.href, title: document.title })',
+                this.getTabInfoCode(),
                 (navInfo, navError) => {
                   if (navError) {
                     resolve({ url, navigated: true });
@@ -223,7 +240,10 @@ class CommandExecutor {
                     resolve({
                       navigated: true,
                       url: navInfo.url,
-                      title: navInfo.title
+                      title: navInfo.title,
+                      domSize: navInfo.domSize,
+                      fullPageDimensions: navInfo.fullPageDimensions,
+                      viewportDimensions: navInfo.viewportDimensions
                     });
                   }
                 }
@@ -247,7 +267,7 @@ class CommandExecutor {
             // Wait for navigation to complete and get new URL/title
             setTimeout(() => {
               chrome.devtools.inspectedWindow.eval(
-                '({ url: window.location.href, title: document.title })',
+                this.getTabInfoCode(),
                 (navInfo, navError) => {
                   if (navError) {
                     resolve({ action: 'back' });
@@ -255,7 +275,10 @@ class CommandExecutor {
                     resolve({
                       action: 'back',
                       url: navInfo.url,
-                      title: navInfo.title
+                      title: navInfo.title,
+                      domSize: navInfo.domSize,
+                      fullPageDimensions: navInfo.fullPageDimensions,
+                      viewportDimensions: navInfo.viewportDimensions
                     });
                   }
                 }
@@ -279,7 +302,7 @@ class CommandExecutor {
             // Wait for navigation to complete and get new URL/title
             setTimeout(() => {
               chrome.devtools.inspectedWindow.eval(
-                '({ url: window.location.href, title: document.title })',
+                this.getTabInfoCode(),
                 (navInfo, navError) => {
                   if (navError) {
                     resolve({ action: 'forward' });
@@ -287,7 +310,10 @@ class CommandExecutor {
                     resolve({
                       action: 'forward',
                       url: navInfo.url,
-                      title: navInfo.title
+                      title: navInfo.title,
+                      domSize: navInfo.domSize,
+                      fullPageDimensions: navInfo.fullPageDimensions,
+                      viewportDimensions: navInfo.viewportDimensions
                     });
                   }
                 }
@@ -350,7 +376,7 @@ class CommandExecutor {
               } else if (response && response.dataUrl) {
                 // Get current URL and title
                 chrome.devtools.inspectedWindow.eval(
-                  '({ url: window.location.href, title: document.title })',
+                  this.getTabInfoCode(),
                   (navInfo) => {
                     resolve({
                       dataUrl: response.dataUrl,
@@ -387,7 +413,7 @@ class CommandExecutor {
           } else if (response && response.dataUrl) {
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
-              '({ url: window.location.href, title: document.title })',
+              this.getTabInfoCode(),
               (navInfo) => {
                 resolve({
                   dataUrl: response.dataUrl,
@@ -450,7 +476,7 @@ class CommandExecutor {
           // Return success with element not found status
           // Get current URL and title even for errors
           chrome.devtools.inspectedWindow.eval(
-            '({ url: window.location.href, title: document.title })',
+            this.getTabInfoCode(),
             (navInfo) => {
               resolve({
                 selector: coords.selector,
@@ -569,7 +595,7 @@ class CommandExecutor {
 
         // Get current URL and title
         chrome.devtools.inspectedWindow.eval(
-          '({ url: window.location.href, title: document.title })',
+          this.getTabInfoCode(),
           (navInfo) => {
             resolve({
               selector: coords.selector,
@@ -611,7 +637,7 @@ class CommandExecutor {
             // Use logs from inspected window
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
-              '({ url: window.location.href, title: document.title })',
+              this.getTabInfoCode(),
               (navInfo) => {
                 resolve({
                   logs: result,
@@ -626,7 +652,7 @@ class CommandExecutor {
             const logs = this.consoleLogBuffer.slice(-max).reverse();
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
-              '({ url: window.location.href, title: document.title })',
+              this.getTabInfoCode(),
               (navInfo) => {
                 resolve({
                   logs: logs.map(log => ({
@@ -690,7 +716,7 @@ class CommandExecutor {
           } else {
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
-              '({ url: window.location.href, title: document.title })',
+              this.getTabInfoCode(),
               (navInfo) => {
                 // Always resolve, even if element not found or not fillable
                 resolve({
@@ -735,7 +761,7 @@ class CommandExecutor {
           } else {
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
-              '({ url: window.location.href, title: document.title })',
+              this.getTabInfoCode(),
               (navInfo) => {
                 // Always resolve, even if element not found or option not found
                 resolve({
@@ -793,7 +819,7 @@ class CommandExecutor {
           // Return success with element not found status
           // Get current URL and title even for errors
           chrome.devtools.inspectedWindow.eval(
-            '({ url: window.location.href, title: document.title })',
+            this.getTabInfoCode(),
             (navInfo) => {
               resolve({
                 selector: coords.selector,
@@ -875,7 +901,7 @@ class CommandExecutor {
 
         // Get current URL and title
         chrome.devtools.inspectedWindow.eval(
-          '({ url: window.location.href, title: document.title })',
+          this.getTabInfoCode(),
           (navInfo) => {
             resolve({
               selector: coords.selector,
@@ -972,7 +998,7 @@ class CommandExecutor {
           } else {
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
-              '({ url: window.location.href, title: document.title })',
+              this.getTabInfoCode(),
               (navInfo) => {
                 resolve({
                   value: result ? result.value : undefined,
@@ -1010,7 +1036,7 @@ class CommandExecutor {
           } else {
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(
-              '({ url: window.location.href, title: document.title })',
+              this.getTabInfoCode(),
               (navInfo) => {
                 resolve({
                   ...result,

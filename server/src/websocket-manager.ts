@@ -12,6 +12,9 @@ interface RegisterMessage extends Message {
   requestedTabId?: string;  // Optional - client can request to reuse a tab ID
   url?: string;
   title?: string;
+  domSize?: number;
+  fullPageDimensions?: { width: number; height: number };
+  viewportDimensions?: { width: number; height: number };
 }
 
 interface ResponseMessage extends Message {
@@ -131,7 +134,10 @@ export class WebSocketManager {
         if (connection && message.url) {
           this.tabRegistry.updateTabInfo(connection.tabId, {
             url: message.url,
-            title: message.title
+            title: message.title,
+            domSize: message.domSize,
+            fullPageDimensions: message.fullPageDimensions,
+            viewportDimensions: message.viewportDimensions
           });
           logger.log(`Tab ${connection.tabId} info updated: ${message.url}`);
         }
@@ -150,7 +156,7 @@ export class WebSocketManager {
   }
 
   private handleRegister(ws: WebSocket, message: RegisterMessage): void {
-    const { requestedTabId, url, title } = message;
+    const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions } = message;
     
     // Server assigns the tab ID
     const assignedTabId = this.tabRegistry.assignTabId(requestedTabId);
@@ -168,8 +174,14 @@ export class WebSocketManager {
     this.tabRegistry.registerWithoutCallback(assignedTabId, ws);
 
     // Update tab info if provided
-    if (url || title) {
-      this.tabRegistry.updateTabInfo(assignedTabId, { url, title });
+    if (url || title || domSize || fullPageDimensions || viewportDimensions) {
+      this.tabRegistry.updateTabInfo(assignedTabId, { 
+        url, 
+        title,
+        domSize,
+        fullPageDimensions,
+        viewportDimensions
+      });
     }
     
     // Now trigger the connect callback after tab info is set

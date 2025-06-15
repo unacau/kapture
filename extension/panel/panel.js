@@ -391,7 +391,19 @@ async function getCurrentTabInfo() {
     }
 
     chrome.devtools.inspectedWindow.eval(
-      "({ url: window.location.href, title: document.title })",
+      `({
+        url: window.location.href,
+        title: document.title,
+        domSize: document.documentElement.outerHTML.length,
+        fullPageDimensions: {
+          width: document.documentElement.scrollWidth,
+          height: document.documentElement.scrollHeight
+        },
+        viewportDimensions: {
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+      })`,
       (result, error) => {
         if (error) {
           console.error('Failed to get tab info:', error);
@@ -446,7 +458,10 @@ async function connect(fromRetry = false) {
       const registerMessage = {
         type: 'register',
         url: tabInfo.url,
-        title: tabInfo.title
+        title: tabInfo.title,
+        domSize: tabInfo.domSize,
+        fullPageDimensions: tabInfo.fullPageDimensions,
+        viewportDimensions: tabInfo.viewportDimensions
       };
 
       // Include previous tab ID if reconnecting
@@ -742,12 +757,18 @@ document.addEventListener('mouseup', () => {
 });
 
 // Send tab info update to server
-function sendTabInfoUpdate(url, title) {
+async function sendTabInfoUpdate(url, title) {
   if (ws && ws.readyState === WebSocket.OPEN) {
+    // Get current dimensions
+    const tabInfo = await getCurrentTabInfo();
+    
     const updateMessage = {
       type: 'tab-info',
       url: url,
-      title: title
+      title: title,
+      domSize: tabInfo ? tabInfo.domSize : undefined,
+      fullPageDimensions: tabInfo ? tabInfo.fullPageDimensions : undefined,
+      viewportDimensions: tabInfo ? tabInfo.viewportDimensions : undefined
     };
     ws.send(JSON.stringify(updateMessage));
     console.log('Sent tab info update:', updateMessage);

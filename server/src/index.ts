@@ -272,7 +272,10 @@ async function sendTabListChangeNotification() {
       url: tab.url,
       title: tab.title,
       connectedAt: tab.connectedAt,
-      lastPing: tab.lastPing
+      lastPing: tab.lastPing,
+      domSize: tab.domSize,
+      fullPageDimensions: tab.fullPageDimensions,
+      viewportDimensions: tab.viewportDimensions
     }));
     
     await server.notification({

@@ -158,6 +158,19 @@ function displayTabs() {
     }
 
     tabEl.innerHTML = `<span class="tab-title">${tab.title || 'Untitled'}</span>`;
+    
+    // Add tooltip with tab dimensions
+    let tooltipText = `Tab ID: ${tab.tabId}\nURL: ${tab.url || 'Unknown'}`;
+    if (tab.domSize) {
+      tooltipText += `\nDOM Size: ${(tab.domSize / 1024).toFixed(1)} KB`;
+    }
+    if (tab.fullPageDimensions) {
+      tooltipText += `\nPage Size: ${tab.fullPageDimensions.width}×${tab.fullPageDimensions.height}`;
+    }
+    if (tab.viewportDimensions) {
+      tooltipText += `\nViewport: ${tab.viewportDimensions.width}×${tab.viewportDimensions.height}`;
+    }
+    tabEl.title = tooltipText;
 
     tabEl.addEventListener('click', () => selectTab(tab.tabId));
     tabListEl.appendChild(tabEl);
