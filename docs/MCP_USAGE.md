@@ -2,6 +2,14 @@
 
 This guide explains how to use Kapture with Model Context Protocol (MCP) clients like Claude Desktop, Cline, or custom MCP implementations.
 
+## 🚀 Multiple AI Assistants Support
+
+**Kapture's standout feature**: Run multiple AI assistants simultaneously! Each AI client can control different browser tabs independently by using separate ports. This enables powerful workflows like:
+- Having Claude Desktop perform web research while Cline writes code
+- Running multiple automation tasks in parallel
+- Team collaboration with different AI tools
+- Testing automation scripts while developing new features
+
 ## Prerequisites
 
 1. Chrome browser with Kapture extension installed
@@ -45,6 +53,47 @@ Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...
 4. Click "Connect"
 
 The tab is now ready to receive commands.
+
+## Running Multiple AI Assistants Simultaneously
+
+Kapture excels at supporting multiple AI clients at the same time. Each client uses a different port to avoid conflicts:
+
+### Example Setup: Claude Desktop + Cline
+
+**1. Claude Desktop** (uses default port 61822):
+```json
+{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}
+```
+
+**2. Cline/VS Code** (uses port 61823):
+```json
+{
+  "cline.mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server", "--port", "61823"]
+    }
+  }
+}
+```
+
+**3. Additional Clients** (increment ports as needed):
+- Third client: port 61824
+- Fourth client: port 61825
+- And so on...
+
+Each AI assistant will:
+- Start its own MCP server instance
+- Connect to different browser tabs
+- Operate independently without interference
+- Show up as separate servers in the Kapture DevTools dropdown
 
 ### 3. Configure Your MCP Client
 
@@ -104,33 +153,6 @@ Add to your VS Code settings:
 }
 ```
 
-#### Multiple AI Clients
-
-If running multiple AI clients simultaneously, use different ports:
-
-**Claude Desktop** (default port 61822):
-```json
-{
-  "mcpServers": {
-    "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
-    }
-  }
-}
-```
-
-**Cline** (port 61823):
-```json
-{
-  "cline.mcpServers": {
-    "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61823"]
-    }
-  }
-}
-```
 
 #### Custom MCP Client
 

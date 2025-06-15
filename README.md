@@ -2,6 +2,8 @@
 
 Kapture is a Chrome DevTools Extension that enables browser automation through the Model Context Protocol (MCP). It allows AI applications like Claude to control web browsers via a three-layer architecture.
 
+**✨ Key Feature**: Run multiple AI assistants simultaneously! Each AI client (Claude Desktop, Cline, etc.) can control different browser tabs using separate ports.
+
 ![Kapture DevTools Extension Panel](extension/ScreenshotWithExtensionPanel.webp)
 
 ## Overview
@@ -10,6 +12,7 @@ Kapture bridges AI assistants with web browsers through:
 - **MCP Server**: Handles MCP protocol communication
 - **Chrome Extension**: DevTools panel for browser automation
 - **WebSocket Bridge**: Real-time communication between server and extensions
+- **Multi-Instance Support**: Run multiple AI clients simultaneously on different ports
 
 ## Architecture
 ![How Kapture Works](docs/assets/images/HowKaptureWorks.webp)
@@ -97,9 +100,9 @@ Add to your Claude Desktop config:
 }
 ```
 
-### Running Multiple Instances
+## 🚀 Run Multiple AI Assistants Simultaneously
 
-If you're using multiple AI clients (e.g., Claude Desktop and Cline), each should use a different port:
+One of Kapture's powerful features is the ability to run multiple AI clients at the same time. Each AI assistant can control different browser tabs without interference by using separate ports. [See the complete guide →](docs/MULTI_ASSISTANT_GUIDE.md)
 
 **Claude Desktop** (using default port 61822):
 ```json
@@ -126,6 +129,12 @@ If you're using multiple AI clients (e.g., Claude Desktop and Cline), each shoul
 ```
 
 This allows multiple AI clients to control different browser tabs simultaneously without conflict.
+
+### Benefits of Multiple AI Assistants:
+- **Parallel Workflows**: Have Claude Desktop research while Cline develops code
+- **Specialized Tasks**: Use different AI clients for different types of automation
+- **Team Collaboration**: Multiple team members can use their preferred AI tools simultaneously
+- **Testing & Development**: Test automation scripts with one AI while developing with another
 
 Then ask Claude to interact with web pages:
 - "Navigate to example.com and take a screenshot"
