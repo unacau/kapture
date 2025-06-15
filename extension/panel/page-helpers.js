@@ -447,6 +447,41 @@
 
       // Fallback for unknown types
       return String(value);
+    },
+
+    // Get comprehensive tab information
+    getTabInfo: function() {
+      return {
+        url: window.location.href,
+        title: document.title,
+        domSize: document.documentElement.outerHTML.length,
+        fullPageDimensions: {
+          width: document.documentElement.scrollWidth,
+          height: document.documentElement.scrollHeight
+        },
+        viewportDimensions: {
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+      };
+    },
+
+    // Navigate to URL
+    navigateTo: function(url) {
+      window.location.href = url;
+      return true;
+    },
+
+    // Navigate back in history
+    goBack: function() {
+      window.history.back();
+      return true;
+    },
+
+    // Navigate forward in history
+    goForward: function() {
+      window.history.forward();
+      return true;
     }
   };
 

@@ -391,19 +391,7 @@ async function getCurrentTabInfo() {
     }
 
     chrome.devtools.inspectedWindow.eval(
-      `({
-        url: window.location.href,
-        title: document.title,
-        domSize: document.documentElement.outerHTML.length,
-        fullPageDimensions: {
-          width: document.documentElement.scrollWidth,
-          height: document.documentElement.scrollHeight
-        },
-        viewportDimensions: {
-          width: window.innerWidth,
-          height: window.innerHeight
-        }
-      })`,
+      'window.__kaptureHelpers ? window.__kaptureHelpers.getTabInfo() : ({ url: window.location.href, title: document.title })',
       (result, error) => {
         if (error) {
           console.error('Failed to get tab info:', error);

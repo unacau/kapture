@@ -12,19 +12,7 @@ class CommandExecutor {
 
   // Helper to get full tab info including dimensions
   getTabInfoCode() {
-    return `({
-      url: window.location.href,
-      title: document.title,
-      domSize: document.documentElement.outerHTML.length,
-      fullPageDimensions: {
-        width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight
-      },
-      viewportDimensions: {
-        width: window.innerWidth,
-        height: window.innerHeight
-      }
-    })`;
+    return 'window.__kaptureHelpers.getTabInfo()';
   }
 
   // Validate CSS selector
@@ -222,7 +210,7 @@ class CommandExecutor {
       }, timeout);
 
       chrome.devtools.inspectedWindow.eval(
-        `window.location.href = ${JSON.stringify(url)}`,
+        `window.__kaptureHelpers.navigateTo(${JSON.stringify(url)})`,
         (result, error) => {
           clearTimeout(timeoutId);
 
@@ -259,7 +247,7 @@ class CommandExecutor {
   async goBack(params) {
     return new Promise((resolve, reject) => {
       chrome.devtools.inspectedWindow.eval(
-        'window.history.back()',
+        'window.__kaptureHelpers.goBack()',
         (result, error) => {
           if (error) {
             reject(new Error(`Go back failed: ${error.toString()}`));
@@ -294,7 +282,7 @@ class CommandExecutor {
   async goForward(params) {
     return new Promise((resolve, reject) => {
       chrome.devtools.inspectedWindow.eval(
-        'window.history.forward()',
+        'window.__kaptureHelpers.goForward()',
         (result, error) => {
           if (error) {
             reject(new Error(`Go forward failed: ${error.toString()}`));
