@@ -245,12 +245,16 @@ Click on a page element.
 - `tabId` (string, required): Target tab ID
 - `selector` (string, required): CSS selector of element to click
 
+**Performance Note:** This tool may experience delays when the Kapture DevTools panel is not the active tab. For best performance, keep the Kapture panel selected in Chrome DevTools.
+
 ### kapturemcp_hover
 Hover over a page element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
 - `selector` (string, required): CSS selector of element to hover
+
+**Performance Note:** This tool may experience delays when the Kapture DevTools panel is not the active tab. For best performance, keep the Kapture panel selected in Chrome DevTools.
 
 ### kapturemcp_fill
 Fill an input field with text.

@@ -223,6 +223,12 @@ After making changes:
 - Some commands accept custom timeout parameter
 - Check element selectors are correct
 
+### Performance Considerations
+**Important**: The `kapturemcp_click` and `kapturemcp_hover` tools may experience performance issues when the Kapture DevTools panel is not the active/selected tab in Chrome DevTools. For optimal performance:
+- Keep the Kapture panel selected during automation
+- If experiencing delays with click/hover operations, switch to the Kapture panel
+- This is due to Chrome's optimization of inactive DevTools panels
+
 ## Security
 
 - Commands execute within Chrome's DevTools sandbox

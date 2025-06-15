@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const clickTool = {
   name: 'kapturemcp_click',
-  description: 'Click on a page element using CSS selector',
+  description: 'Click on a page element using CSS selector. Note: May experience delays if Kapture DevTools panel is not the active tab.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
     selector: z.string().describe('CSS selector of element to click')
@@ -11,7 +11,7 @@ export const clickTool = {
 
 export const hoverTool = {
   name: 'kapturemcp_hover',
-  description: 'Hover over a page element using CSS selector',
+  description: 'Hover over a page element using CSS selector. Note: May experience delays if Kapture DevTools panel is not the active tab.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
     selector: z.string().describe('CSS selector of element to hover over')
