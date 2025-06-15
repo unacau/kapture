@@ -61,3 +61,7 @@ dist/
 extension.zip
 extension-build/
 
+/extension/icons/generate-icons.html
+/extension/KaptureDevToolsPanel.jpg
+/extension/ScreenshotWithExtensionPanel.jpg
+/kapture-extension.zip
