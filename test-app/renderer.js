@@ -454,7 +454,7 @@ async function executeTool(toolName, button) {
 
       // Set summary based on content
       if (content.error) {
-        summaryEl.textContent = `❌ Error: ${content.error.message || 'Command failed'}`;
+        summaryEl.textContent = `❌ ${content.error.message || 'Command failed'}`;
         resultEl.className = 'tool-result error';
       } else if (content.clicked === false || content.hovered === false || content.filled === false || content.selected === false) {
         summaryEl.textContent = '⚠️ Element not found';
@@ -508,7 +508,7 @@ async function executeTool(toolName, button) {
         if (existingPreview) {
           existingPreview.remove();
         }
-        
+
         const img = document.createElement('div');
         img.className = 'screenshot-preview';
         const scaleInfo = content.scale && content.scale < 1 ? ` (scaled to ${content.scale * 100}%)` : '';
@@ -531,7 +531,7 @@ async function executeTool(toolName, button) {
   } catch (error) {
     resultEl.className = 'tool-result error';
     let errorMessage = error.message;
-    
+
     // Check for common error patterns
     if (errorMessage.includes('Tab') && errorMessage.includes('not found')) {
       errorMessage = 'Tab not found. Please refresh tabs and try again.';
@@ -540,8 +540,8 @@ async function executeTool(toolName, button) {
     } else if (errorMessage.includes('Please select a tab first')) {
       errorMessage = 'No tab selected. Please select a tab from the list above.';
     }
-    
-    summaryEl.textContent = `❌ Error: ${errorMessage}`;
+
+    summaryEl.textContent = `❌ ${errorMessage}`;
     contentEl.textContent = error.stack || error.message;
     log(`${toolName} failed: ${errorMessage}`, 'error');
   } finally {
@@ -624,19 +624,19 @@ window.electronAPI.onMCPNotification((message) => {
     // Handle tab disconnection notification
     const { tabId } = message.params;
     log(`Tab ${tabId} disconnected`, 'warning');
-    
+
     // Remove tab from current tabs
     currentTabs = currentTabs.filter(tab => tab.tabId !== tabId);
-    
+
     // If this was the selected tab, clear selection
     if (selectedTabId === tabId) {
       selectedTabId = null;
       displayTabContent();
     }
-    
+
     // Update UI
     displayTabs();
-    
+
     // Start polling if no tabs left
     if (currentTabs.length === 0) {
       startTabPolling();

@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { 
-  ListToolsRequestSchema, 
+import {
+  ListToolsRequestSchema,
   CallToolRequestSchema,
   InitializeRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
@@ -78,11 +78,11 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
   if (request.params.clientInfo) {
     mcpClientInfo = request.params.clientInfo;
     logger.log(`MCP client connected: ${mcpClientInfo.name} v${mcpClientInfo.version}`);
-    
+
     mcpHandler.setClientInfo(mcpClientInfo);
     wsManager.setMcpClientInfo(mcpClientInfo);
   }
-  
+
   // Process the initialize request normally
   return {
     protocolVersion: '2024-11-05',
@@ -111,13 +111,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Register handler for calling tools
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  
+
   // Find the tool
   const tool = allTools.find(t => t.name === name);
   if (!tool) {
     throw new Error(`Unknown tool: ${name}`);
   }
-  
+
   try {
     const result = await mcpHandler.executeCommand(name, args);
     return {
@@ -132,8 +132,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: [
         {
-          type: 'text',
-          text: `Error: ${error.message}`
+          type: 'error',
+          text: JSON.stringify({error: { message: error.message }}, null, 2)
         }
       ],
       isError: true

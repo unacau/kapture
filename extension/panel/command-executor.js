@@ -19,7 +19,7 @@ class CommandExecutor {
         error: 'The :contains() pseudo-selector is not valid CSS and is not supported by browsers. Use XPath with contains() or use kapturemcp_evaluate to find elements with specific text content.'
       };
     }
-    
+
     // Could add more validation here in the future
     return { valid: true };
   }
@@ -968,7 +968,7 @@ class CommandExecutor {
             reject(new Error(`Evaluate failed: ${error.toString()}`));
           } else if (result && !result.success) {
             // Script threw an error
-            reject(new Error(`Script error: ${result.error.message}`));
+            reject(new Error(`${result.error.name}: ${result.error.message}`));
           } else {
             // Get current URL and title
             chrome.devtools.inspectedWindow.eval(

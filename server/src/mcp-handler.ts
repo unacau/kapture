@@ -95,7 +95,7 @@ export class MCPHandler {
       logger.log(`Command completed: ${command} (${commandId})`);
       return response;
     } catch (error: any) {
-      throw new Error(`Command failed: ${error.message}`);
+      throw new Error(error.message);
     }
   }
 
