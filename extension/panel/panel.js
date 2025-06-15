@@ -495,6 +495,9 @@ async function connect(fromRetry = false) {
           updateConnectionStatus(true);
           // Update dropdown to show connected server
           updateServerDropdown();
+          
+          // Start monitoring for tab changes
+          startTabMonitoring();
 
         } else if (message.type === 'mcp-client-update') {
           // Update connected server info when MCP client connects later
@@ -581,6 +584,9 @@ function disconnect(maintainRetryState = false) {
   commandExecutor = null;
   commandQueue = null;
   connectedServerInfo = null; // Clear connected server info
+  
+  // Stop monitoring tab changes
+  stopTabMonitoring();
 
   // Restart discovery when disconnected
   if (!isConnected) {
@@ -745,18 +751,15 @@ document.addEventListener('mouseup', () => {
 });
 
 // Send tab info update to server
-async function sendTabInfoUpdate(url, title) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    // Get current dimensions
-    const tabInfo = await getCurrentTabInfo();
-    
+async function sendTabInfoUpdate(tabInfo) {
+  if (ws && ws.readyState === WebSocket.OPEN && tabInfo) {
     const updateMessage = {
       type: 'tab-info',
-      url: url,
-      title: title,
-      domSize: tabInfo ? tabInfo.domSize : undefined,
-      fullPageDimensions: tabInfo ? tabInfo.fullPageDimensions : undefined,
-      viewportDimensions: tabInfo ? tabInfo.viewportDimensions : undefined
+      url: tabInfo.url,
+      title: tabInfo.title,
+      domSize: tabInfo.domSize,
+      fullPageDimensions: tabInfo.fullPageDimensions,
+      viewportDimensions: tabInfo.viewportDimensions
     };
     ws.send(JSON.stringify(updateMessage));
     console.log('Sent tab info update:', updateMessage);
@@ -765,3 +768,72 @@ async function sendTabInfoUpdate(url, title) {
 
 // Export for command executor
 window.sendTabInfoUpdate = sendTabInfoUpdate;
+
+// Variables for tab monitoring
+let navigationListener = null;
+let lastKnownUrl = null;
+let lastKnownTitle = null;
+let monitoringInterval = null;
+
+// Start monitoring for tab changes
+function startTabMonitoring() {
+  // Store initial values and send immediate update
+  getCurrentTabInfo().then(info => {
+    if (info) {
+      lastKnownUrl = info.url;
+      lastKnownTitle = info.title;
+      // Send initial tab info update immediately
+      console.log('Sending initial tab info update');
+      sendTabInfoUpdate(info);
+    }
+  });
+  
+  // Listen for navigation events
+  if (!navigationListener) {
+    navigationListener = (url) => {
+      console.log('Navigation detected:', url);
+      // Get the new tab info after navigation
+      setTimeout(() => {
+        getCurrentTabInfo().then(info => {
+          if (info && (info.url !== lastKnownUrl || info.title !== lastKnownTitle)) {
+            console.log('Tab info changed - sending update');
+            lastKnownUrl = info.url;
+            lastKnownTitle = info.title;
+            sendTabInfoUpdate(info);
+          }
+        });
+      }, 500); // Small delay to ensure page has loaded
+    };
+    chrome.devtools.network.onNavigated.addListener(navigationListener);
+  }
+  
+  // Also periodically check for title changes (some SPAs update title without navigation)
+  if (!monitoringInterval) {
+    monitoringInterval = setInterval(() => {
+      getCurrentTabInfo().then(info => {
+        if (info && (info.url !== lastKnownUrl || info.title !== lastKnownTitle)) {
+          console.log('Tab info changed during monitoring - sending update');
+          lastKnownUrl = info.url;
+          lastKnownTitle = info.title;
+          sendTabInfoUpdate(info);
+        }
+      });
+    }, 2000); // Check every 2 seconds
+  }
+}
+
+// Stop monitoring for tab changes
+function stopTabMonitoring() {
+  if (navigationListener) {
+    chrome.devtools.network.onNavigated.removeListener(navigationListener);
+    navigationListener = null;
+  }
+  
+  if (monitoringInterval) {
+    clearInterval(monitoringInterval);
+    monitoringInterval = null;
+  }
+  
+  lastKnownUrl = null;
+  lastKnownTitle = null;
+}

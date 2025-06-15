@@ -223,7 +223,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 // Define available resources
-const availableResources = [
+const baseResources = [
   {
     uri: 'kapture://tabs',
     name: 'Connected Browser Tabs',
@@ -232,10 +232,19 @@ const availableResources = [
   }
 ];
 
+// Dynamic resources will be added/removed as tabs connect/disconnect
+let dynamicTabResources: Map<string, any> = new Map();
+
 // Register handler for listing resources
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  // Combine base resources with dynamic tab resources
+  const allResources = [
+    ...baseResources,
+    ...Array.from(dynamicTabResources.values())
+  ];
+  
   return {
-    resources: availableResources
+    resources: allResources
   };
 });
 
@@ -254,6 +263,39 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           uri: 'kapture://tabs',
           mimeType: 'application/json',
           text: JSON.stringify(tabsArray, null, 2)
+        }
+      ]
+    };
+  }
+  
+  // Check if it's a tab-specific resource
+  const tabMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)$/);
+  if (tabMatch) {
+    const tabId = tabMatch[1];
+    const tab = tabRegistry.get(tabId);
+    
+    if (!tab) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+    
+    // Return detailed information about the specific tab
+    const tabInfo = {
+      tabId: tab.tabId,
+      url: tab.url,
+      title: tab.title,
+      connectedAt: tab.connectedAt,
+      lastPing: tab.lastPing,
+      domSize: tab.domSize,
+      fullPageDimensions: tab.fullPageDimensions,
+      viewportDimensions: tab.viewportDimensions
+    };
+    
+    return {
+      contents: [
+        {
+          uri: uri,
+          mimeType: 'application/json',
+          text: JSON.stringify(tabInfo, null, 2)
         }
       ]
     };
@@ -294,18 +336,79 @@ async function sendTabListChangeNotification() {
 // Set up tab connect notification
 tabRegistry.setConnectCallback(async (tabId: string) => {
   logger.log(`Tab connected: ${tabId}`);
+  
+  // Get tab info to build a better name
+  const tab = tabRegistry.get(tabId);
+  const tabTitle = tab?.title || `Tab ${tabId}`;
+  
+  // Add dynamic resource for this tab
+  const tabResource = {
+    uri: `kapturemcp://tab/${tabId}`,
+    name: `Browser Tab: ${tabTitle}`,
+    description: `Information about browser tab ${tabId}`,
+    mimeType: 'application/json'
+  };
+  dynamicTabResources.set(tabId, tabResource);
+  
+  // Send MCP notification that resources have changed
+  try {
+    await server.notification({
+      method: 'notifications/resources/list_changed',
+      params: {}
+    });
+    logger.log(`Sent resources/list_changed notification for tab ${tabId} connect`);
+  } catch (error) {
+    logger.error('Failed to send resources/list_changed notification:', error);
+  }
+  
   await sendTabListChangeNotification();
 });
 
 // Set up tab update notification
 tabRegistry.setUpdateCallback(async (tabId: string) => {
   logger.log(`Tab updated: ${tabId}`);
+  
+  // Update the dynamic resource name if the tab exists
+  if (dynamicTabResources.has(tabId)) {
+    const tab = tabRegistry.get(tabId);
+    const tabTitle = tab?.title || `Tab ${tabId}`;
+    
+    const tabResource = {
+      uri: `kapturemcp://tab/${tabId}`,
+      name: `Browser Tab: ${tabTitle}`,
+      description: `Information about browser tab ${tabId}`,
+      mimeType: 'application/json'
+    };
+    dynamicTabResources.set(tabId, tabResource);
+    
+    // Send MCP notification that resources have changed
+    try {
+      await server.notification({
+        method: 'notifications/resources/list_changed',
+        params: {}
+      });
+      logger.log(`Sent resources/list_changed notification for tab ${tabId} update`);
+    } catch (error) {
+      logger.error('Failed to send resources/list_changed notification:', error);
+    }
+  }
+  
   await sendTabListChangeNotification();
 });
 
 // Set up tab disconnect notification
 tabRegistry.setDisconnectCallback(async (tabId: string) => {
   try {
+    // Remove the dynamic resource for this tab
+    dynamicTabResources.delete(tabId);
+    
+    // Send MCP notification that resources have changed
+    await server.notification({
+      method: 'notifications/resources/list_changed',
+      params: {}
+    });
+    logger.log(`Sent resources/list_changed notification for tab ${tabId} disconnect`);
+    
     await server.notification({
       method: 'kapturemcp/tab_disconnected',
       params: {
@@ -325,8 +428,8 @@ tabRegistry.setDisconnectCallback(async (tabId: string) => {
 // Set up resource endpoint handler  
 handleResourceEndpoint = async (resourcePath: string) => {
   try {
-    // Find matching resource
-    const matchingResource = availableResources.find((resource) => {
+    // Check base resources first
+    const matchingResource = baseResources.find((resource) => {
       // Extract path from resource URI (e.g., "kapture://tabs" -> "tabs")
       const uriParts = resource.uri.split('://');
       if (uriParts.length === 2 && uriParts[0] === 'kapture') {
@@ -347,7 +450,32 @@ handleResourceEndpoint = async (resourcePath: string) => {
           mimeType: 'application/json'
         };
       }
-      // Add more resource handlers here as needed
+    }
+    
+    // Check if it's a tab-specific resource (e.g., "tab/123")
+    const tabMatch = resourcePath.match(/^tab\/(.+)$/);
+    if (tabMatch) {
+      const tabId = tabMatch[1];
+      const tab = tabRegistry.get(tabId);
+      
+      if (tab) {
+        // Return detailed information about the specific tab
+        const tabInfo = {
+          tabId: tab.tabId,
+          url: tab.url,
+          title: tab.title,
+          connectedAt: tab.connectedAt,
+          lastPing: tab.lastPing,
+          domSize: tab.domSize,
+          fullPageDimensions: tab.fullPageDimensions,
+          viewportDimensions: tab.viewportDimensions
+        };
+        
+        return {
+          content: JSON.stringify(tabInfo, null, 2),
+          mimeType: 'application/json'
+        };
+      }
     }
   } catch (error) {
     logger.error('Error reading resource:', error);
@@ -364,6 +492,7 @@ async function startServer() {
     logger.log('MCP server started');
     logger.log(`HTTP endpoints available at http://localhost:${PORT}/`);
     logger.log(`Resource endpoints: http://localhost:${PORT}/tabs`);
+    logger.log(`Dynamic tab endpoints: http://localhost:${PORT}/tab/{tabId}`);
     // Server is ready
   } catch (error) {
     logger.error('Failed to start MCP server:', error);
