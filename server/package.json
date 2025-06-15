@@ -1,11 +1,11 @@
 {
   "name": "kapture-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "MCP server for Kapture browser automation",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "kapture-server": "dist/cli.js"
+    "kapture-mcp-server": "dist/cli.js"
   },
   "files": [
     "dist/**/*",
@@ -27,7 +27,7 @@
     "directory": "server"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/cli.js",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "debug": "KAPTURE_DEBUG=1 node dist/index.js",
