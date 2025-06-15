@@ -434,6 +434,42 @@ class CommandExecutor {
 
     try {
       const result = await window.MessagePassing.executeInPage('select', { selector, value });
+      
+      // Check if the command returned an error (element not found or wrong type)
+      if (result && result.error) {
+        if (result.code === 'INVALID_ELEMENT') {
+          // Return success:true with error details for graceful handling
+          return {
+            selected: false,
+            error: {
+              code: result.code,
+              message: `Element is not an HTML <select> element. Found: <${result.message.split(': ')[1]}>. This tool only works with native HTML select dropdowns.`
+            },
+            selector: result.selector
+          };
+        } else if (result.code === 'ELEMENT_NOT_FOUND') {
+          // Return success:true with error details for graceful handling
+          return {
+            selected: false,
+            error: {
+              code: result.code,
+              message: `No element found matching selector: ${result.selector}`
+            },
+            selector: result.selector
+          };
+        } else if (result.code === 'OPTION_NOT_FOUND') {
+          // Return success:true with error details for graceful handling
+          return {
+            selected: false,
+            error: {
+              code: result.code,
+              message: result.message
+            },
+            selector: result.selector
+          };
+        }
+      }
+      
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Select failed: ${error.message}`);

@@ -30,10 +30,10 @@ export const fillTool = {
 
 export const selectTool = {
   name: 'kapturemcp_select',
-  description: 'Select an option from a dropdown',
+  description: 'Select an option from an HTML <select> dropdown element. Note: Only works with native HTML select elements, not custom dropdowns.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
-    selector: z.string().describe('CSS selector of select element'),
-    value: z.string().describe('Value of option to select')
+    selector: z.string().describe('CSS selector of HTML select element'),
+    value: z.string().describe('Value attribute of the option to select')
   }),
 };

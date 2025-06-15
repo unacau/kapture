@@ -265,12 +265,18 @@ Fill an input field with text.
 - `value` (string, required): Text to fill
 
 ### kapturemcp_select
-Select an option from a dropdown.
+Select an option from an HTML `<select>` dropdown element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
-- `selector` (string, required): CSS selector of select element
-- `value` (string, required): Value of option to select
+- `selector` (string, required): CSS selector of HTML `<select>` element
+- `value` (string, required): Value attribute of the option to select
+
+**Important Notes:**
+- This tool only works with native HTML `<select>` elements
+- It does NOT work with custom dropdown implementations (div-based dropdowns, React/Vue components, etc.)
+- If the element is not a `<select>`, the tool will return an error with details about what element type was found
+- For custom dropdowns, use `kapturemcp_click` to open the dropdown and click the desired option
 
 ### kapturemcp_evaluate
 Execute JavaScript in the browser context.

@@ -151,7 +151,7 @@ Then ask Claude to interact with web pages:
 - `kapturemcp_click` - Click elements
 - `kapturemcp_hover` - Hover over elements
 - `kapturemcp_fill` - Fill input fields
-- `kapturemcp_select` - Select dropdown options
+- `kapturemcp_select` - Select dropdown options (HTML `<select>` only)
 - `kapturemcp_evaluate` - Execute JavaScript
 - `kapturemcp_logs` - Retrieve console logs
 - `kapturemcp_dom` - Get HTML content
