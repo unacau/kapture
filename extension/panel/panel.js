@@ -452,7 +452,10 @@ async function connect(fromRetry = false) {
         title: tabInfo.title,
         domSize: tabInfo.domSize,
         fullPageDimensions: tabInfo.fullPageDimensions,
-        viewportDimensions: tabInfo.viewportDimensions
+        viewportDimensions: tabInfo.viewportDimensions,
+        scrollPosition: tabInfo.scrollPosition,
+        pageVisibility: tabInfo.pageVisibility,
+        pageLoadTimes: tabInfo.pageLoadTimes
       };
 
       // Include previous tab ID if reconnecting
@@ -762,7 +765,10 @@ async function sendTabInfoUpdate(tabInfo) {
       title: tabInfo.title,
       domSize: tabInfo.domSize,
       fullPageDimensions: tabInfo.fullPageDimensions,
-      viewportDimensions: tabInfo.viewportDimensions
+      viewportDimensions: tabInfo.viewportDimensions,
+      scrollPosition: tabInfo.scrollPosition,
+      pageVisibility: tabInfo.pageVisibility,
+      pageLoadTimes: tabInfo.pageLoadTimes
     };
     ws.send(JSON.stringify(updateMessage));
     console.log('Sent tab info update:', updateMessage);
@@ -776,6 +782,8 @@ window.sendTabInfoUpdate = sendTabInfoUpdate;
 let navigationListener = null;
 let lastKnownUrl = null;
 let lastKnownTitle = null;
+let lastKnownScrollX = null;
+let lastKnownScrollY = null;
 let monitoringInterval = null;
 
 // Start monitoring for tab changes
@@ -785,6 +793,10 @@ function startTabMonitoring() {
     if (info) {
       lastKnownUrl = info.url;
       lastKnownTitle = info.title;
+      if (info.scrollPosition) {
+        lastKnownScrollX = info.scrollPosition.x;
+        lastKnownScrollY = info.scrollPosition.y;
+      }
       // Send initial tab info update immediately
       console.log('Sending initial tab info update');
       sendTabInfoUpdate(info);
@@ -802,6 +814,10 @@ function startTabMonitoring() {
             console.log('Tab info changed - sending update');
             lastKnownUrl = info.url;
             lastKnownTitle = info.title;
+            if (info.scrollPosition) {
+              lastKnownScrollX = info.scrollPosition.x;
+              lastKnownScrollY = info.scrollPosition.y;
+            }
             sendTabInfoUpdate(info);
           }
         });
@@ -810,15 +826,33 @@ function startTabMonitoring() {
     chrome.devtools.network.onNavigated.addListener(navigationListener);
   }
 
-  // Also periodically check for title changes (some SPAs update title without navigation)
+  // Also periodically check for changes (title, scroll, visibility, etc.)
   if (!monitoringInterval) {
     monitoringInterval = setInterval(() => {
       getCurrentTabInfo().then(info => {
-        if (info && (info.url !== lastKnownUrl || info.title !== lastKnownTitle)) {
-          console.log('Tab info changed during monitoring - sending update');
-          lastKnownUrl = info.url;
-          lastKnownTitle = info.title;
-          sendTabInfoUpdate(info);
+        if (info) {
+          let hasChanged = false;
+          
+          // Check URL/title changes
+          if (info.url !== lastKnownUrl || info.title !== lastKnownTitle) {
+            hasChanged = true;
+            lastKnownUrl = info.url;
+            lastKnownTitle = info.title;
+          }
+          
+          // Check scroll position changes
+          if (info.scrollPosition && 
+              (info.scrollPosition.x !== lastKnownScrollX || 
+               info.scrollPosition.y !== lastKnownScrollY)) {
+            hasChanged = true;
+            lastKnownScrollX = info.scrollPosition.x;
+            lastKnownScrollY = info.scrollPosition.y;
+          }
+          
+          if (hasChanged) {
+            console.log('Tab info changed during monitoring - sending update');
+            sendTabInfoUpdate(info);
+          }
         }
       });
     }, 2000); // Check every 2 seconds
@@ -839,4 +873,6 @@ function stopTabMonitoring() {
 
   lastKnownUrl = null;
   lastKnownTitle = null;
+  lastKnownScrollX = null;
+  lastKnownScrollY = null;
 }

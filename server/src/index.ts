@@ -257,6 +257,12 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const tabsData = mcpHandler.listTabs();
     const tabsArray = tabsData.tabs || [];
     
+    // Debug: Log what we're returning for resource read
+    logger.log(`Resource read 'kapture://tabs' returning ${tabsArray.length} tabs`);
+    if (tabsArray.length > 0) {
+      logger.log(`Resource read tab data: ${JSON.stringify(tabsArray)}`);
+    }
+    
     return {
       contents: [
         {
@@ -287,7 +293,10 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       lastPing: tab.lastPing,
       domSize: tab.domSize,
       fullPageDimensions: tab.fullPageDimensions,
-      viewportDimensions: tab.viewportDimensions
+      viewportDimensions: tab.viewportDimensions,
+      scrollPosition: tab.scrollPosition,
+      pageVisibility: tab.pageVisibility,
+      pageLoadTimes: tab.pageLoadTimes
     };
     
     return {
@@ -317,8 +326,17 @@ async function sendTabListChangeNotification() {
       lastPing: tab.lastPing,
       domSize: tab.domSize,
       fullPageDimensions: tab.fullPageDimensions,
-      viewportDimensions: tab.viewportDimensions
+      viewportDimensions: tab.viewportDimensions,
+      scrollPosition: tab.scrollPosition,
+      pageVisibility: tab.pageVisibility,
+      pageLoadTimes: tab.pageLoadTimes
     }));
+    
+    // Debug: Log what we're sending
+    logger.log(`Preparing tabs_changed notification with ${tabs.length} tabs`);
+    if (tabs.length > 0) {
+      logger.log(`Tab data being sent: ${JSON.stringify(tabs)}`);
+    }
     
     await server.notification({
       method: 'kapturemcp/tabs_changed',
@@ -468,7 +486,10 @@ handleResourceEndpoint = async (resourcePath: string) => {
           lastPing: tab.lastPing,
           domSize: tab.domSize,
           fullPageDimensions: tab.fullPageDimensions,
-          viewportDimensions: tab.viewportDimensions
+          viewportDimensions: tab.viewportDimensions,
+          scrollPosition: tab.scrollPosition,
+          pageVisibility: tab.pageVisibility,
+          pageLoadTimes: tab.pageLoadTimes
         };
         
         return {

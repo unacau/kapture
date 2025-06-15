@@ -137,7 +137,10 @@ export class WebSocketManager {
             title: message.title,
             domSize: message.domSize,
             fullPageDimensions: message.fullPageDimensions,
-            viewportDimensions: message.viewportDimensions
+            viewportDimensions: message.viewportDimensions,
+            scrollPosition: message.scrollPosition,
+            pageVisibility: message.pageVisibility,
+            pageLoadTimes: message.pageLoadTimes
           });
           logger.log(`Tab ${connection.tabId} info updated: ${message.url}`);
         }
@@ -156,7 +159,8 @@ export class WebSocketManager {
   }
 
   private handleRegister(ws: WebSocket, message: RegisterMessage): void {
-    const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions } = message;
+    const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions, 
+            scrollPosition, pageVisibility, pageLoadTimes } = message;
     
     // Server assigns the tab ID
     const assignedTabId = this.tabRegistry.assignTabId(requestedTabId);
@@ -174,13 +178,17 @@ export class WebSocketManager {
     this.tabRegistry.registerWithoutCallback(assignedTabId, ws);
 
     // Update tab info if provided
-    if (url || title || domSize || fullPageDimensions || viewportDimensions) {
+    if (url || title || domSize || fullPageDimensions || viewportDimensions || 
+        scrollPosition || pageVisibility || pageLoadTimes) {
       this.tabRegistry.updateTabInfo(assignedTabId, { 
         url, 
         title,
         domSize,
         fullPageDimensions,
-        viewportDimensions
+        viewportDimensions,
+        scrollPosition,
+        pageVisibility,
+        pageLoadTimes
       });
     }
     

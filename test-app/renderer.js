@@ -120,6 +120,10 @@ async function refreshTabs(silent = false) {
 
     if (!silent) {
       log(`Found ${newTabs.length} connected tabs`);
+      // Debug: Log the tab data from manual refresh
+      if (newTabs.length > 0) {
+        log(`Manual refresh tab data: ${JSON.stringify(newTabs)}`, 'debug');
+      }
     }
 
     currentTabs = newTabs;
@@ -153,6 +157,9 @@ function displayTabs() {
     return;
   }
 
+  // Debug: Log what we're about to display
+  log(`Displaying ${currentTabs.length} tabs`, 'debug');
+  
   currentTabs.forEach(tab => {
     const tabEl = document.createElement('button');
     tabEl.className = 'tab-item';
@@ -218,6 +225,22 @@ function updateTabInfo() {
   // Page Size
   if (tab.fullPageDimensions) {
     infoHTML += `<span class="info-item"><span class="info-label">Page:</span> <span class="info-value">${tab.fullPageDimensions.width}×${tab.fullPageDimensions.height}</span></span>`;
+  }
+  
+  // Scroll Position
+  if (tab.scrollPosition) {
+    infoHTML += `<span class="info-item"><span class="info-label">Scroll:</span> <span class="info-value">${tab.scrollPosition.x}, ${tab.scrollPosition.y}</span></span>`;
+  }
+  
+  // Page Visibility
+  if (tab.pageVisibility) {
+    const visibleIcon = tab.pageVisibility.visible ? '👁️' : '🚫';
+    infoHTML += `<span class="info-item"><span class="info-label">Visible:</span> <span class="info-value">${visibleIcon} ${tab.pageVisibility.visibilityState}</span></span>`;
+  }
+  
+  // Page Load Time
+  if (tab.pageLoadTimes && tab.pageLoadTimes.load) {
+    infoHTML += `<span class="info-item"><span class="info-label">Load:</span> <span class="info-value">${tab.pageLoadTimes.load}ms</span></span>`;
   }
   
   tabInfoEl.innerHTML = infoHTML;
@@ -727,6 +750,11 @@ window.electronAPI.onMCPNotification((message) => {
     // Handle tabs list change notification
     const { tabs } = message.params;
     log(`Tabs list changed: ${tabs.length} tabs`, 'info');
+    
+    // Debug: Log the full tab data
+    if (tabs.length > 0) {
+      log(`Tab data received: ${JSON.stringify(tabs)}`, 'debug');
+    }
     
     // Update current tabs
     currentTabs = tabs;

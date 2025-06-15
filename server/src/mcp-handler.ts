@@ -146,7 +146,10 @@ export class MCPHandler {
       lastPing: tab.lastPing,
       domSize: tab.domSize,
       fullPageDimensions: tab.fullPageDimensions,
-      viewportDimensions: tab.viewportDimensions
+      viewportDimensions: tab.viewportDimensions,
+      scrollPosition: tab.scrollPosition,
+      pageVisibility: tab.pageVisibility,
+      pageLoadTimes: tab.pageLoadTimes
     }));
 
     return {

@@ -452,6 +452,13 @@
 
     // Get comprehensive tab information
     getTabInfo: function() {
+      // Get navigation timing data
+      const perfData = window.performance.timing;
+      const loadTime = perfData.loadEventEnd > 0 ? 
+        perfData.loadEventEnd - perfData.navigationStart : null;
+      const domContentLoadedTime = perfData.domContentLoadedEventEnd > 0 ?
+        perfData.domContentLoadedEventEnd - perfData.navigationStart : null;
+      
       return {
         url: window.location.href,
         title: document.title,
@@ -463,6 +470,23 @@
         viewportDimensions: {
           width: window.innerWidth,
           height: window.innerHeight
+        },
+        scrollPosition: {
+          x: window.pageXOffset || document.documentElement.scrollLeft,
+          y: window.pageYOffset || document.documentElement.scrollTop
+        },
+        pageVisibility: {
+          visible: !document.hidden,
+          visibilityState: document.visibilityState
+        },
+        pageLoadTimes: {
+          domContentLoaded: domContentLoadedTime,
+          load: loadTime,
+          // Time to first byte
+          ttfb: perfData.responseStart - perfData.navigationStart,
+          // Total time including redirects
+          total: perfData.loadEventEnd > 0 ? 
+            perfData.loadEventEnd - perfData.fetchStart : null
         }
       };
     }
