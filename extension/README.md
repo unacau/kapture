@@ -18,14 +18,92 @@ This Chrome Extension enables browser automation through the Model Context Proto
 5. Use this Tab ID when executing MCP commands
 6. You can even ask your AI assistant to list the connected tabs and their IDs for you
 
+## Architecture
+
+The extension uses a secure message passing architecture to execute commands on web pages:
+
+```mermaid
+graph TD
+    DP[DevTools Panel] -->|chrome.runtime.sendMessage| BG[Background Script]
+    BG <-->|chrome.runtime.Port| DP
+    BG -->|chrome.tabs.sendMessage| CS[Content Script]
+    CS -->|DOM Access| WP[Web Page]
+    CS -->|chrome.runtime.sendMessage| BG
+    
+    style DP fill:#bfb,stroke:#333,stroke-width:2px
+    style BG fill:#fbf,stroke:#333,stroke-width:2px
+    style CS fill:#ffb,stroke:#333,stroke-width:2px
+    style WP fill:#fbb,stroke:#333,stroke-width:2px
+```
+
+### Message Flow
+
+```mermaid
+sequenceDiagram
+    participant Panel as DevTools Panel
+    participant BG as Background Script
+    participant CS as Content Script
+    participant Page as Web Page
+    
+    Panel->>BG: Command Request
+    BG->>CS: Forward Command
+    CS->>Page: Execute Operation
+    Page-->>CS: Get Result
+    CS-->>BG: Send Response
+    BG-->>Panel: Return Result
+```
+
+### Real-time Updates
+
+The extension provides real-time updates for page changes:
+
+```mermaid
+graph LR
+    subgraph "Page Events"
+        E1[Scroll<br/>300ms debounce]
+        E2[Resize<br/>500ms debounce]
+        E3[Title Change<br/>immediate]
+        E4[URL Change<br/>immediate]
+        E5[Console Log<br/>immediate]
+    end
+    
+    E1 --> CS[Content Script]
+    E2 --> CS
+    E3 --> CS
+    E4 --> CS
+    E5 --> CS
+    
+    CS -->|chrome.runtime| BG[Background Script]
+    BG -->|Port| DP[DevTools Panel]
+```
+
 ## Features
 
 - **Real-time Connection Status**: See when you're connected to the MCP server
 - **Message Logging**: View all commands and responses in real-time
 - **Screenshot Capture**: Supports WebP/JPEG formats with compression
 - **Element Interaction**: Click, hover, fill forms, and more
-- **Console Access**: Read browser console logs
+- **Console Access**: Read browser console logs with real-time streaming
 - **DOM Inspection**: Extract page structure and content
+- **Tab Info Updates**: Real-time monitoring of page changes (URL, title, scroll position)
+- **Secure Message Passing**: All operations use Chrome's extension APIs, no eval()
+
+## Technical Details
+
+### Components
+
+- **content-script.js**: Injected into web pages to handle DOM operations
+- **background.js**: Service worker that routes messages between components
+- **panel/panel.js**: DevTools panel UI and WebSocket communication
+- **panel/command-executor.js**: Executes browser automation commands
+- **panel/message-passing.js**: Handles communication with content scripts
+
+### Security
+
+- All page operations use Chrome's message passing APIs
+- No use of `eval()` for better security (except for the evaluate command)
+- Content scripts have limited permissions
+- Each tab is isolated with unique IDs
 
 ## Requirements
 
