@@ -35,6 +35,33 @@ let hasDiscoveredOnce = false;  // Track if we've run discovery at least once
 let connectedServerInfo = null; // Store info about connected server
 let reconnectTimeout = null; // Store timeout for server switching
 
+// Load saved tab IDs from session storage
+function loadSavedTabIds() {
+  try {
+    const saved = sessionStorage.getItem('kapture-tab-ids');
+    return saved ? JSON.parse(saved) : {};
+  } catch (e) {
+    console.error('Failed to load saved tab IDs:', e);
+    return {};
+  }
+}
+
+// Save tab ID for a specific port
+function saveTabIdForPort(port, tabId) {
+  try {
+    const tabIds = loadSavedTabIds();
+    tabIds[port] = tabId;
+    sessionStorage.setItem('kapture-tab-ids', JSON.stringify(tabIds));
+  } catch (e) {
+    console.error('Failed to save tab ID:', e);
+  }
+}
+
+// Get saved tab ID for a specific port
+function getSavedTabIdForPort(port) {
+  const tabIds = loadSavedTabIds();
+  return tabIds[port] || null;
+}
 
 // Update UI state
 function updateConnectionStatus(connected, retrying = false) {
@@ -275,6 +302,15 @@ async function discoverServers() {
   const shouldAutoConnect = discovered.length > 0 && !selectedPort;
   if (shouldAutoConnect) {
     selectedPort = discovered[0].port;
+    
+    // Load saved tab ID for this port
+    const savedTabId = getSavedTabIdForPort(selectedPort);
+    if (savedTabId) {
+      previousTabId = savedTabId;
+    } else {
+      // Clear previousTabId for new server
+      previousTabId = null;
+    }
   }
 
   updateServerDropdown();
@@ -472,9 +508,10 @@ async function connect(fromRetry = false) {
         pageLoadTimes: tabInfo.pageLoadTimes
       };
 
-      // Include previous tab ID if reconnecting
-      if (previousTabId) {
-        registerMessage.requestedTabId = previousTabId;
+      // Only use saved tab ID for this specific port
+      const savedTabId = getSavedTabIdForPort(selectedPort);
+      if (savedTabId) {
+        registerMessage.requestedTabId = savedTabId;
       }
 
       ws.send(JSON.stringify(registerMessage));
@@ -500,6 +537,9 @@ async function connect(fromRetry = false) {
           tabId = message.tabId;
           previousTabId = tabId;  // Store for reconnection
           tabIdElement.textContent = `Tab: ${tabId}`;
+          
+          // Save tab ID for this port
+          saveTabIdForPort(selectedPort, tabId);
 
           // Store connected server info if provided
           if (message.mcpClient && message.mcpClient.name) {
@@ -695,6 +735,15 @@ serverDropdown.addEventListener('change', (e) => {
   if (newPort && newPort !== selectedPort) {
     selectedPort = newPort;
     isManualDisconnect = false; // Auto-connect when selecting a server
+    
+    // Load saved tab ID for this port
+    const savedTabId = getSavedTabIdForPort(newPort);
+    if (savedTabId) {
+      previousTabId = savedTabId;
+    } else {
+      // Clear previousTabId when switching to a different server with no saved ID
+      previousTabId = null;
+    }
 
     // If connected to a different server, disconnect first
     if (isConnected || isRetrying) {
