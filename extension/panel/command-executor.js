@@ -12,7 +12,7 @@ class CommandExecutor {
 
   // Helper to get full tab info including dimensions
   getTabInfoCode() {
-    return 'window.__kaptureHelpers.getTabInfo()';
+    return 'window.__kh.getTabInfo()';
   }
 
   // Validate CSS selector
@@ -35,7 +35,7 @@ class CommandExecutor {
       // First check if helpers already exist
       const checkResult = await new Promise((resolve) => {
         chrome.devtools.inspectedWindow.eval(
-          'typeof window.__kaptureHelpers !== "undefined"',
+          'typeof window.__kh !== "undefined"',
           (result, error) => {
             resolve(error ? false : result);
           }
@@ -210,7 +210,7 @@ class CommandExecutor {
       }, timeout);
 
       chrome.devtools.inspectedWindow.eval(
-        `window.__kaptureHelpers.navigateTo(${JSON.stringify(url)})`,
+        `window.location.href = ${JSON.stringify(url)}`,
         (result, error) => {
           clearTimeout(timeoutId);
 
@@ -247,7 +247,7 @@ class CommandExecutor {
   async goBack(params) {
     return new Promise((resolve, reject) => {
       chrome.devtools.inspectedWindow.eval(
-        'window.__kaptureHelpers.goBack()',
+        'window.history.back()',
         (result, error) => {
           if (error) {
             reject(new Error(`Go back failed: ${error.toString()}`));
@@ -282,7 +282,7 @@ class CommandExecutor {
   async goForward(params) {
     return new Promise((resolve, reject) => {
       chrome.devtools.inspectedWindow.eval(
-        'window.__kaptureHelpers.goForward()',
+        'window.history.forward()',
         (result, error) => {
           if (error) {
             reject(new Error(`Go forward failed: ${error.toString()}`));
@@ -329,7 +329,7 @@ class CommandExecutor {
 
         // Get element bounds
         chrome.devtools.inspectedWindow.eval(
-          `window.__kaptureHelpers.getElementBounds(${JSON.stringify(selector)})`,
+          `window.__kh.getElementBounds(${JSON.stringify(selector)})`,
           (bounds, error) => {
             if (error) {
               reject(new Error(`Failed to get element bounds: ${error.toString()}`));
@@ -448,7 +448,7 @@ class CommandExecutor {
         // First, get element coordinates and info
         const coords = await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `window.__kaptureHelpers.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
+            `window.__kh.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
             (result, error) => {
               if (error) {
                 reject(new Error(`Failed to get element position: ${error.toString()}`));
@@ -484,7 +484,7 @@ class CommandExecutor {
         // Create visual cursor
         await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `window.__kaptureHelpers.createCursor()`,
+            `window.__kh.createCursor()`,
             (result, error) => {
               if (error) reject(error);
               else resolve(result);
@@ -511,7 +511,7 @@ class CommandExecutor {
           // Update visual cursor position
           await new Promise((resolve) => {
             chrome.devtools.inspectedWindow.eval(
-              `window.__kaptureHelpers.moveCursor(${currentX}, ${currentY})`,
+              `window.__kh.moveCursor(${currentX}, ${currentY})`,
               () => resolve()
             );
           });
@@ -549,7 +549,7 @@ class CommandExecutor {
         // Visual feedback - make cursor pulse
         await new Promise((resolve) => {
           chrome.devtools.inspectedWindow.eval(
-            `window.__kaptureHelpers.pulseCursor()`,
+            `window.__kh.pulseCursor()`,
             () => resolve()
           );
         });
@@ -572,7 +572,7 @@ class CommandExecutor {
         // Remove cursor after a short delay
         setTimeout(() => {
           chrome.devtools.inspectedWindow.eval(
-            `window.__kaptureHelpers.removeCursor()`,
+            `window.__kh.removeCursor()`,
             () => {}
           );
         }, 1000);
@@ -619,7 +619,7 @@ class CommandExecutor {
       await this.injectHelpers();
 
       chrome.devtools.inspectedWindow.eval(
-        `window.__kaptureHelpers.getLogs(${max})`,
+        `window.__kh.getLogs(${max})`,
         (result, error) => {
           if (!error && result && result.length > 0) {
             // Use logs from inspected window
@@ -697,7 +697,7 @@ class CommandExecutor {
       await this.injectHelpers();
 
       chrome.devtools.inspectedWindow.eval(
-        `window.__kaptureHelpers.fillElement(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
+        `window.__kh.fillElement(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
         (result, error) => {
           if (error) {
             reject(new Error(`Fill failed: ${error.toString()}`));
@@ -742,7 +742,7 @@ class CommandExecutor {
       await this.injectHelpers();
 
       chrome.devtools.inspectedWindow.eval(
-        `window.__kaptureHelpers.selectOption(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
+        `window.__kh.selectOption(${JSON.stringify(selector)}, ${JSON.stringify(value)})`,
         (result, error) => {
           if (error) {
             reject(new Error(`Select failed: ${error.toString()}`));
@@ -791,7 +791,7 @@ class CommandExecutor {
         // First, get element coordinates
         const coords = await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `window.__kaptureHelpers.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
+            `window.__kh.scrollAndGetElementPosition(${JSON.stringify(selector)})`,
             (result, error) => {
               if (error) {
                 reject(new Error(`Failed to get element position: ${error.toString()}`));
@@ -827,7 +827,7 @@ class CommandExecutor {
         // Create visual cursor
         await new Promise((resolve, reject) => {
           chrome.devtools.inspectedWindow.eval(
-            `window.__kaptureHelpers.createCursor()`,
+            `window.__kh.createCursor()`,
             (result, error) => {
               if (error) reject(error);
               else resolve(result);
@@ -854,7 +854,7 @@ class CommandExecutor {
           // Update visual cursor position
           await new Promise((resolve) => {
             chrome.devtools.inspectedWindow.eval(
-              `window.__kaptureHelpers.moveCursor(${currentX}, ${currentY})`,
+              `window.__kh.moveCursor(${currentX}, ${currentY})`,
               () => resolve()
             );
           });
@@ -878,7 +878,7 @@ class CommandExecutor {
         // Remove cursor after a short delay
         setTimeout(() => {
           chrome.devtools.inspectedWindow.eval(
-            `window.__kaptureHelpers.removeCursor()`,
+            `window.__kh.removeCursor()`,
             () => {}
           );
         }, 1000);
@@ -947,10 +947,10 @@ class CommandExecutor {
             }
             
             // Check if helpers are available
-            if (typeof window.__kaptureHelpers !== 'undefined' && window.__kaptureHelpers.serializeValue) {
+            if (typeof window.__kh !== 'undefined' && window.__kh.serializeValue) {
               return { 
                 success: true, 
-                value: window.__kaptureHelpers.serializeValue(result) 
+                value: window.__kh.serializeValue(result) 
               };
             } else {
               // Fallback to basic serialization
@@ -1017,7 +1017,7 @@ class CommandExecutor {
       await this.injectHelpers();
 
       chrome.devtools.inspectedWindow.eval(
-        `window.__kaptureHelpers.getOuterHTML(${JSON.stringify(selector || '')})`,
+        `window.__kh.getOuterHTML(${JSON.stringify(selector || '')})`,
         (result, error) => {
           if (error) {
             reject(new Error(`Get DOM failed: ${error.toString()}`));

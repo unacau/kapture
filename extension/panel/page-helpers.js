@@ -20,7 +20,8 @@
     12: "NOTATION_NODE"
   };
 
-  window.__kaptureHelpers = {
+  // Create short aliases for frequently used functions to minimize eval payload
+  window.__kh = window.__kaptureHelpers = {
     // Mouse cursor management
     createCursor: function() {
       const existingCursor = document.getElementById('kapture-mouse-cursor');
@@ -464,24 +465,6 @@
           height: window.innerHeight
         }
       };
-    },
-
-    // Navigate to URL
-    navigateTo: function(url) {
-      window.location.href = url;
-      return true;
-    },
-
-    // Navigate back in history
-    goBack: function() {
-      window.history.back();
-      return true;
-    },
-
-    // Navigate forward in history
-    goForward: function() {
-      window.history.forward();
-      return true;
     }
   };
 

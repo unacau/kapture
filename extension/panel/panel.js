@@ -391,7 +391,7 @@ async function getCurrentTabInfo() {
     }
 
     chrome.devtools.inspectedWindow.eval(
-      'window.__kaptureHelpers ? window.__kaptureHelpers.getTabInfo() : ({ url: window.location.href, title: document.title })',
+      'window.__kh ? window.__kh.getTabInfo() : ({ url: window.location.href, title: document.title })',
       (result, error) => {
         if (error) {
           console.error('Failed to get tab info:', error);
