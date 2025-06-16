@@ -788,6 +788,17 @@
                                     and filtering by <code>?level={log|info|warn|error}</code>
                                 </p>
                             </div>
+
+                            <div class="tool-category">
+                                <h4>Screenshots</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">kapturemcp://tab/{tabId}/screenshot</span>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                                    Capture screenshots with <code>?selector={css}</code><br>
+                                    <code>?scale={0.1-1.0}&format={webp|jpeg|png}</code>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -824,6 +835,34 @@
                                     Standard MCP notification when resources change
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HTTP Endpoints Section -->
+            <div style="margin-top: 60px; text-align: center;">
+                <h3 style="margin-bottom: 20px; color: #2d3748;">Direct HTTP Endpoints</h3>
+                <p style="color: #718096; margin-bottom: 30px;">Access data and images directly via HTTP for debugging and integration</p>
+                <div class="tools-showcase" style="max-width: 800px; margin: 0 auto;">
+                    <div class="tool-categories">
+                        <div class="tool-category">
+                            <h4>Data Endpoints</h4>
+                            <div class="tool-list">
+                                <span class="tool-item">GET /tabs</span>
+                                <span class="tool-item">GET /tab/{tabId}</span>
+                                <span class="tool-item">GET /tab/{tabId}/console</span>
+                                <span class="tool-item">GET /tab/{tabId}/screenshot</span>
+                            </div>
+                        </div>
+                        <div class="tool-category">
+                            <h4>Image Endpoints</h4>
+                            <div class="tool-list">
+                                <span class="tool-item">GET /tab/{tabId}/screenshot/view</span>
+                            </div>
+                            <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                                Returns actual image files for direct viewing or embedding
+                            </p>
                         </div>
                     </div>
                 </div>
