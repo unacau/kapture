@@ -21,6 +21,6 @@ export const allTools = [
   // screenshotTool,  // Disabled - use kapturemcp://tab/{tabId}/screenshot resource instead
   evaluateTool,
   // domTool,  // Disabled - use kapturemcp://tab/{tabId}/dom resource instead
-  elementsFromPointTool,
+  // elementsFromPointTool,
   // listTabsTool  // Disabled - use kapturemcp://tabs resource instead
 ];
