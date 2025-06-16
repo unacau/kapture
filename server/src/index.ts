@@ -53,7 +53,7 @@ const { port: PORT } = parseArgs();
 const tabRegistry = new TabRegistry();
 
 // Store handler for resource endpoints
-let handleResourceEndpoint: ((path: string) => Promise<{ content: string; mimeType: string } | null>) | null = null;
+let handleResourceEndpoint: ((path: string, queryString?: string) => Promise<{ content: string | Buffer; mimeType: string } | null>) | null = null;
 
 // Create HTTP server for both discovery endpoint and WebSocket
 const httpServer = createServer(async (req, res) => {
@@ -89,16 +89,23 @@ const httpServer = createServer(async (req, res) => {
 
   // Check if URL matches a resource endpoint pattern
   if (req.url && req.url !== '/' && req.method === 'GET' && handleResourceEndpoint) {
-    // Remove leading slash
-    const resourcePath = req.url.substring(1);
+    // Parse URL to separate path and query string
+    const urlParts = req.url.split('?');
+    const resourcePath = urlParts[0].substring(1); // Remove leading slash
+    const queryString = urlParts[1] || '';
     
     try {
-      const result = await handleResourceEndpoint(resourcePath);
+      const result = await handleResourceEndpoint(resourcePath, queryString);
       if (result) {
         res.writeHead(200, { 
           'Content-Type': result.mimeType 
         });
-        res.end(result.content);
+        // Handle binary content (e.g., images)
+        if (Buffer.isBuffer(result.content)) {
+          res.end(result.content);
+        } else {
+          res.end(result.content);
+        }
         return;
       }
     } catch (error) {
@@ -380,6 +387,90 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     }
   }
   
+  // Check if it's a screenshot resource with optional query parameters
+  const screenshotMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/screenshot(?:\?.*)?$/);
+  if (screenshotMatch) {
+    const fullPath = screenshotMatch[0];
+    const pathParts = fullPath.split('?');
+    const pathMatch = pathParts[0].match(/^kapturemcp:\/\/tab\/(.+)\/screenshot$/);
+    
+    if (!pathMatch) {
+      throw new Error(`Invalid screenshot resource URI: ${uri}`);
+    }
+    
+    const tabId = pathMatch[1];
+    const tab = tabRegistry.get(tabId);
+    
+    if (!tab) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+    
+    // Parse query parameters
+    let selector: string | undefined;
+    let scale = 0.3;
+    let format: 'webp' | 'jpeg' | 'png' = 'webp';
+    let quality = 0.85;
+    
+    const queryMatch = uri.match(/\?(.+)$/);
+    if (queryMatch) {
+      const params = new URLSearchParams(queryMatch[1]);
+      selector = params.get('selector') || undefined;
+      const scaleParam = params.get('scale');
+      if (scaleParam) {
+        const parsedScale = parseFloat(scaleParam);
+        if (!isNaN(parsedScale) && parsedScale >= 0.1 && parsedScale <= 1) {
+          scale = parsedScale;
+        }
+      }
+      const formatParam = params.get('format');
+      if (formatParam && ['webp', 'jpeg', 'png'].includes(formatParam)) {
+        format = formatParam as 'webp' | 'jpeg' | 'png';
+      }
+      const qualityParam = params.get('quality');
+      if (qualityParam) {
+        const parsedQuality = parseFloat(qualityParam);
+        if (!isNaN(parsedQuality) && parsedQuality >= 0.1 && parsedQuality <= 1) {
+          quality = parsedQuality;
+        }
+      }
+    }
+    
+    try {
+      // Execute screenshot command with parameters
+      const screenshotData = await mcpHandler.executeCommand('kapturemcp_screenshot', {
+        tabId,
+        selector,
+        scale,
+        format,
+        quality
+      });
+      
+      // Return the screenshot data as JSON
+      return {
+        contents: [
+          {
+            uri: uri,
+            mimeType: 'application/json',
+            text: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              parameters: {
+                selector,
+                scale,
+                format,
+                quality
+              },
+              screenshot: screenshotData
+            }, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      throw new Error(`Failed to capture screenshot: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
   // Check if it's a tab-specific resource
   const tabMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)$/);
   if (tabMatch) {
@@ -476,6 +567,15 @@ function updateTabResources(tabId: string, tabTitle: string) {
     mimeType: 'application/json'
   };
   dynamicTabResources.set(`${tabId}/console`, consoleResource);
+  
+  // Add/update screenshot resource for this tab
+  const screenshotResource = {
+    uri: `kapturemcp://tab/${tabId}/screenshot`,
+    name: `Screenshot: ${tabTitle}`,
+    description: `Take a screenshot of browser tab ${tabId}`,
+    mimeType: 'application/json'
+  };
+  dynamicTabResources.set(`${tabId}/screenshot`, screenshotResource);
 }
 
 // Set up tab connect notification
@@ -536,6 +636,7 @@ tabRegistry.setDisconnectCallback(async (tabId: string) => {
     // Remove the dynamic resources for this tab
     dynamicTabResources.delete(tabId);
     dynamicTabResources.delete(`${tabId}/console`);
+    dynamicTabResources.delete(`${tabId}/screenshot`);
     
     // Send MCP notification that resources have changed
     await server.notification({
@@ -561,7 +662,7 @@ tabRegistry.setDisconnectCallback(async (tabId: string) => {
 });
 
 // Set up resource endpoint handler  
-handleResourceEndpoint = async (resourcePath: string) => {
+handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
   try {
     // Check base resources first
     const matchingResource = baseResources.find((resource) => {
@@ -584,6 +685,143 @@ handleResourceEndpoint = async (resourcePath: string) => {
           content: JSON.stringify(tabsArray, null, 2),
           mimeType: 'application/json'
         };
+      }
+    }
+    
+    // Check if it's a screenshot view resource (e.g., "tab/123/screenshot/view?scale=0.5")
+    const screenshotViewMatch = resourcePath.match(/^tab\/(.+)\/screenshot\/view$/);
+    if (screenshotViewMatch) {
+      const tabId = screenshotViewMatch[1];
+      const tab = tabRegistry.get(tabId);
+      
+      if (tab) {
+        try {
+          // Parse query parameters
+          let selector: string | undefined;
+          let scale = 0.3;
+          let format: 'webp' | 'jpeg' | 'png' = 'webp';
+          let quality = 0.85;
+          
+          if (queryString) {
+            const params = new URLSearchParams(queryString);
+            selector = params.get('selector') || undefined;
+            const scaleParam = params.get('scale');
+            if (scaleParam) {
+              const parsedScale = parseFloat(scaleParam);
+              if (!isNaN(parsedScale) && parsedScale >= 0.1 && parsedScale <= 1) {
+                scale = parsedScale;
+              }
+            }
+            const formatParam = params.get('format');
+            if (formatParam && ['webp', 'jpeg', 'png'].includes(formatParam)) {
+              format = formatParam as 'webp' | 'jpeg' | 'png';
+            }
+            const qualityParam = params.get('quality');
+            if (qualityParam) {
+              const parsedQuality = parseFloat(qualityParam);
+              if (!isNaN(parsedQuality) && parsedQuality >= 0.1 && parsedQuality <= 1) {
+                quality = parsedQuality;
+              }
+            }
+          }
+          
+          // Execute screenshot command
+          const screenshotData = await mcpHandler.executeCommand('kapturemcp_screenshot', {
+            tabId,
+            selector,
+            scale,
+            format,
+            quality
+          });
+          
+          // Extract base64 data and mime type from data URL
+          if (screenshotData.dataUrl) {
+            const match = screenshotData.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+            if (match) {
+              const [, mimeType, base64Data] = match;
+              const imageBuffer = Buffer.from(base64Data, 'base64');
+              
+              return {
+                content: imageBuffer,
+                mimeType: mimeType
+              };
+            }
+          }
+          
+          throw new Error('Invalid screenshot data');
+        } catch (error) {
+          logger.error(`Failed to capture screenshot for tab ${tabId}:`, error);
+          return null;
+        }
+      }
+    }
+    
+    // Check if it's a screenshot resource (e.g., "tab/123/screenshot")
+    const screenshotMatch = resourcePath.match(/^tab\/(.+)\/screenshot$/);
+    if (screenshotMatch) {
+      const tabId = screenshotMatch[1];
+      const tab = tabRegistry.get(tabId);
+      
+      if (tab) {
+        try {
+          // Parse query parameters
+          let selector: string | undefined;
+          let scale = 0.3;
+          let format: 'webp' | 'jpeg' | 'png' = 'webp';
+          let quality = 0.85;
+          
+          if (queryString) {
+            const params = new URLSearchParams(queryString);
+            selector = params.get('selector') || undefined;
+            const scaleParam = params.get('scale');
+            if (scaleParam) {
+              const parsedScale = parseFloat(scaleParam);
+              if (!isNaN(parsedScale) && parsedScale >= 0.1 && parsedScale <= 1) {
+                scale = parsedScale;
+              }
+            }
+            const formatParam = params.get('format');
+            if (formatParam && ['webp', 'jpeg', 'png'].includes(formatParam)) {
+              format = formatParam as 'webp' | 'jpeg' | 'png';
+            }
+            const qualityParam = params.get('quality');
+            if (qualityParam) {
+              const parsedQuality = parseFloat(qualityParam);
+              if (!isNaN(parsedQuality) && parsedQuality >= 0.1 && parsedQuality <= 1) {
+                quality = parsedQuality;
+              }
+            }
+          }
+          
+          // Execute screenshot command
+          const screenshotData = await mcpHandler.executeCommand('kapturemcp_screenshot', {
+            tabId,
+            selector,
+            scale,
+            format,
+            quality
+          });
+          
+          // Return the screenshot data as JSON
+          return {
+            content: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              parameters: {
+                selector,
+                scale,
+                format,
+                quality
+              },
+              screenshot: screenshotData
+            }, null, 2),
+            mimeType: 'application/json'
+          };
+        } catch (error) {
+          logger.error(`Failed to capture screenshot for tab ${tabId}:`, error);
+          return null;
+        }
       }
     }
     
@@ -667,6 +905,8 @@ async function startServer() {
     logger.log(`Resource endpoints: http://localhost:${PORT}/tabs`);
     logger.log(`Dynamic tab endpoints: http://localhost:${PORT}/tab/{tabId}`);
     logger.log(`Console log endpoints: http://localhost:${PORT}/tab/{tabId}/console`);
+    logger.log(`Screenshot endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot`);
+    logger.log(`Screenshot view endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot/view`);
     // Server is ready
   } catch (error) {
     logger.error('Failed to start MCP server:', error);

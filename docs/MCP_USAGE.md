@@ -338,6 +338,36 @@ Get console logs from a specific tab.
 - `kapturemcp://tab/abc123/console?level=error`
 - `kapturemcp://tab/abc123/console?level=warn&limit=20`
 
+### kapturemcp://tab/{tabId}/screenshot
+Capture a screenshot of a specific tab or element.
+
+**Parameters:**
+- `tabId` (in URL path): The tab ID
+- `selector` (query param, optional): CSS selector of element to capture
+- `scale` (query param, optional): Scale factor (0.1-1.0) to reduce screenshot size (default: 0.3)
+- `format` (query param, optional): Image format - webp, jpeg, or png (default: webp)
+- `quality` (query param, optional): Compression quality for webp/jpeg (0.1-1.0, default: 0.85)
+
+**Returns:** JSON object with:
+- `tabId` (string): The tab ID
+- `url` (string): Current URL of the tab
+- `title` (string): Current title of the tab
+- `parameters` (object): The parameters used for the screenshot
+- `screenshot` (object): Screenshot data including:
+  - `dataUrl` (string): Base64 encoded data URL of the image
+  - `scale` (number): The scale factor applied
+  - `format` (string): The image format used
+  - `quality` (number): The compression quality used
+  - `name` (string): Name of the screenshot
+
+**Examples:**
+- `kapturemcp://tab/abc123/screenshot` - Full page screenshot with defaults
+- `kapturemcp://tab/abc123/screenshot?selector=.main-content` - Capture specific element
+- `kapturemcp://tab/abc123/screenshot?scale=0.5&format=jpeg&quality=0.9` - Higher quality JPEG
+- `kapturemcp://tab/abc123/screenshot?selector=%23header&format=png` - PNG of element with ID "header"
+
+**Note:** This resource provides the same functionality as the `kapturemcp_screenshot` tool but as a resource for better integration with MCP clients.
+
 ## MCP Notifications
 
 Kapture sends real-time notifications for various events:
@@ -683,6 +713,127 @@ Common error codes:
 4. **Clean up resources** when done:
    - Disconnect tabs when finished
    - Close the MCP server gracefully
+
+## HTTP Endpoints
+
+In addition to MCP resources, Kapture provides direct HTTP endpoints for accessing data and images. These are useful for debugging, testing, or integration with non-MCP tools.
+
+### Discovery Endpoint
+**GET http://localhost:{port}/**
+
+Returns server status and MCP client information.
+
+**Response:**
+```json
+{
+  "mcpClient": {
+    "name": "Claude Desktop",
+    "version": "0.7.2"
+  }
+}
+```
+
+### Tab List
+**GET http://localhost:{port}/tabs**
+
+Returns a JSON array of all connected tabs.
+
+**Response:**
+```json
+[
+  {
+    "tabId": "1",
+    "url": "https://example.com",
+    "title": "Example Domain",
+    "connectedAt": 1234567890,
+    "lastPing": 1234567900
+  }
+]
+```
+
+### Tab Information
+**GET http://localhost:{port}/tab/{tabId}**
+
+Returns detailed information about a specific tab.
+
+**Response:**
+```json
+{
+  "tabId": "1",
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "connectedAt": 1234567890,
+  "lastPing": 1234567900,
+  "domSize": 12345,
+  "fullPageDimensions": {"width": 1200, "height": 2400},
+  "viewportDimensions": {"width": 1200, "height": 800},
+  "scrollPosition": {"x": 0, "y": 0},
+  "pageVisibility": {"visible": true, "visibilityState": "visible"},
+  "pageLoadTimes": {/* timing data */}
+}
+```
+
+### Console Logs
+**GET http://localhost:{port}/tab/{tabId}/console**
+
+Returns console logs from a specific tab.
+
+**Query Parameters:**
+- `before`: ISO timestamp to get logs before
+- `limit`: Maximum number of logs (default: 100)
+- `level`: Filter by log level (log, info, warn, error)
+
+**Example:** `http://localhost:61822/tab/1/console?level=error&limit=50`
+
+### Screenshot (JSON)
+**GET http://localhost:{port}/tab/{tabId}/screenshot**
+
+Returns screenshot data as JSON with base64 encoded image.
+
+**Query Parameters:**
+- `selector`: CSS selector of element to capture
+- `scale`: Scale factor (0.1-1.0, default: 0.3)
+- `format`: Image format - webp, jpeg, or png (default: webp)
+- `quality`: Compression quality (0.1-1.0, default: 0.85)
+
+**Response:**
+```json
+{
+  "tabId": "1",
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "parameters": {
+    "selector": null,
+    "scale": 0.3,
+    "format": "webp",
+    "quality": 0.85
+  },
+  "screenshot": {
+    "dataUrl": "data:image/webp;base64,..."
+    /* other screenshot data */
+  }
+}
+```
+
+### Screenshot (Direct Image)
+**GET http://localhost:{port}/tab/{tabId}/screenshot/view**
+
+Returns the screenshot as a direct image response (not JSON).
+
+**Query Parameters:** Same as the JSON endpoint above.
+
+**Response:** Binary image data with appropriate Content-Type header.
+
+**Examples:**
+- `http://localhost:61822/tab/1/screenshot/view` - Full page screenshot
+- `http://localhost:61822/tab/1/screenshot/view?selector=.header&format=png` - PNG of header
+- `http://localhost:61822/tab/1/screenshot/view?scale=1&quality=0.95` - High quality screenshot
+
+This endpoint is particularly useful for:
+- Viewing screenshots directly in a browser
+- Embedding in HTML: `<img src="http://localhost:61822/tab/1/screenshot/view">`
+- Downloading screenshots with tools like curl or wget
+- Integration with image processing tools
 
 ## Troubleshooting
 
