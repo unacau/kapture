@@ -864,7 +864,7 @@ function injectConsoleCapture() {
               stack: new Error().stack
             }
           });
-          originalConsole.log('[Kapture] Dispatching console event:', event.detail);
+
           // Dispatch event for content script to capture
           window.dispatchEvent(event);
           
@@ -1027,14 +1027,14 @@ function connectToBackground() {
         // Console clear received
         // Clear the log array
         window.consoleLogs = [];
-        
+
         // Forward to server
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'console-clear'
           }));
         }
-        
+
         // Update the log count display
         updateLogCount();
       }
