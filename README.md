@@ -151,8 +151,6 @@ Then ask Claude to interact with web pages:
 - `select` - Select dropdown options (HTML `<select>` only)
 - `evaluate` - Execute JavaScript
 
-**Note**: The tools `list_tabs`, `screenshot`, and `dom` have been disabled. Use the corresponding resources instead for better integration.
-
 ### MCP Resources
 
 - `kapture://tabs` - List all connected browser tabs
