@@ -10,7 +10,9 @@ const statusEl = document.getElementById('status');
 const statusTextEl = document.getElementById('status-text');
 const refreshTabsBtn = document.getElementById('refresh-tabs');
 const tabListEl = document.getElementById('tab-list');
-const tabContentEl = document.getElementById('tab-content');
+const toolsListEl = document.getElementById('tools-list');
+const resourcesListEl = document.getElementById('resources-list');
+const contentContainerEl = document.getElementById('content-container');
 const consoleEl = document.getElementById('console-output');
 const tabInfoEl = document.getElementById('tab-info-content');
 const consoleDividerEl = document.getElementById('console-divider');
@@ -18,6 +20,9 @@ const consoleContainerEl = document.getElementById('console');
 
 // Tool forms state - store form data per tab
 const tabFormData = {};
+
+// Selected item state
+let selectedItem = null; // { type: 'tool'|'resource', name: string }
 
 // Utility function to escape HTML
 function escapeHtml(text) {
@@ -89,6 +94,7 @@ async function discoverTools() {
     const response = await window.electronAPI.sendMCPRequest('tools/list');
     currentTools = response.tools || [];
     log(`Found ${currentTools.length} tools`);
+    displayToolsList();
   } catch (error) {
     log(`Failed to discover tools: ${error.message}`, 'error');
   }
@@ -101,6 +107,7 @@ async function discoverResources() {
     const response = await window.electronAPI.sendMCPRequest('resources/list');
     currentResources = response.resources || [];
     log(`Found ${currentResources.length} resources`);
+    displayResourcesList();
   } catch (error) {
     log(`Failed to discover resources: ${error.message}`, 'error');
   }
@@ -197,8 +204,29 @@ function displayTabs() {
 function selectTab(tabId) {
   selectedTabId = tabId;
   displayTabs();
-  displayTabContent();
   updateTabInfo();
+  
+  // Clear selected item when tab changes
+  selectedItem = null;
+  displayToolsList();
+  displayResourcesList();
+  
+  // Show empty state message
+  contentContainerEl.innerHTML = `
+    <div class="empty-state">
+      <h2>Select from sidebar</h2>
+      <p>Choose a tool or resource from the left sidebar</p>
+    </div>
+  `;
+  
+  // Update URL in navigation bar
+  const tab = currentTabs.find(t => t.tabId === selectedTabId);
+  if (tab && tab.url) {
+    const urlInput = document.getElementById('nav-url');
+    if (urlInput) {
+      urlInput.value = tab.url;
+    }
+  }
 }
 
 function updateTabInfo() {
@@ -253,63 +281,157 @@ function updateTabInfo() {
   tabInfoEl.innerHTML = infoHTML;
 }
 
-function displayTabContent() {
-  if (!selectedTabId) {
-    tabContentEl.innerHTML = `
+// Display tools in sidebar
+function displayToolsList() {
+  toolsListEl.innerHTML = '';
+  
+  if (currentTools.length === 0) {
+    toolsListEl.innerHTML = '<div class="empty-state" style="padding: 0.5rem; color: #999;">No tools available</div>';
+    return;
+  }
+  
+  currentTools.forEach(tool => {
+    const toolEl = document.createElement('button');
+    toolEl.className = 'sidebar-item';
+    if (selectedItem && selectedItem.type === 'tool' && selectedItem.name === tool.name) {
+      toolEl.classList.add('active');
+    }
+    
+    // Choose appropriate icon
+    let icon = '🔧';
+    if (tool.name.includes('click')) icon = '👆';
+    else if (tool.name.includes('type')) icon = '⌨️';
+    else if (tool.name.includes('screenshot')) icon = '📸';
+    else if (tool.name.includes('select')) icon = '📝';
+    else if (tool.name.includes('wait')) icon = '⏱️';
+    else if (tool.name.includes('execute')) icon = '▶️';
+    else if (tool.name.includes('hover')) icon = '🎯';
+    else if (tool.name.includes('scroll')) icon = '📜';
+    else if (tool.name.includes('navigate')) icon = '🧭';
+    else if (tool.name.includes('back')) icon = '⬅️';
+    else if (tool.name.includes('forward')) icon = '➡️';
+    
+    toolEl.innerHTML = `
+      <span class="sidebar-item-icon">${icon}</span>
+      <span>${tool.name}</span>
+    `;
+    
+    toolEl.addEventListener('click', () => selectSidebarItem('tool', tool.name));
+    toolsListEl.appendChild(toolEl);
+  });
+}
+
+// Display resources in sidebar
+function displayResourcesList() {
+  resourcesListEl.innerHTML = '';
+  
+  if (currentResources.length === 0) {
+    resourcesListEl.innerHTML = '<div class="empty-state" style="padding: 0.5rem; color: #999;">No resources available</div>';
+    return;
+  }
+  
+  currentResources.forEach(resource => {
+    const resourceEl = document.createElement('button');
+    resourceEl.className = 'sidebar-item';
+    if (selectedItem && selectedItem.type === 'resource' && selectedItem.name === resource.uri) {
+      resourceEl.classList.add('active');
+    }
+    
+    // Choose appropriate icon
+    let icon = '📄';
+    if (resource.uri.includes('console')) icon = '📋';
+    else if (resource.uri.includes('screenshot')) icon = '📸';
+    else if (resource.uri.includes('tabs')) icon = '🗂️';
+    
+    resourceEl.innerHTML = `
+      <span class="sidebar-item-icon">${icon}</span>
+      <span>${resource.uri}</span>
+    `;
+    
+    resourceEl.addEventListener('click', () => selectSidebarItem('resource', resource.uri));
+    resourcesListEl.appendChild(resourceEl);
+  });
+}
+
+// Handle sidebar item selection
+function selectSidebarItem(type, name) {
+  selectedItem = { type, name };
+  
+  // Update active states
+  displayToolsList();
+  displayResourcesList();
+  
+  // Display the selected item in content area
+  displaySelectedItem();
+}
+
+// Display selected tool or resource
+function displaySelectedItem() {
+  if (!selectedItem || !selectedTabId) {
+    contentContainerEl.innerHTML = `
       <div class="empty-state">
-        <p>No tab selected</p>
-        <p class="hint">Select a tab above to see available tools</p>
+        <h2>Welcome to Kapture Test Client</h2>
+        <p>Select a tab from the sidebar to get started</p>
+        <p class="hint">Tools and resources will appear once a tab is selected</p>
       </div>
     `;
     return;
   }
+  
+  if (selectedItem.type === 'tool') {
+    const tool = currentTools.find(t => t.name === selectedItem.name);
+    if (tool) {
+      // Navigation tools are handled via the navigation bar, not as separate cards
+      if (['kapturemcp_navigate', 'kapturemcp_go_back', 'kapturemcp_go_forward'].includes(tool.name)) {
+        contentContainerEl.innerHTML = `
+          <div class="empty-state">
+            <h2>${tool.name}</h2>
+            <p>${tool.description}</p>
+            <p class="hint">Use the navigation bar above to ${tool.name.includes('navigate') ? 'navigate to URLs' : tool.name.includes('back') ? 'go back' : 'go forward'}</p>
+          </div>
+        `;
+      } else {
+        contentContainerEl.innerHTML = `
+          <div style="max-width: 600px; margin: 0 auto;">
+            ${createToolCard(tool)}
+          </div>
+        `;
+        
+        // Restore form data if exists
+        if (tabFormData[selectedTabId] && tabFormData[selectedTabId][tool.name]) {
+          Object.entries(tabFormData[selectedTabId][tool.name]).forEach(([paramName, value]) => {
+            if (paramName === 'format') {
+              const radio = document.querySelector(`input[name="${tool.name}-${paramName}"][value="${value}"]`);
+              if (radio) radio.checked = true;
+            } else {
+              const input = document.getElementById(`${tool.name}-${paramName}`);
+              if (input) input.value = value;
+            }
+          });
+        }
+        
+        // Add event listeners
+        addToolEventListeners();
+      }
+    }
+  } else if (selectedItem.type === 'resource') {
+    const resource = currentResources.find(r => r.uri === selectedItem.name);
+    if (resource) {
+      contentContainerEl.innerHTML = `
+        <div style="max-width: 600px; margin: 0 auto;">
+          ${createResourceCard(resource)}
+        </div>
+      `;
+      
+      // Add event listeners
+      addToolEventListeners();
+    }
+  }
+}
 
-  // Get current tab info
-  const currentTab = currentTabs.find(t => t.tabId === selectedTabId);
-  const currentUrl = currentTab ? currentTab.url : '';
-
-  // Create browser navigation bar
-  const navBarHtml = `
-    <div class="browser-nav-bar">
-      <button class="nav-btn" id="nav-back" title="Go back">
-        <svg width="16" height="16" viewBox="0 0 16 16">
-          <path fill="currentColor" d="M11 2L5 8l6 6v-12z"/>
-        </svg>
-      </button>
-      <button class="nav-btn" id="nav-forward" title="Go forward">
-        <svg width="16" height="16" viewBox="0 0 16 16">
-          <path fill="currentColor" d="M5 2l6 6-6 6V2z"/>
-        </svg>
-      </button>
-      <input type="text" class="nav-url-input" id="nav-url" value="${currentUrl}" placeholder="Enter URL...">
-      <button class="nav-btn nav-refresh" id="nav-refresh" title="Navigate">
-        <svg width="16" height="16" viewBox="0 0 16 16">
-          <path fill="currentColor" d="M12 8l-6-6v4H2v4h4v4l6-6z"/>
-        </svg>
-      </button>
-    </div>
-  `;
-
-  // Create tool cards (excluding navigation tools)
-  const toolsHtml = currentTools
-    .filter(tool => !['kapturemcp_list_tabs', 'kapturemcp_navigate', 'kapturemcp_go_back', 'kapturemcp_go_forward'].includes(tool.name))
-    .map(tool => createToolCard(tool))
-    .join('');
-
-  // Create resource cards
-  const resourcesHtml = currentResources
-    .map(resource => createResourceCard(resource))
-    .join('');
-
-  tabContentEl.innerHTML = `
-    ${navBarHtml}
-    <div class="tools-grid">
-      ${toolsHtml}
-      ${resourcesHtml}
-    </div>
-  `;
-
-  // Add navigation event listeners
+// Add navigation event listeners when page loads
+function setupNavigationListeners() {
+  // Navigation buttons
   document.getElementById('nav-back').addEventListener('click', async () => {
     await executeNavigation('back');
   });
@@ -335,25 +457,6 @@ function displayTabContent() {
   });
 
   navRefresh.addEventListener('click', navigateToUrl);
-
-  // Restore form data if exists
-  if (tabFormData[selectedTabId]) {
-    Object.entries(tabFormData[selectedTabId]).forEach(([toolName, params]) => {
-      Object.entries(params).forEach(([paramName, value]) => {
-        if (paramName === 'format') {
-          // For radio buttons, find and check the matching one
-          const radio = document.querySelector(`input[name="${toolName}-${paramName}"][value="${value}"]`);
-          if (radio) radio.checked = true;
-        } else {
-          const input = document.getElementById(`${toolName}-${paramName}`);
-          if (input) input.value = value;
-        }
-      });
-    });
-  }
-
-  // Add event listeners
-  addToolEventListeners();
 }
 
 function createToolCard(tool) {
@@ -421,6 +524,7 @@ function createToolCard(tool) {
 function createResourceCard(resource) {
   // Check if this is the console resource that supports parameters
   const isConsoleResource = resource.uri.includes('/console');
+  const isScreenshotResource = resource.uri.includes('/screenshot');
   
   let paramsHtml = '';
   if (isConsoleResource) {
@@ -453,6 +557,49 @@ function createResourceCard(resource) {
         </div>
       </div>
     `;
+  } else if (isScreenshotResource) {
+    // Add parameter inputs for screenshot resource (same as screenshot tool)
+    paramsHtml = `
+      <div class="tool-params">
+        <div class="param-group">
+          <label for="${resource.uri}-selector">
+            selector <span style="color: #999; font-size: 0.85rem;">(optional)</span>
+          </label>
+          <input type="text" id="${resource.uri}-selector">
+        </div>
+        <div class="param-group">
+          <label for="${resource.uri}-scale">
+            scale
+          </label>
+          <input type="number" id="${resource.uri}-scale" min="0.1" max="1.0" step="0.1" value="0.3">
+        </div>
+        <div class="param-group">
+          <label for="${resource.uri}-format">
+            format
+          </label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="${resource.uri}-format" value="webp" checked>
+              <span>WEBP</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="${resource.uri}-format" value="jpeg">
+              <span>JPEG</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="${resource.uri}-format" value="png">
+              <span>PNG</span>
+            </label>
+          </div>
+        </div>
+        <div class="param-group">
+          <label for="${resource.uri}-quality">
+            quality
+          </label>
+          <input type="number" id="${resource.uri}-quality" min="0.1" max="1.0" step="0.1" value="0.85">
+        </div>
+      </div>
+    `;
   }
   
   return `
@@ -471,7 +618,7 @@ function createResourceCard(resource) {
 
 function addToolEventListeners() {
   // Save form data on input
-  tabContentEl.querySelectorAll('input, textarea').forEach(input => {
+  contentContainerEl.querySelectorAll('input, textarea').forEach(input => {
     const eventType = input.type === 'radio' ? 'change' : 'input';
     input.addEventListener(eventType, () => {
       if (input.type === 'radio') {
@@ -499,7 +646,7 @@ function addToolEventListeners() {
   });
 
   // Execute buttons
-  tabContentEl.querySelectorAll('.tool-execute').forEach(btn => {
+  contentContainerEl.querySelectorAll('.tool-execute').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const toolName = e.target.dataset.tool;
       await executeTool(toolName, e.target);
@@ -507,7 +654,7 @@ function addToolEventListeners() {
   });
 
   // Resource query buttons
-  tabContentEl.querySelectorAll('.resource-query').forEach(btn => {
+  contentContainerEl.querySelectorAll('.resource-query').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const resourceUri = e.target.dataset.resource;
       await queryResource(resourceUri, e.target);
@@ -532,6 +679,7 @@ async function executeTool(toolName, button) {
     button.disabled = true;
     button.textContent = 'Executing...';
     resultEl.style.display = 'block';
+    resultEl.open = true; // Auto-open the details
     resultEl.className = 'tool-result';
     summaryEl.textContent = 'Executing...';
     contentEl.textContent = '';
@@ -714,18 +862,20 @@ async function queryResource(resourceUri, button) {
     button.disabled = true;
     button.textContent = 'Querying...';
     resultEl.style.display = 'block';
+    resultEl.open = true; // Auto-open the details
     resultEl.className = 'tool-result';
     summaryEl.textContent = 'Querying...';
     contentEl.textContent = '';
     
-    // Build URI with query parameters if it's a console resource
+    // Build URI with query parameters
     let finalUri = resourceUri;
+    const params = new URLSearchParams();
+    
     if (resourceUri.includes('/console')) {
       const levelInput = document.getElementById(`${resourceUri}-level`);
       const limitInput = document.getElementById(`${resourceUri}-limit`);
       const beforeInput = document.getElementById(`${resourceUri}-before`);
       
-      const params = new URLSearchParams();
       if (levelInput && levelInput.value) {
         params.append('level', levelInput.value);
       }
@@ -735,10 +885,28 @@ async function queryResource(resourceUri, button) {
       if (beforeInput && beforeInput.value) {
         params.append('before', beforeInput.value);
       }
+    } else if (resourceUri.includes('/screenshot')) {
+      const selectorInput = document.getElementById(`${resourceUri}-selector`);
+      const scaleInput = document.getElementById(`${resourceUri}-scale`);
+      const formatRadio = document.querySelector(`input[name="${resourceUri}-format"]:checked`);
+      const qualityInput = document.getElementById(`${resourceUri}-quality`);
       
-      if (params.toString()) {
-        finalUri += '?' + params.toString();
+      if (selectorInput && selectorInput.value) {
+        params.append('selector', selectorInput.value);
       }
+      if (scaleInput && scaleInput.value) {
+        params.append('scale', scaleInput.value);
+      }
+      if (formatRadio) {
+        params.append('format', formatRadio.value);
+      }
+      if (qualityInput && qualityInput.value) {
+        params.append('quality', qualityInput.value);
+      }
+    }
+    
+    if (params.toString()) {
+      finalUri += '?' + params.toString();
     }
     
     const response = await window.electronAPI.sendMCPRequest('resources/read', {
@@ -756,14 +924,42 @@ async function queryResource(resourceUri, button) {
         const logCount = data.logs ? data.logs.length : 0;
         const totalCount = data.total || 0;
         summaryEl.textContent = `✅ Retrieved ${logCount} of ${totalCount} logs`;
+        contentEl.textContent = JSON.stringify(data, null, 2);
       } else if (resourceUri.includes('/tabs')) {
         const tabCount = Array.isArray(data) ? data.length : 0;
         summaryEl.textContent = `✅ Found ${tabCount} tabs`;
+        contentEl.textContent = JSON.stringify(data, null, 2);
+      } else if (resourceUri.includes('/screenshot')) {
+        summaryEl.textContent = '✅ Screenshot captured';
+        
+        // Display the raw JSON in the result content
+        contentEl.textContent = JSON.stringify(data, null, 2);
+        
+        // Create screenshot preview below the result
+        if (data.screenshot && data.screenshot.dataUrl) {
+          // Remove any existing screenshot preview
+          const existingPreview = resultEl.parentNode.querySelector('.screenshot-preview');
+          if (existingPreview) {
+            existingPreview.remove();
+          }
+          
+          const previewDiv = document.createElement('div');
+          previewDiv.className = 'screenshot-preview';
+          const scaleInfo = data.parameters && data.parameters.scale < 1 ? ` (scaled to ${Math.round(data.parameters.scale * 100)}%)` : '';
+          const formatInfo = data.parameters && data.parameters.format ? ` (${data.parameters.format.toUpperCase()})` : '';
+          previewDiv.innerHTML = `
+            <img src="${data.screenshot.dataUrl}" alt="Screenshot">
+            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+              Screenshot captured${scaleInfo}${formatInfo}
+            </div>
+          `;
+          // Insert after the details element
+          resultEl.parentNode.insertBefore(previewDiv, resultEl.nextSibling);
+        }
       } else {
         summaryEl.textContent = '✅ Resource retrieved';
+        contentEl.textContent = JSON.stringify(data, null, 2);
       }
-      
-      contentEl.textContent = JSON.stringify(data, null, 2);
     } else {
       resultEl.className = 'tool-result warning';
       summaryEl.textContent = '⚠️ No data returned';
@@ -921,9 +1117,17 @@ window.electronAPI.onMCPDisconnected((data) => {
   // Clear tabs and content
   currentTabs = [];
   selectedTabId = null;
+  selectedItem = null;
   displayTabs();
-  displayTabContent();
+  displayToolsList();
+  displayResourcesList();
   updateTabInfo();
+  contentContainerEl.innerHTML = `
+    <div class="empty-state">
+      <h2>Disconnected</h2>
+      <p>Waiting for server connection...</p>
+    </div>
+  `;
 
   // Attempt to reconnect
   setTimeout(() => {
@@ -977,6 +1181,9 @@ document.addEventListener('mouseup', () => {
 
 // Initial state
 log('Kapture MCP Test Client ready');
+
+// Setup navigation listeners
+setupNavigationListeners();
 
 // Auto-connect on startup
 connectToServer();

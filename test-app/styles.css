@@ -58,13 +58,149 @@ body {
   font-size: 0.9rem;
 }
 
-/* Main Layout */
-.main {
+/* Browser Container */
+.browser-container {
   flex: 1;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
-  gap: 1rem;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 300px;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-section {
   padding: 1rem;
+}
+
+.sidebar-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-section-header h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #666;
+  margin: 0;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 0 1rem;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #666;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f0f0f0;
+  color: #3498db;
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tab List in Sidebar */
+.tab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tab-item {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.tab-item:hover {
+  background: #f0f0f0;
+}
+
+.tab-item.active {
+  background: #3498db;
+  color: white;
+}
+
+/* Sidebar Items (Tools & Resources) */
+.sidebar-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-item {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 100%;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-item:hover {
+  background: #f0f0f0;
+}
+
+.sidebar-item.active {
+  background: #e8f4f8;
+  color: #2c5282;
+  font-weight: 500;
+}
+
+.sidebar-item-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* Content Area */
+.content-area {
+  flex: 1;
+  background: #f5f5f5;
+  overflow-y: auto;
+}
+
+.content-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Resource Widget */
@@ -200,7 +336,14 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+/* Main Content with Sidebar */
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
 }
 
 /* Browser Navigation Bar */
