@@ -540,6 +540,53 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     }
   }
   
+  // Check if it's a DOM resource with optional query parameters
+  const domMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/dom(?:\?.*)?$/);
+  if (domMatch) {
+    const tabId = domMatch[1];
+    const tab = tabRegistry.get(tabId);
+    
+    if (!tab) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+    
+    // Parse query parameters for selector
+    let selector: string | undefined;
+    
+    const queryIndex = uri.indexOf('?');
+    if (queryIndex !== -1) {
+      const params = new URLSearchParams(uri.substring(queryIndex + 1));
+      selector = params.get('selector') || undefined;
+    }
+    
+    try {
+      // Execute DOM command
+      const domData = await mcpHandler.executeCommand('kapturemcp_dom', {
+        tabId,
+        selector
+      });
+      
+      // Return the DOM data as JSON
+      return {
+        contents: [
+          {
+            uri: uri,
+            mimeType: 'application/json',
+            text: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              selector: selector || 'body',
+              dom: domData
+            }, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      throw new Error(`Failed to get DOM: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
   // Check if it's a tab-specific resource
   const tabMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)$/);
   if (tabMatch) {
@@ -654,6 +701,15 @@ function updateTabResources(tabId: string, tabTitle: string) {
     mimeType: 'application/json'
   };
   dynamicTabResources.set(`${tabId}/elementsFromPoint`, elementsResource);
+  
+  // Add/update DOM resource for this tab
+  const domResource = {
+    uri: `kapturemcp://tab/${tabId}/dom`,
+    name: `DOM: ${tabTitle}`,
+    description: `Get the DOM HTML of browser tab ${tabId}`,
+    mimeType: 'application/json'
+  };
+  dynamicTabResources.set(`${tabId}/dom`, domResource);
 }
 
 // Set up tab connect notification
@@ -1003,6 +1059,46 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
       }
     }
     
+    // Check if it's a DOM resource (e.g., "tab/123/dom")
+    const domMatch = resourcePath.match(/^tab\/(.+)\/dom$/);
+    if (domMatch) {
+      const tabId = domMatch[1];
+      const tab = tabRegistry.get(tabId);
+      
+      if (tab) {
+        try {
+          // Parse query parameters for selector
+          let selector: string | undefined;
+          
+          if (queryString) {
+            const params = new URLSearchParams(queryString);
+            selector = params.get('selector') || undefined;
+          }
+          
+          // Execute DOM command
+          const domData = await mcpHandler.executeCommand('kapturemcp_dom', {
+            tabId,
+            selector
+          });
+          
+          // Return the DOM data as JSON
+          return {
+            content: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              selector: selector || 'body',
+              dom: domData
+            }, null, 2),
+            mimeType: 'application/json'
+          };
+        } catch (error) {
+          logger.error(`Failed to get DOM for tab ${tabId}:`, error);
+          return null;
+        }
+      }
+    }
+    
     // Check if it's a tab-specific resource (e.g., "tab/123")
     const tabMatch = resourcePath.match(/^tab\/(.+)$/);
     if (tabMatch) {
@@ -1051,6 +1147,7 @@ async function startServer() {
     logger.log(`Screenshot endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot`);
     logger.log(`Screenshot view endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot/view`);
     logger.log(`Elements at point endpoints: http://localhost:${PORT}/tab/{tabId}/elementsFromPoint?x={x}&y={y}`);
+    logger.log(`DOM endpoints: http://localhost:${PORT}/tab/{tabId}/dom`);
     // Server is ready
   } catch (error) {
     logger.error('Failed to start MCP server:', error);

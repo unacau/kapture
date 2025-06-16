@@ -408,6 +408,30 @@ Get information about all elements at a specific coordinate in the viewport.
 
 **Note:** This uses the browser's `document.elementsFromPoint()` API to get all elements at the specified coordinates, from topmost to bottommost in the stacking order.
 
+### kapturemcp://tab/{tabId}/dom
+Get the DOM HTML of a specific tab or element.
+
+**Parameters:**
+- `tabId` (in URL path): The tab ID
+- `selector` (query param, optional): CSS selector of element to get HTML from (defaults to body)
+
+**Returns:** JSON object with:
+- `tabId` (string): The tab ID
+- `url` (string): Current URL of the tab
+- `title` (string): Current title of the tab
+- `selector` (string): The CSS selector used (or 'body' if none provided)
+- `dom` (object): DOM data containing:
+  - `found` (boolean): Whether the element was found
+  - `html` (string): The outerHTML of the element
+  - `error` (object|undefined): Error details if element not found
+
+**Examples:**
+- `kapturemcp://tab/abc123/dom` - Get full body HTML
+- `kapturemcp://tab/abc123/dom?selector=.main-content` - Get HTML of element with class "main-content"
+- `kapturemcp://tab/abc123/dom?selector=%23header` - Get HTML of element with ID "header"
+
+**Note:** This resource provides the same functionality as the `kapturemcp_dom` tool but as a resource for better integration with MCP clients.
+
 ## MCP Notifications
 
 Kapture sends real-time notifications for various events:
@@ -895,6 +919,35 @@ This endpoint is useful for:
 - Finding clickable elements at specific coordinates
 - Analyzing page structure at mouse positions
 - Building custom interaction tools
+
+### DOM
+**GET http://localhost:{port}/tab/{tabId}/dom**
+
+Get the DOM HTML of a specific tab or element.
+
+**Query Parameters:**
+- `selector` (optional): CSS selector of element to get HTML from (defaults to body)
+
+**Response:** JSON object with:
+- `tabId` (string): The tab ID
+- `url` (string): Current URL of the tab
+- `title` (string): Current title of the tab
+- `selector` (string): The CSS selector used (or 'body' if none provided)
+- `dom` (object): DOM data containing:
+  - `found` (boolean): Whether the element was found
+  - `html` (string): The outerHTML of the element
+  - `error` (object|undefined): Error details if element not found
+
+**Examples:**
+- `http://localhost:61822/tab/1/dom` - Get full body HTML
+- `http://localhost:61822/tab/1/dom?selector=.main-content` - Get HTML of element with class "main-content"
+- `http://localhost:61822/tab/1/dom?selector=%23header` - Get HTML of element with ID "header" (URL encoded)
+
+This endpoint is particularly useful for:
+- Extracting specific page sections for analysis
+- Monitoring DOM changes during automation
+- Debugging element structure
+- Content scraping and extraction
 
 ## Troubleshooting
 
