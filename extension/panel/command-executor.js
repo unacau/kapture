@@ -40,37 +40,37 @@ class CommandExecutor {
 
     try {
       switch (command) {
-        case 'kapturemcp_navigate':
+        case 'navigate':
           return await this.navigate(params);
 
-        case 'kapturemcp_go_back':
+        case 'back':
           return await this.goBack(params);
 
-        case 'kapturemcp_go_forward':
+        case 'forward':
           return await this.goForward(params);
 
-        case 'kapturemcp_screenshot':
+        case 'screenshot':
           return await this.screenshot(params);
 
-        case 'kapturemcp_click':
+        case 'click':
           return await this.click(params);
 
-        case 'kapturemcp_fill':
+        case 'fill':
           return await this.fill(params);
 
-        case 'kapturemcp_select':
+        case 'select':
           return await this.select(params);
 
-        case 'kapturemcp_hover':
+        case 'hover':
           return await this.hover(params);
 
-        case 'kapturemcp_evaluate':
+        case 'evaluate':
           return await this.evaluate(params);
 
-        case 'kapturemcp_dom':
+        case 'dom':
           return await this.getDom(params);
 
-        case 'kapturemcp_elementsFromPoint':
+        case 'elementsFromPoint':
           return await this.getElementsFromPoint(params);
 
         case 'getLogs':

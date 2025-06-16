@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const screenshotTool = {
-  name: 'kapturemcp_screenshot',
+  name: 'screenshot',
   description: 'Capture a screenshot of the page or specific element',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -13,7 +13,7 @@ export const screenshotTool = {
 };
 
 export const evaluateTool = {
-  name: 'kapturemcp_evaluate',
+  name: 'evaluate',
   description: 'Execute JavaScript code in the browser context. Return values are automatically serialized to JSON-safe format: functions become "[Function: name]", DOM elements include unique CSS selectors, NodeLists/HTMLCollections are converted to arrays with selectors, circular references are handled, etc.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -22,7 +22,7 @@ export const evaluateTool = {
 };
 
 export const domTool = {
-  name: 'kapturemcp_dom',
+  name: 'dom',
   description: 'Get outerHTML of the body or a specific element',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -31,7 +31,7 @@ export const domTool = {
 };
 
 export const elementsFromPointTool = {
-  name: 'kapturemcp_elementsFromPoint',
+  name: 'elementsFromPoint',
   description: 'Get information about all elements at a specific coordinate in the viewport',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),

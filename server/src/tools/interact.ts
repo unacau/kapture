@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const clickTool = {
-  name: 'kapturemcp_click',
+  name: 'click',
   description: 'Click on a page element using CSS selector. Note: May experience delays if Kapture DevTools panel is not the active tab.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -10,7 +10,7 @@ export const clickTool = {
 };
 
 export const hoverTool = {
-  name: 'kapturemcp_hover',
+  name: 'hover',
   description: 'Hover over a page element using CSS selector. Note: May experience delays if Kapture DevTools panel is not the active tab.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -19,7 +19,7 @@ export const hoverTool = {
 };
 
 export const fillTool = {
-  name: 'kapturemcp_fill',
+  name: 'fill',
   description: 'Fill an input field with a value',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
@@ -29,7 +29,7 @@ export const fillTool = {
 };
 
 export const selectTool = {
-  name: 'kapturemcp_select',
+  name: 'select',
   description: 'Select an option from an HTML <select> dropdown element. Note: Only works with native HTML select elements, not custom dropdowns.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),

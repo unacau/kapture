@@ -233,7 +233,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const result = await mcpHandler.executeCommand(name, args);
     
     // Special handling for screenshot tool
-    if (name === 'kapturemcp_screenshot' && result.dataUrl) {
+    if (name === 'screenshot' && result.dataUrl) {
       // Extract the base64 data and mime type from the data URL
       const match = result.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
       if (match) {
@@ -325,7 +325,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
   
   // Check if it's a console resource with optional pagination
-  const consoleMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/console(?:\?.*)?$/);
+  const consoleMatch = uri.match(/^kapture:\/\/tab\/(.+)\/console(?:\?.*)?$/);
   if (consoleMatch) {
     const [fullPath, tabId] = consoleMatch;
     
@@ -388,11 +388,11 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
   
   // Check if it's a screenshot resource with optional query parameters
-  const screenshotMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/screenshot(?:\?.*)?$/);
+  const screenshotMatch = uri.match(/^kapture:\/\/tab\/(.+)\/screenshot(?:\?.*)?$/);
   if (screenshotMatch) {
     const fullPath = screenshotMatch[0];
     const pathParts = fullPath.split('?');
-    const pathMatch = pathParts[0].match(/^kapturemcp:\/\/tab\/(.+)\/screenshot$/);
+    const pathMatch = pathParts[0].match(/^kapture:\/\/tab\/(.+)\/screenshot$/);
     
     if (!pathMatch) {
       throw new Error(`Invalid screenshot resource URI: ${uri}`);
@@ -437,7 +437,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     
     try {
       // Execute screenshot command with parameters
-      const screenshotData = await mcpHandler.executeCommand('kapturemcp_screenshot', {
+      const screenshotData = await mcpHandler.executeCommand('screenshot', {
         tabId,
         selector,
         scale,
@@ -472,7 +472,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
   
   // Check if it's an elementsFromPoint resource with optional query parameters
-  const elementsMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/elementsFromPoint(?:\?.*)?$/);
+  const elementsMatch = uri.match(/^kapture:\/\/tab\/(.+)\/elementsFromPoint(?:\?.*)?$/);
   if (elementsMatch) {
     const tabId = elementsMatch[1];
     const tab = tabRegistry.get(tabId);
@@ -513,7 +513,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     
     try {
       // Execute elementsFromPoint command
-      const elementsData = await mcpHandler.executeCommand('kapturemcp_elementsFromPoint', {
+      const elementsData = await mcpHandler.executeCommand('elementsFromPoint', {
         tabId,
         x,
         y
@@ -541,7 +541,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
   
   // Check if it's a DOM resource with optional query parameters
-  const domMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/dom(?:\?.*)?$/);
+  const domMatch = uri.match(/^kapture:\/\/tab\/(.+)\/dom(?:\?.*)?$/);
   if (domMatch) {
     const tabId = domMatch[1];
     const tab = tabRegistry.get(tabId);
@@ -588,7 +588,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   }
   
   // Check if it's a tab-specific resource
-  const tabMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)$/);
+  const tabMatch = uri.match(/^kapture:\/\/tab\/(.+)$/);
   if (tabMatch) {
     const tabId = tabMatch[1];
     const tab = tabRegistry.get(tabId);
@@ -668,7 +668,7 @@ async function sendTabListChangeNotification() {
 function updateTabResources(tabId: string, tabTitle: string) {
   // Add/update dynamic resource for this tab
   const tabResource = {
-    uri: `kapturemcp://tab/${tabId}`,
+    uri: `kapture://tab/${tabId}`,
     name: `Browser Tab: ${tabTitle}`,
     description: `Information about browser tab ${tabId}`,
     mimeType: 'application/json'
@@ -677,7 +677,7 @@ function updateTabResources(tabId: string, tabTitle: string) {
   
   // Add/update console resource for this tab
   const consoleResource = {
-    uri: `kapturemcp://tab/${tabId}/console`,
+    uri: `kapture://tab/${tabId}/console`,
     name: `Console Logs: ${tabTitle}`,
     description: `Console log messages from browser tab ${tabId}`,
     mimeType: 'application/json'
@@ -686,7 +686,7 @@ function updateTabResources(tabId: string, tabTitle: string) {
   
   // Add/update screenshot resource for this tab
   const screenshotResource = {
-    uri: `kapturemcp://tab/${tabId}/screenshot`,
+    uri: `kapture://tab/${tabId}/screenshot`,
     name: `Screenshot: ${tabTitle}`,
     description: `Take a screenshot of browser tab ${tabId}`,
     mimeType: 'application/json'
@@ -695,7 +695,7 @@ function updateTabResources(tabId: string, tabTitle: string) {
   
   // Add/update elementsFromPoint resource for this tab
   const elementsResource = {
-    uri: `kapturemcp://tab/${tabId}/elementsFromPoint`,
+    uri: `kapture://tab/${tabId}/elementsFromPoint`,
     name: `Elements at Point: ${tabTitle}`,
     description: `Get information about elements at a coordinate in browser tab ${tabId}`,
     mimeType: 'application/json'
@@ -704,7 +704,7 @@ function updateTabResources(tabId: string, tabTitle: string) {
   
   // Add/update DOM resource for this tab
   const domResource = {
-    uri: `kapturemcp://tab/${tabId}/dom`,
+    uri: `kapture://tab/${tabId}/dom`,
     name: `DOM: ${tabTitle}`,
     description: `Get the DOM HTML of browser tab ${tabId}`,
     mimeType: 'application/json'
@@ -860,7 +860,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           }
           
           // Execute screenshot command
-          const screenshotData = await mcpHandler.executeCommand('kapturemcp_screenshot', {
+          const screenshotData = await mcpHandler.executeCommand('screenshot', {
             tabId,
             selector,
             scale,
@@ -928,7 +928,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           }
           
           // Execute screenshot command
-          const screenshotData = await mcpHandler.executeCommand('kapturemcp_screenshot', {
+          const screenshotData = await mcpHandler.executeCommand('screenshot', {
             tabId,
             selector,
             scale,
@@ -1035,7 +1035,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           }
           
           // Execute elementsFromPoint command
-          const elementsData = await mcpHandler.executeCommand('kapturemcp_elementsFromPoint', {
+          const elementsData = await mcpHandler.executeCommand('elementsFromPoint', {
             tabId,
             x,
             y
@@ -1076,7 +1076,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           }
           
           // Execute DOM command
-          const domData = await mcpHandler.executeCommand('kapturemcp_dom', {
+          const domData = await mcpHandler.executeCommand('dom', {
             tabId,
             selector
           });

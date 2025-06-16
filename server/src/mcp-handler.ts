@@ -44,7 +44,7 @@ export class MCPHandler {
 
   async executeCommand(command: string, args: any): Promise<any> {
     // Handle list_tabs specially - it doesn't need a tabId
-    if (command === 'kapturemcp_list_tabs') {
+    if (command === 'list_tabs') {
       return this.listTabs();
     }
 
