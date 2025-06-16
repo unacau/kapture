@@ -29,3 +29,13 @@ export const domTool = {
     selector: z.string().optional().describe('CSS selector of element (optional, defaults to body)')
   }),
 };
+
+export const elementsFromPointTool = {
+  name: 'kapturemcp_elementsFromPoint',
+  description: 'Get information about all elements at a specific coordinate in the viewport',
+  inputSchema: z.object({
+    tabId: z.string().describe('Target tab ID'),
+    x: z.number().describe('X coordinate relative to the viewport'),
+    y: z.number().describe('Y coordinate relative to the viewport')
+  }),
+};

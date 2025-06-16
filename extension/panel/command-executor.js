@@ -70,6 +70,9 @@ class CommandExecutor {
         case 'kapturemcp_dom':
           return await this.getDom(params);
 
+        case 'kapturemcp_elementsFromPoint':
+          return await this.getElementsFromPoint(params);
+
         case 'getLogs':
           return await this.getLogs(params);
 
@@ -797,6 +800,23 @@ class CommandExecutor {
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Get DOM failed: ${error.message}`);
+    }
+  }
+
+  // Get elements from a specific point
+  async getElementsFromPoint(params) {
+    const { x, y } = params;
+
+    if (typeof x !== 'number' || typeof y !== 'number') {
+      throw new Error('Both x and y coordinates are required and must be numbers');
+    }
+
+    try {
+      // Execute elementsFromPoint in the page context
+      const result = await window.MessagePassing.executeInPage('getElementsFromPoint', { x, y });
+      return await this.getTabInfoWithCommand(result);
+    } catch (error) {
+      throw new Error(`Get elements from point failed: ${error.message}`);
     }
   }
 

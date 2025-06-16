@@ -471,6 +471,75 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     }
   }
   
+  // Check if it's an elementsFromPoint resource with optional query parameters
+  const elementsMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/elementsFromPoint(?:\?.*)?$/);
+  if (elementsMatch) {
+    const tabId = elementsMatch[1];
+    const tab = tabRegistry.get(tabId);
+    
+    if (!tab) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+    
+    // Parse query parameters for x and y coordinates
+    let x: number | undefined;
+    let y: number | undefined;
+    
+    const queryIndex = uri.indexOf('?');
+    if (queryIndex !== -1) {
+      const params = new URLSearchParams(uri.substring(queryIndex + 1));
+      const xParam = params.get('x');
+      const yParam = params.get('y');
+      
+      if (xParam) {
+        const parsedX = parseFloat(xParam);
+        if (!isNaN(parsedX)) {
+          x = parsedX;
+        }
+      }
+      
+      if (yParam) {
+        const parsedY = parseFloat(yParam);
+        if (!isNaN(parsedY)) {
+          y = parsedY;
+        }
+      }
+    }
+    
+    // Validate that both x and y are provided
+    if (x === undefined || y === undefined) {
+      throw new Error('Both x and y coordinates are required');
+    }
+    
+    try {
+      // Execute elementsFromPoint command
+      const elementsData = await mcpHandler.executeCommand('kapturemcp_elementsFromPoint', {
+        tabId,
+        x,
+        y
+      });
+      
+      // Return the elements data as JSON
+      return {
+        contents: [
+          {
+            uri: uri,
+            mimeType: 'application/json',
+            text: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              coordinates: { x, y },
+              elements: elementsData
+            }, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      throw new Error(`Failed to get elements from point: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
   // Check if it's a tab-specific resource
   const tabMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)$/);
   if (tabMatch) {
@@ -576,6 +645,15 @@ function updateTabResources(tabId: string, tabTitle: string) {
     mimeType: 'application/json'
   };
   dynamicTabResources.set(`${tabId}/screenshot`, screenshotResource);
+  
+  // Add/update elementsFromPoint resource for this tab
+  const elementsResource = {
+    uri: `kapturemcp://tab/${tabId}/elementsFromPoint`,
+    name: `Elements at Point: ${tabTitle}`,
+    description: `Get information about elements at a coordinate in browser tab ${tabId}`,
+    mimeType: 'application/json'
+  };
+  dynamicTabResources.set(`${tabId}/elementsFromPoint`, elementsResource);
 }
 
 // Set up tab connect notification
@@ -860,6 +938,71 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
       }
     }
     
+    // Check if it's an elementsFromPoint resource (e.g., "tab/123/elementsFromPoint?x=100&y=200")
+    const elementsMatch = resourcePath.match(/^tab\/(.+)\/elementsFromPoint$/);
+    if (elementsMatch) {
+      const tabId = elementsMatch[1];
+      const tab = tabRegistry.get(tabId);
+      
+      if (tab) {
+        try {
+          // Parse query parameters for x and y coordinates
+          let x: number | undefined;
+          let y: number | undefined;
+          
+          if (queryString) {
+            const params = new URLSearchParams(queryString);
+            const xParam = params.get('x');
+            const yParam = params.get('y');
+            
+            if (xParam) {
+              const parsedX = parseFloat(xParam);
+              if (!isNaN(parsedX)) {
+                x = parsedX;
+              }
+            }
+            
+            if (yParam) {
+              const parsedY = parseFloat(yParam);
+              if (!isNaN(parsedY)) {
+                y = parsedY;
+              }
+            }
+          }
+          
+          // Validate that both x and y are provided
+          if (x === undefined || y === undefined) {
+            return {
+              content: JSON.stringify({ error: 'Both x and y coordinates are required' }, null, 2),
+              mimeType: 'application/json'
+            };
+          }
+          
+          // Execute elementsFromPoint command
+          const elementsData = await mcpHandler.executeCommand('kapturemcp_elementsFromPoint', {
+            tabId,
+            x,
+            y
+          });
+          
+          // Return the elements data as JSON
+          return {
+            content: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              coordinates: { x, y },
+              elements: elementsData
+            }, null, 2),
+            mimeType: 'application/json'
+          };
+        } catch (error) {
+          logger.error(`Failed to get elements from point for tab ${tabId}:`, error);
+          return null;
+        }
+      }
+    }
+    
     // Check if it's a tab-specific resource (e.g., "tab/123")
     const tabMatch = resourcePath.match(/^tab\/(.+)$/);
     if (tabMatch) {
@@ -907,6 +1050,7 @@ async function startServer() {
     logger.log(`Console log endpoints: http://localhost:${PORT}/tab/{tabId}/console`);
     logger.log(`Screenshot endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot`);
     logger.log(`Screenshot view endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot/view`);
+    logger.log(`Elements at point endpoints: http://localhost:${PORT}/tab/{tabId}/elementsFromPoint?x={x}&y={y}`);
     // Server is ready
   } catch (error) {
     logger.error('Failed to start MCP server:', error);

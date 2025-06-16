@@ -368,6 +368,46 @@ Capture a screenshot of a specific tab or element.
 
 **Note:** This resource provides the same functionality as the `kapturemcp_screenshot` tool but as a resource for better integration with MCP clients.
 
+### kapturemcp://tab/{tabId}/elementsFromPoint
+Get information about all elements at a specific coordinate in the viewport.
+
+**Parameters:**
+- `tabId` (in URL path): The tab ID
+- `x` (query param, required): X coordinate relative to the viewport
+- `y` (query param, required): Y coordinate relative to the viewport
+
+**Returns:** JSON object with:
+- `tabId` (string): The tab ID
+- `url` (string): Current URL of the tab
+- `title` (string): Current title of the tab
+- `coordinates` (object): The x and y coordinates queried
+- `elements` (array): Array of elements at the specified point, ordered from top to bottom, each containing:
+  - `index` (number): Order in the stack (0 is topmost)
+  - `tagName` (string): HTML tag name
+  - `id` (string|null): Element ID if present
+  - `className` (string|null): Element className attribute
+  - `classList` (array): Array of individual class names
+  - `selector` (string): Unique CSS selector for the element
+  - `text` (string): Text content (truncated to 100 chars)
+  - `href` (string|null): Link URL for anchor elements
+  - `src` (string|null): Source URL for images/media
+  - `alt` (string|null): Alt text for images
+  - `value` (string|null): Form element value
+  - `type` (string|null): Input/button type
+  - `name` (string|null): Form element name
+  - `role` (string|null): ARIA role
+  - `ariaLabel` (string|null): ARIA label
+  - `dataAttributes` (object): All data-* attributes
+  - `bounds` (object): Element position and dimensions
+  - `style` (object): Key computed styles (display, visibility, opacity, etc.)
+  - `isVisible` (boolean): Whether the element is visible
+
+**Examples:**
+- `kapturemcp://tab/abc123/elementsFromPoint?x=100&y=200` - Get all elements at viewport coordinates (100, 200)
+- `kapturemcp://tab/abc123/elementsFromPoint?x=500.5&y=300.25` - Supports decimal coordinates
+
+**Note:** This uses the browser's `document.elementsFromPoint()` API to get all elements at the specified coordinates, from topmost to bottommost in the stacking order.
+
 ## MCP Notifications
 
 Kapture sends real-time notifications for various events:
@@ -834,6 +874,27 @@ This endpoint is particularly useful for:
 - Embedding in HTML: `<img src="http://localhost:61822/tab/1/screenshot/view">`
 - Downloading screenshots with tools like curl or wget
 - Integration with image processing tools
+
+### Elements at Point
+**GET http://localhost:{port}/tab/{tabId}/elementsFromPoint**
+
+Get information about all elements at a specific coordinate in the viewport.
+
+**Query Parameters:**
+- `x` (required): X coordinate relative to the viewport
+- `y` (required): Y coordinate relative to the viewport
+
+**Response:** JSON object with element information (same as the MCP resource).
+
+**Examples:**
+- `http://localhost:61822/tab/1/elementsFromPoint?x=100&y=200` - Get elements at (100, 200)
+- `http://localhost:61822/tab/1/elementsFromPoint?x=500.5&y=300.25` - Decimal coordinates
+
+This endpoint is useful for:
+- Debugging element stacking and layout issues
+- Finding clickable elements at specific coordinates
+- Analyzing page structure at mouse positions
+- Building custom interaction tools
 
 ## Troubleshooting
 

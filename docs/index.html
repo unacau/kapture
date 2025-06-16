@@ -799,6 +799,17 @@
                                     <code>?scale={0.1-1.0}&format={webp|jpeg|png}</code>
                                 </p>
                             </div>
+
+                            <div class="tool-category">
+                                <h4>Element Inspection</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">kapturemcp://tab/{tabId}/elementsFromPoint</span>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                                    Get all elements at coordinates with <code>?x={x}&y={y}</code><br>
+                                    Returns element stack with selectors, bounds, and styles
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -853,6 +864,7 @@
                                 <span class="tool-item">GET /tab/{tabId}</span>
                                 <span class="tool-item">GET /tab/{tabId}/console</span>
                                 <span class="tool-item">GET /tab/{tabId}/screenshot</span>
+                                <span class="tool-item">GET /tab/{tabId}/elementsFromPoint</span>
                             </div>
                         </div>
                         <div class="tool-category">
