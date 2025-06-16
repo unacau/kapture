@@ -70,18 +70,20 @@ const httpServer = createServer(async (req, res) => {
 
   // Discovery endpoint
   if (req.url === '/' && req.method === 'GET') {
-    // Only return server info if MCP client has connected
+    // Always return 200 OK with server status
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    
     if (mcpClientInfo.name) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      // MCP client is connected
       res.end(JSON.stringify({
         mcpClient: mcpClientInfo
       }));
     } else {
-      // Return 503 Service Unavailable if no MCP client connected yet
-      res.writeHead(503, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ 
-        error: 'MCP client not connected',
-        status: 'waiting'
+      // MCP client not connected yet, but server is running
+      res.end(JSON.stringify({
+        mcpClient: null,
+        status: 'waiting',
+        message: 'Kapture MCP server is running, waiting for MCP client connection'
       }));
     }
     return;
