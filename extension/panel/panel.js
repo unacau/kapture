@@ -35,6 +35,10 @@ let hasDiscoveredOnce = false;  // Track if we've run discovery at least once
 let connectedServerInfo = null; // Store info about connected server
 let reconnectTimeout = null; // Store timeout for server switching
 
+// Console log storage - make it globally accessible for CommandExecutor
+window.consoleLogs = [];
+const MAX_CONSOLE_LOGS = 1000;
+
 // Load saved tab IDs from session storage
 function loadSavedTabIds() {
   try {
@@ -691,20 +695,8 @@ function stopRetrying() {
 }
 
 // Update log count display
-async function updateLogCount() {
-  if (commandExecutor && isConnected) {
-    try {
-      // Get log count from content script
-      const logsResult = await window.MessagePassing.executeInPage('getLogs', { limit: 0 });
-      const logCount = logsResult.total || 0;
-      logCountElement.textContent = `Log length: ${logCount}`;
-    } catch (error) {
-      // If we can't get logs, just show 0
-      logCountElement.textContent = `Log length: 0`;
-    }
-  } else {
-    logCountElement.textContent = `Log length: 0`;
-  }
+function updateLogCount() {
+  logCountElement.textContent = `Log length: ${window.consoleLogs.length}`;
 }
 
 // Clear messages
@@ -717,15 +709,9 @@ function clearMessages() {
 }
 
 // Clear console logs
-async function clearLogs() {
-  if (commandExecutor && isConnected) {
-    try {
-      await window.MessagePassing.executeInPage('clearLogs', {});
-      updateLogCount();
-    } catch (error) {
-      console.error('Failed to clear logs:', error);
-    }
-  }
+function clearLogs() {
+  window.consoleLogs = [];
+  updateLogCount();
 }
 
 // Connect button handler
@@ -818,6 +804,83 @@ updateLogCount();
 // Start server discovery on load (this will update connection status)
 startDiscovery();
 
+// Inject console capture into the inspected page
+function injectConsoleCapture() {
+  const injectionCode = `
+    (function() {
+      // Check if already injected
+      if (window.__kaptureConsoleInjected) return;
+      window.__kaptureConsoleInjected = true;
+      
+      // Store original console methods
+      const originalConsole = {
+        log: console.log,
+        error: console.error,
+        warn: console.warn,
+        info: console.info
+      };
+
+      // Helper to serialize arguments
+      function serializeArgs(args) {
+        return Array.from(args).map(arg => {
+          try {
+            if (arg === undefined) return 'undefined';
+            if (arg === null) return 'null';
+            if (typeof arg === 'function') return arg.toString();
+            if (typeof arg === 'object') {
+              // Handle circular references
+              const seen = new WeakSet();
+              return JSON.stringify(arg, function(key, value) {
+                if (typeof value === 'object' && value !== null) {
+                  if (seen.has(value)) return '[Circular]';
+                  seen.add(value);
+                }
+                if (typeof value === 'function') return value.toString();
+                return value;
+              });
+            }
+            return String(arg);
+          } catch (e) {
+            return String(arg);
+          }
+        });
+      }
+      
+      // Override console methods
+      ['log', 'error', 'warn', 'info'].forEach(level => {
+        console[level] = function(...args) {
+          // Create log entry
+          const event = new CustomEvent('kapture-console', {
+            detail: {
+              level: level,
+              args: serializeArgs(args),
+              timestamp: new Date().toISOString(),
+              stack: new Error().stack
+            }
+          });
+          
+          // Dispatch event for content script to capture
+          window.dispatchEvent(event);
+          
+          // Call original method
+          originalConsole[level].apply(console, args);
+        };
+      });
+      
+      // Log that injection is complete
+      originalConsole.log('[Kapture] Console capture injected into page context');
+    })();
+  `;
+
+  chrome.devtools.inspectedWindow.eval(injectionCode, (result, error) => {
+    if (error) {
+      console.error('Failed to inject console capture:', error);
+    } else {
+      console.log('Console capture injected successfully');
+    }
+  });
+}
+
 // Divider drag functionality
 let isDragging = false;
 let startY = 0;
@@ -887,7 +950,9 @@ let backgroundPort = null;
 function connectToBackground() {
   if (!backgroundPort) {
     try {
-      backgroundPort = chrome.runtime.connect({ name: 'devtools-panel' });
+      if (chrome.runtime?.id) {
+        backgroundPort = chrome.runtime.connect({name: 'devtools-panel'});
+      }
     } catch (error) {
       console.error('Failed to connect to background:', error);
       // Extension was likely reloaded, show a message to the user
@@ -910,6 +975,9 @@ function connectToBackground() {
         backgroundPort = null;
         return;
       }
+
+      // Inject console capture into the inspected page
+      injectConsoleCapture();
     }
 
     // Handle incoming messages
@@ -918,6 +986,12 @@ function connectToBackground() {
         sendTabInfoUpdate(msg.tabInfo);
       } else if (msg.type === 'console-log' && msg.logEntry) {
         // Real-time console log received
+        // Store in panel's log array
+        window.consoleLogs.push(msg.logEntry);
+        if (window.consoleLogs.length > MAX_CONSOLE_LOGS) {
+          window.consoleLogs.shift();
+        }
+        
         // Forward to server
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
@@ -925,6 +999,7 @@ function connectToBackground() {
             logEntry: msg.logEntry
           }));
         }
+        
         // Update the log count display
         updateLogCount();
       }
@@ -962,6 +1037,16 @@ function startTabMonitoring() {
   if (!navigationListener) {
     navigationListener = (url) => {
       console.log('Navigation detected:', url);
+      
+      // Clear console logs on navigation
+      window.consoleLogs = [];
+      updateLogCount();
+      
+      // Re-inject console capture after navigation
+      setTimeout(() => {
+        injectConsoleCapture();
+      }, 100);
+
       // Get the new tab info after navigation
       setTimeout(() => {
         getCurrentTabInfo().then(info => {

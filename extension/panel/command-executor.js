@@ -800,16 +800,43 @@ class CommandExecutor {
     }
   }
 
-  // Get console logs
+  // Get console logs from panel storage
   async getLogs(params) {
     const { before, limit = 100, level } = params;
 
-    try {
-      const result = await window.MessagePassing.executeInPage('getLogs', { before, limit, level });
-      return result;
-    } catch (error) {
-      throw new Error(`Get logs failed: ${error.message}`);
+    // Access the panel's consoleLogs array directly
+    let logs = window.consoleLogs || [];
+    let filteredLogs = logs;
+
+    // If 'before' timestamp is provided, filter logs older than that timestamp
+    if (before) {
+      filteredLogs = filteredLogs.filter(log => log.timestamp < before);
     }
+    
+    // If level is provided, filter by log level
+    if (level) {
+      filteredLogs = filteredLogs.filter(log => log.level === level);
+    }
+
+    // If limit is 0, just return the count
+    if (limit === 0) {
+      return {
+        logs: [],
+        total: logs.length,
+        filteredTotal: filteredLogs.length
+      };
+    }
+
+    // Get the most recent logs up to the limit (newest first)
+    const actualLimit = limit || 100;
+    const startIndex = Math.max(0, filteredLogs.length - actualLimit);
+    const resultLogs = filteredLogs.slice(startIndex).reverse();
+
+    return {
+      logs: resultLogs,
+      total: logs.length,
+      filteredTotal: filteredLogs.length
+    };
   }
 }
 

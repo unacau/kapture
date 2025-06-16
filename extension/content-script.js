@@ -1,6 +1,29 @@
 // Kapture Content Script
 // Handles message passing between DevTools panel and page content
 
+// Listen for console events from the page and forward to background
+window.addEventListener('kapture-console', (event) => {
+  if (event.detail && event.detail.args) {
+    const entry = {
+      timestamp: event.detail.timestamp || new Date().toISOString(),
+      level: event.detail.level,
+      message: event.detail.args.join(' ')
+    };
+
+    // Send real-time console log update to background script
+    try {
+      if (chrome.runtime?.id) {
+        chrome.runtime.sendMessage({
+          type: 'kapture-console-log',
+          logEntry: entry
+        });
+      }
+    } catch (e) {
+      // Extension context may have been invalidated
+    }
+  }
+});
+
 (function() {
   // Check if already injected
   if (window.__kaptureContentScript) return;
@@ -308,37 +331,6 @@
       };
     },
 
-    // Console log capture
-    getLogs: function(before, limit) {
-      if (!window.__kaptureLogs) return { logs: [], total: 0 };
-
-      const allLogs = window.__kaptureLogs;
-      let filteredLogs = allLogs;
-
-      // If 'before' timestamp is provided, filter logs older than that timestamp
-      if (before) {
-        filteredLogs = allLogs.filter(log => log.timestamp < before);
-      }
-
-      // If limit is 0, just return the count
-      if (limit === 0) {
-        return {
-          logs: [],
-          total: allLogs.length
-        };
-      }
-
-      // Get the most recent logs up to the limit (newest first)
-      const actualLimit = limit || 100;
-      const startIndex = Math.max(0, filteredLogs.length - actualLimit);
-      const logs = filteredLogs.slice(startIndex).reverse();
-
-      return {
-        logs: logs,
-        total: allLogs.length
-      };
-    },
-
     // Safe serialization helper for evaluate results
     serializeValue: function(value, depth = 0, maxDepth = 3, seen = new WeakSet()) {
       // Handle primitive types
@@ -502,60 +494,6 @@
     }
   };
 
-  // Setup console log capture if not already done
-  if (!window.__kaptureLogs) {
-    window.__kaptureLogs = [];
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-    const originalInfo = console.info;
-
-    function captureLog(level, args) {
-      const entry = {
-        timestamp: new Date().toISOString(),
-        level: level,
-        message: Array.from(args).map(arg => {
-          try {
-            return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
-          } catch (e) {
-            return String(arg);
-          }
-        }).join(' ')
-      };
-
-      window.__kaptureLogs.push(entry);
-      if (window.__kaptureLogs.length > 1000) {
-        window.__kaptureLogs.shift();
-      }
-
-      // Send real-time console log update
-      chrome.runtime.sendMessage({
-        type: 'kapture-console-log',
-        logEntry: entry
-      });
-    }
-
-    console.log = function(...args) {
-      captureLog('log', args);
-      originalLog.apply(console, args);
-    };
-
-    console.error = function(...args) {
-      captureLog('error', args);
-      originalError.apply(console, args);
-    };
-
-    console.warn = function(...args) {
-      captureLog('warn', args);
-      originalWarn.apply(console, args);
-    };
-
-    console.info = function(...args) {
-      captureLog('info', args);
-      originalInfo.apply(console, args);
-    };
-  }
-
   // Command execution handler
   function executeCommand(command, params) {
     switch (command) {
@@ -675,9 +613,8 @@
 
       // Console operations
       case 'getLogs':
-        const { before, limit = 100 } = params;
-        // Note: originalLog is not in scope here, so we'll just return the logs without debug logging
-        return helpers.getLogs(before, limit);
+        const { before, limit = 100, level } = params;
+        return helpers.getLogs(before, limit, level);
 
       case 'clearLogs':
         window.__kaptureLogs = [];
@@ -772,10 +709,18 @@
     const tabInfo = helpers.getTabInfo();
     if (hasTabInfoChanged(tabInfo, lastSentTabInfo)) {
       lastSentTabInfo = tabInfo;
-      chrome.runtime.sendMessage({
-        type: 'kapture-tab-info-update',
-        tabInfo: tabInfo
-      });
+      try {
+        // Use runtime.sendMessage to ensure it works in content scripts
+        if (chrome.runtime?.id) {
+          chrome.runtime.sendMessage({
+            type: 'kapture-tab-info-update',
+            tabInfo: tabInfo
+          });
+        }
+      }
+      catch(e) {
+        // ignore
+      }
     }
   }
 
