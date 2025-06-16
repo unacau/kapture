@@ -809,12 +809,12 @@ function injectConsoleCapture() {
   const injectionId = Date.now(); // Unique ID for this injection
   const injectionCode = `
     (function() {
+      const isOverridden = !console.log.toString().includes('[native code]');
+      console.log('[Kapture] Console overridden?', isOverridden);
       // Check if already injected with a recent timestamp (within last 5 seconds)
-      if (window.__kaptureConsoleInjected && 
-          (Date.now() - window.__kaptureConsoleInjected) < 5000) {
+      if (isOverridden) {
         return;
       }
-      window.__kaptureConsoleInjected = Date.now();
       
       // Store original console methods
       const originalConsole = {
@@ -849,7 +849,8 @@ function injectConsoleCapture() {
           }
         });
       }
-      
+
+      originalConsole.log('[Kapture] overriding console methods');
       // Override console methods
       ['log', 'error', 'warn', 'info'].forEach(level => {
         console[level] = function(...args) {
@@ -862,7 +863,7 @@ function injectConsoleCapture() {
               stack: new Error().stack
             }
           });
-          
+          originalConsole.log('[Kapture] Dispatching console event:', event.detail);
           // Dispatch event for content script to capture
           window.dispatchEvent(event);
           
@@ -995,7 +996,7 @@ function connectToBackground() {
         if (window.consoleLogs.length > MAX_CONSOLE_LOGS) {
           window.consoleLogs.shift();
         }
-        
+
         // Forward to server
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
@@ -1003,7 +1004,7 @@ function connectToBackground() {
             logEntry: msg.logEntry
           }));
         }
-        
+
         // Update the log count display
         updateLogCount();
       }
@@ -1041,11 +1042,11 @@ function startTabMonitoring() {
   if (!navigationListener) {
     navigationListener = (url) => {
       console.log('Navigation detected:', url);
-      
+
       // Clear console logs on navigation
       window.consoleLogs = [];
       updateLogCount();
-      
+
       // Re-inject console capture after navigation
       setTimeout(() => {
         injectConsoleCapture();
