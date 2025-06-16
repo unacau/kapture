@@ -18,9 +18,9 @@ export const allTools = [
   hoverTool,
   fillTool,
   selectTool,
-  screenshotTool,
+  // screenshotTool,  // Disabled - use kapturemcp://tab/{tabId}/screenshot resource instead
   evaluateTool,
-  domTool,
+  // domTool,  // Disabled - use kapturemcp://tab/{tabId}/dom resource instead
   elementsFromPointTool,
-  listTabsTool
+  // listTabsTool  // Disabled - use kapturemcp://tabs resource instead
 ];
