@@ -13,6 +13,7 @@ import { createServer } from 'http';
 import { TabRegistry } from './tab-registry.js';
 import { WebSocketManager } from './websocket-manager.js';
 import { MCPHandler } from './mcp-handler.js';
+import { MCPWebSocketHandler } from './mcp-websocket-handler.js';
 import { allTools } from './tools/index.js';
 import { zodToJsonSchema } from './tools/schema-converter.js';
 import { logger } from './logger.js';
@@ -170,6 +171,10 @@ const server = new Server(
   }
 );
 
+// Create MCP WebSocket handler
+const mcpWebSocketHandler = new MCPWebSocketHandler(server);
+wsManager.setMCPWebSocketHandler(mcpWebSocketHandler);
+
 // Set up initialize handler to capture client info immediately
 server.setRequestHandler(InitializeRequestSchema, async (request) => {
   // Capture client info from the request
@@ -219,6 +224,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     const result = await mcpHandler.executeCommand(name, args);
+    
+    // Special handling for screenshot tool
+    if (name === 'kapturemcp_screenshot' && result.dataUrl) {
+      // Extract the base64 data and mime type from the data URL
+      const match = result.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        const [, mimeType, base64Data] = match;
+        return {
+          content: [
+            {
+              type: 'image',
+              data: base64Data,
+              mimeType: mimeType
+            }
+          ]
+        };
+      }
+    }
+    
+    // Default text response for other tools
     return {
       content: [
         {

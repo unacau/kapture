@@ -19,6 +19,13 @@ const consoleContainerEl = document.getElementById('console');
 // Tool forms state - store form data per tab
 const tabFormData = {};
 
+// Utility function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Logging
 function log(message, type = 'info') {
   const entry = document.createElement('div');
@@ -397,8 +404,8 @@ function createToolCard(tool) {
 
   return `
     <div class="tool-card">
-      <h3>${tool.name}</h3>
-      <p class="description">${tool.description}</p>
+      <h3>${escapeHtml(tool.name)}</h3>
+      <p class="description">${escapeHtml(tool.description)}</p>
       <div class="tool-params">
         ${paramsHtml || '<p style="color: #999; font-size: 0.85rem;">No parameters needed</p>'}
       </div>
@@ -412,12 +419,46 @@ function createToolCard(tool) {
 }
 
 function createResourceCard(resource) {
+  // Check if this is the console resource that supports parameters
+  const isConsoleResource = resource.uri.includes('/console');
+  
+  let paramsHtml = '';
+  if (isConsoleResource) {
+    // Add parameter inputs for console resource
+    paramsHtml = `
+      <div class="tool-params">
+        <div class="param-group">
+          <label for="${resource.uri}-level">
+            level <span style="color: #999; font-size: 0.85rem;">(optional)</span>
+          </label>
+          <select id="${resource.uri}-level">
+            <option value="">All levels</option>
+            <option value="log">log</option>
+            <option value="info">info</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+          </select>
+        </div>
+        <div class="param-group">
+          <label for="${resource.uri}-limit">
+            limit <span style="color: #999; font-size: 0.85rem;">(optional)</span>
+          </label>
+          <input type="number" id="${resource.uri}-limit" min="0" max="1000" value="100">
+        </div>
+      </div>
+    `;
+  }
+  
   return `
-    <div class="tool-widget">
+    <div class="tool-card">
       <h3>${resource.uri}</h3>
-      <p>${resource.description || resource.name}</p>
-      <button class="btn-primary resource-query" data-resource="${resource.uri}">Query resource</button>
-      <div class="resource-result" id="result-${resource.uri.replace(/[^a-zA-Z0-9]/g, '-')}"></div>
+      <p class="description">${resource.description || resource.name}</p>
+      ${paramsHtml}
+      <button class="tool-execute resource-query" data-resource="${resource.uri}">Query Resource</button>
+      <details id="result-${resource.uri.replace(/[^a-zA-Z0-9]/g, '-')}" class="tool-result" style="display: none;">
+        <summary></summary>
+        <pre class="result-content"></pre>
+      </details>
     </div>
   `;
 }
@@ -522,83 +563,105 @@ async function executeTool(toolName, button) {
 
     // Parse and display result
     if (result.content && result.content[0]) {
-      let content;
-      try {
-        content = JSON.parse(result.content[0].text);
-      } catch (parseError) {
-        // If JSON parsing fails, it might be a plain error message
-        throw new Error(result.content[0].text || 'Unknown error');
-      }
-
-      // Set summary based on content
-      if (content.error) {
-        summaryEl.textContent = `❌ ${content.error.message || 'Command failed'}`;
-        resultEl.className = 'tool-result error';
-      } else if (content.clicked === false || content.hovered === false || content.filled === false || content.selected === false) {
-        summaryEl.textContent = '⚠️ Element not found';
-        resultEl.className = 'tool-result warning';
-      } else if (toolName === 'kapturemcp_screenshot') {
+      const responseContent = result.content[0];
+      
+      // Handle different content types
+      if (responseContent.type === 'image') {
+        // Handle image response from screenshot tool
         summaryEl.textContent = '✅ Screenshot captured';
-      } else if (toolName === 'kapturemcp_click') {
-        summaryEl.textContent = '✅ Clicked successfully';
-      } else if (toolName === 'kapturemcp_hover') {
-        summaryEl.textContent = '✅ Hovered successfully';
-      } else if (toolName === 'kapturemcp_fill') {
-        summaryEl.textContent = '✅ Filled successfully';
-      } else if (toolName === 'kapturemcp_select') {
-        summaryEl.textContent = '✅ Selected successfully';
-      } else if (toolName === 'kapturemcp_logs') {
-        summaryEl.textContent = `✅ Retrieved ${content.logs?.length || 0} logs`;
-      } else if (toolName === 'kapturemcp_evaluate') {
-        summaryEl.textContent = '✅ Evaluated successfully';
-      } else if (toolName === 'kapturemcp_dom') {
-        summaryEl.textContent = '✅ DOM retrieved';
-      } else {
-        summaryEl.textContent = '✅ Success';
-      }
+        
+        // Create an image element to display the screenshot
+        const img = document.createElement('img');
+        img.src = `data:${responseContent.mimeType};base64,${responseContent.data}`;
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        
+        contentEl.innerHTML = '';
+        contentEl.appendChild(img);
+      } else if (responseContent.type === 'text') {
+        // Handle text/JSON responses
+        let content;
+        try {
+          content = JSON.parse(responseContent.text);
+        } catch (parseError) {
+          // If JSON parsing fails, it might be a plain error message
+          throw new Error(responseContent.text || 'Unknown error');
+        }
 
-      contentEl.textContent = JSON.stringify(content, null, 2);
+        // Set summary based on content
+        if (content.error) {
+          summaryEl.textContent = `❌ ${content.error.message || 'Command failed'}`;
+          resultEl.className = 'tool-result error';
+        } else if (content.clicked === false || content.hovered === false || content.filled === false || content.selected === false) {
+          summaryEl.textContent = '⚠️ Element not found';
+          resultEl.className = 'tool-result warning';
+        } else if (toolName === 'kapturemcp_screenshot') {
+          summaryEl.textContent = '✅ Screenshot captured';
+        } else if (toolName === 'kapturemcp_click') {
+          summaryEl.textContent = '✅ Clicked successfully';
+        } else if (toolName === 'kapturemcp_hover') {
+          summaryEl.textContent = '✅ Hovered successfully';
+        } else if (toolName === 'kapturemcp_fill') {
+          summaryEl.textContent = '✅ Filled successfully';
+        } else if (toolName === 'kapturemcp_select') {
+          summaryEl.textContent = '✅ Selected successfully';
+        } else if (toolName === 'kapturemcp_logs') {
+          summaryEl.textContent = `✅ Retrieved ${content.logs?.length || 0} logs`;
+        } else if (toolName === 'kapturemcp_evaluate') {
+          summaryEl.textContent = '✅ Evaluated successfully';
+        } else if (toolName === 'kapturemcp_dom') {
+          summaryEl.textContent = '✅ DOM retrieved';
+        } else {
+          summaryEl.textContent = '✅ Success';
+        }
 
-      // Update local tab info if we got new URL/title
-      if (content.url && content.title && selectedTabId) {
-        const tab = currentTabs.find(t => t.tabId === selectedTabId);
-        if (tab && (tab.url !== content.url || tab.title !== content.title)) {
-          tab.url = content.url;
-          tab.title = content.title;
+        contentEl.textContent = JSON.stringify(content, null, 2);
 
-          // Update UI immediately
-          displayTabs();
+        // Update local tab info if we got new URL/title
+        if (content.url && content.title && selectedTabId) {
+          const tab = currentTabs.find(t => t.tabId === selectedTabId);
+          if (tab && (tab.url !== content.url || tab.title !== content.title)) {
+            tab.url = content.url;
+            tab.title = content.title;
 
-          // Update URL input if it exists
-          const urlInput = document.getElementById('nav-url');
-          if (urlInput) {
-            urlInput.value = content.url;
+            // Update UI immediately
+            displayTabs();
+
+            // Update URL input if it exists
+            const urlInput = document.getElementById('nav-url');
+            if (urlInput) {
+              urlInput.value = content.url;
+            }
+
+            log(`Tab info updated: ${content.title}`);
+          }
+        }
+
+        // Special handling for screenshots
+        if (content.dataUrl) {
+          // Remove any existing screenshot preview
+          const existingPreview = resultEl.parentNode.querySelector('.screenshot-preview');
+          if (existingPreview) {
+            existingPreview.remove();
           }
 
-          log(`Tab info updated: ${content.title}`);
+          const img = document.createElement('div');
+          img.className = 'screenshot-preview';
+          const scaleInfo = content.scale && content.scale < 1 ? ` (scaled to ${content.scale * 100}%)` : '';
+          const formatInfo = content.format ? ` (${content.format.toUpperCase()})` : '';
+          img.innerHTML = `
+            <img src="${content.dataUrl}" alt="Screenshot">
+            <div style="text-align: center; margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+              Screenshot captured${scaleInfo}${formatInfo}
+            </div>
+          `;
+          // Insert after the details element
+          resultEl.parentNode.insertBefore(img, resultEl.nextSibling);
         }
-      }
-
-      // Special handling for screenshots
-      if (content.dataUrl) {
-        // Remove any existing screenshot preview
-        const existingPreview = resultEl.parentNode.querySelector('.screenshot-preview');
-        if (existingPreview) {
-          existingPreview.remove();
-        }
-
-        const img = document.createElement('div');
-        img.className = 'screenshot-preview';
-        const scaleInfo = content.scale && content.scale < 1 ? ` (scaled to ${content.scale * 100}%)` : '';
-        const formatInfo = content.format ? ` (${content.format.toUpperCase()})` : '';
-        img.innerHTML = `
-          <img src="${content.dataUrl}" alt="Screenshot">
-          <div style="text-align: center; margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
-            Screenshot captured${scaleInfo}${formatInfo}
-          </div>
-        `;
-        // Insert after the details element
-        resultEl.parentNode.insertBefore(img, resultEl.nextSibling);
+      } else if (responseContent.type === 'error') {
+        throw new Error(responseContent.text || 'Unknown error');
+      } else {
+        throw new Error(`Unsupported content type: ${responseContent.type}`);
       }
     } else {
       summaryEl.textContent = '✅ Success';
@@ -637,32 +700,75 @@ async function callTool(name, args) {
 
 async function queryResource(resourceUri, button) {
   const resultId = `result-${resourceUri.replace(/[^a-zA-Z0-9]/g, '-')}`;
-  const resultDiv = document.getElementById(resultId);
+  const resultEl = document.getElementById(resultId);
+  const summaryEl = resultEl.querySelector('summary');
+  const contentEl = resultEl.querySelector('.result-content');
   
   try {
     button.disabled = true;
     button.textContent = 'Querying...';
-    resultDiv.innerHTML = '<p style="color: #666;">Loading...</p>';
+    resultEl.style.display = 'block';
+    resultEl.className = 'tool-result';
+    summaryEl.textContent = 'Querying...';
+    contentEl.textContent = '';
+    
+    // Build URI with query parameters if it's a console resource
+    let finalUri = resourceUri;
+    if (resourceUri.includes('/console')) {
+      const levelInput = document.getElementById(`${resourceUri}-level`);
+      const limitInput = document.getElementById(`${resourceUri}-limit`);
+      
+      const params = new URLSearchParams();
+      if (levelInput && levelInput.value) {
+        params.append('level', levelInput.value);
+      }
+      if (limitInput && limitInput.value) {
+        params.append('limit', limitInput.value);
+      }
+      
+      if (params.toString()) {
+        finalUri += '?' + params.toString();
+      }
+    }
     
     const response = await window.electronAPI.sendMCPRequest('resources/read', {
-      uri: resourceUri
+      uri: finalUri
     });
     
     // Display the result
     if (response.contents && response.contents[0]) {
       const data = JSON.parse(response.contents[0].text);
-      resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+      
+      resultEl.className = 'tool-result success';
+      
+      // Set summary based on content
+      if (resourceUri.includes('/console')) {
+        const logCount = data.logs ? data.logs.length : 0;
+        const totalCount = data.total || 0;
+        summaryEl.textContent = `✅ Retrieved ${logCount} of ${totalCount} logs`;
+      } else if (resourceUri.includes('/tabs')) {
+        const tabCount = Array.isArray(data) ? data.length : 0;
+        summaryEl.textContent = `✅ Found ${tabCount} tabs`;
+      } else {
+        summaryEl.textContent = '✅ Resource retrieved';
+      }
+      
+      contentEl.textContent = JSON.stringify(data, null, 2);
     } else {
-      resultDiv.innerHTML = '<p class="error">No data returned</p>';
+      resultEl.className = 'tool-result warning';
+      summaryEl.textContent = '⚠️ No data returned';
+      contentEl.textContent = 'The resource returned no content';
     }
     
-    log(`Successfully queried resource: ${resourceUri}`, 'info');
+    log(`Successfully queried resource: ${finalUri}`, 'info');
   } catch (error) {
+    resultEl.className = 'tool-result error';
+    summaryEl.textContent = `❌ ${error.message}`;
+    contentEl.textContent = error.stack || error.message;
     log(`Failed to query resource ${resourceUri}: ${error.message}`, 'error');
-    resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
   } finally {
     button.disabled = false;
-    button.textContent = 'Query resource';
+    button.textContent = 'Query Resource';
   }
 }
 
@@ -776,6 +882,20 @@ window.electronAPI.onMCPNotification((message) => {
       // Update tab info if selected tab still exists
       updateTabInfo();
     }
+  } else if (message.method === 'kapturemcp/console_log' && message.params) {
+    // Handle real-time console log notification
+    const { tabId, logEntry } = message.params;
+    const tabName = currentTabs.find(t => t.tabId === tabId)?.title || tabId;
+    log(`[${tabName}] Console ${logEntry.level}: ${logEntry.message}`, logEntry.level);
+  } else if (message.method === 'notifications/resources/list_changed') {
+    // Handle resources list changed notification
+    log('Resources list changed, refreshing...', 'info');
+    discoverResources().then(() => {
+      // Update UI if we have a selected tab
+      if (selectedTabId) {
+        displayTabContent();
+      }
+    });
   } else {
     log(`Notification: ${message.method}`, 'info');
   }

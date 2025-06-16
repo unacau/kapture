@@ -32,12 +32,17 @@ export class WebSocketManager {
   private responseHandler?: (response: ResponseMessage) => void;
   private consoleLogHandler?: (tabId: string, logEntry: any) => void;
   private mcpClientInfo: { name?: string; version?: string } = {};
+  private mcpWebSocketHandler?: any;
 
   constructor(
     private wss: WebSocketServer,
     private tabRegistry: TabRegistry
   ) {
     this.setupWebSocketServer();
+  }
+
+  setMCPWebSocketHandler(handler: any): void {
+    this.mcpWebSocketHandler = handler;
   }
 
   setResponseHandler(handler: (response: ResponseMessage) => void): void {
@@ -61,9 +66,21 @@ export class WebSocketManager {
   }
 
   private setupWebSocketServer(): void {
-    this.wss.on('connection', (ws: WebSocket) => {
-      logger.log('New WebSocket connection');
+    this.wss.on('connection', (ws: WebSocket, request) => {
+      logger.log(`New WebSocket connection: ${request.url}`);
       
+      // Check if this is an MCP connection
+      if (request.url === '/mcp') {
+        if (this.mcpWebSocketHandler) {
+          this.mcpWebSocketHandler.handleConnection(ws);
+        } else {
+          logger.error('MCP WebSocket handler not configured');
+          ws.close(1011, 'MCP WebSocket handler not available');
+        }
+        return;
+      }
+      
+      // Regular browser tab connection
       // Set up ping/pong for connection health
       const pingInterval = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {

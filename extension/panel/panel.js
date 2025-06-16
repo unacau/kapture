@@ -806,11 +806,15 @@ startDiscovery();
 
 // Inject console capture into the inspected page
 function injectConsoleCapture() {
+  const injectionId = Date.now(); // Unique ID for this injection
   const injectionCode = `
     (function() {
-      // Check if already injected
-      if (window.__kaptureConsoleInjected) return;
-      window.__kaptureConsoleInjected = true;
+      // Check if already injected with a recent timestamp (within last 5 seconds)
+      if (window.__kaptureConsoleInjected && 
+          (Date.now() - window.__kaptureConsoleInjected) < 5000) {
+        return;
+      }
+      window.__kaptureConsoleInjected = Date.now();
       
       // Store original console methods
       const originalConsole = {

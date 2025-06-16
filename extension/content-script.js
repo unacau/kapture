@@ -1,8 +1,12 @@
 // Kapture Content Script
 // Handles message passing between DevTools panel and page content
 
-// Listen for console events from the page and forward to background
-window.addEventListener('kapture-console', (event) => {
+// Check if we've already set up the console listener
+if (!window.__kaptureConsoleListenerSetup) {
+  window.__kaptureConsoleListenerSetup = true;
+  
+  // Listen for console events from the page and forward to background
+  window.addEventListener('kapture-console', (event) => {
   if (event.detail && event.detail.args) {
     const entry = {
       timestamp: event.detail.timestamp || new Date().toISOString(),
@@ -22,7 +26,8 @@ window.addEventListener('kapture-console', (event) => {
       // Extension context may have been invalidated
     }
   }
-});
+  });
+}
 
 (function() {
   // Check if already injected
