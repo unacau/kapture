@@ -445,6 +445,12 @@ function createResourceCard(resource) {
           </label>
           <input type="number" id="${resource.uri}-limit" min="0" max="1000" value="100">
         </div>
+        <div class="param-group">
+          <label for="${resource.uri}-before">
+            before <span style="color: #999; font-size: 0.85rem;">(optional, timestamp)</span>
+          </label>
+          <input type="text" id="${resource.uri}-before" placeholder="e.g., 2025-06-16T12:00:00.000Z">
+        </div>
       </div>
     `;
   }
@@ -717,6 +723,7 @@ async function queryResource(resourceUri, button) {
     if (resourceUri.includes('/console')) {
       const levelInput = document.getElementById(`${resourceUri}-level`);
       const limitInput = document.getElementById(`${resourceUri}-limit`);
+      const beforeInput = document.getElementById(`${resourceUri}-before`);
       
       const params = new URLSearchParams();
       if (levelInput && levelInput.value) {
@@ -724,6 +731,9 @@ async function queryResource(resourceUri, button) {
       }
       if (limitInput && limitInput.value) {
         params.append('limit', limitInput.value);
+      }
+      if (beforeInput && beforeInput.value) {
+        params.append('before', beforeInput.value);
       }
       
       if (params.toString()) {
