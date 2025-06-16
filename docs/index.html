@@ -731,8 +731,8 @@
                                 <h4>Navigation</h4>
                                 <div class="tool-list">
                                     <span class="tool-item">navigate</span>
-                                    <span class="tool-item">go_back</span>
-                                    <span class="tool-item">go_forward</span>
+                                    <span class="tool-item">back</span>
+                                    <span class="tool-item">forward</span>
                                 </div>
                             </div>
 
@@ -749,10 +749,11 @@
                             <div class="tool-category">
                                 <h4>Information</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">screenshot</span>
-                                    <span class="tool-item">dom</span>
-                                    <span class="tool-item">list_tabs</span>
+                                    <span class="tool-item" style="text-decoration: line-through; opacity: 0.5;">screenshot</span>
+                                    <span class="tool-item" style="text-decoration: line-through; opacity: 0.5;">dom</span>
+                                    <span class="tool-item" style="text-decoration: line-through; opacity: 0.5;">list_tabs</span>
                                 </div>
+                                <p style="margin-top: 10px; font-size: 0.8rem; color: #718096;">Use resources instead</p>
                             </div>
 
                             <div class="tool-category">
@@ -773,15 +774,15 @@
                             <div class="tool-category">
                                 <h4>Tab Management</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">kapturemcp://tabs</span>
-                                    <span class="tool-item">kapturemcp://tab/{tabId}</span>
+                                    <span class="tool-item">kapture://tabs</span>
+                                    <span class="tool-item">kapture://tab/{tabId}</span>
                                 </div>
                             </div>
 
                             <div class="tool-category">
                                 <h4>Console Logs</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">kapturemcp://tab/{tabId}/console</span>
+                                    <span class="tool-item">kapture://tab/{tabId}/console</span>
                                 </div>
                                 <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
                                     Supports pagination with <code>?before={timestamp}&limit={count}</code><br>
@@ -792,7 +793,7 @@
                             <div class="tool-category">
                                 <h4>Screenshots</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">kapturemcp://tab/{tabId}/screenshot</span>
+                                    <span class="tool-item">kapture://tab/{tabId}/screenshot</span>
                                 </div>
                                 <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
                                     Capture screenshots with <code>?selector={css}</code><br>
@@ -803,7 +804,7 @@
                             <div class="tool-category">
                                 <h4>Element Inspection</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">kapturemcp://tab/{tabId}/elementsFromPoint</span>
+                                    <span class="tool-item">kapture://tab/{tabId}/elementsFromPoint</span>
                                 </div>
                                 <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
                                     Get all elements at coordinates with <code>?x={x}&y={y}</code><br>
@@ -814,7 +815,7 @@
                             <div class="tool-category">
                                 <h4>DOM Access</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">kapturemcp://tab/{tabId}/dom</span>
+                                    <span class="tool-item">kapture://tab/{tabId}/dom</span>
                                 </div>
                                 <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
                                     Get HTML of page or element with <code>?selector={css}</code><br>
@@ -833,15 +834,15 @@
                             <div class="tool-category">
                                 <h4>Tab Events</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">kapturemcp/tabs_changed</span>
-                                    <span class="tool-item">kapturemcp/tab_disconnected</span>
+                                    <span class="tool-item">kapture/tabs_changed</span>
+                                    <span class="tool-item">kapture/tab_disconnected</span>
                                 </div>
                             </div>
 
                             <div class="tool-category">
                                 <h4>Real-time Updates</h4>
                                 <div class="tool-list">
-                                    <span class="tool-item">kapturemcp/console_log</span>
+                                    <span class="tool-item">kapture/console_log</span>
                                 </div>
                                 <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
                                     Live console log events from browser tabs
@@ -985,7 +986,7 @@
                     <p>Kapture comes with a powerful Electron-based test application that lets developers connect to the MCP server and test commands as if they were an AI agent.</p>
                     <p>Perfect for debugging, development, and understanding how AI agents will interact with your browser automation setup.</p>
                     <ul class="test-app-features">
-                        <li>Test all 11 MCP tools interactively</li>
+                        <li>Test all MCP tools interactively</li>
                         <li>Real-time console output</li>
                         <li>Parameter validation</li>
                         <li>Connection status monitoring</li>

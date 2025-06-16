@@ -26,7 +26,7 @@ class CommandExecutor {
     if (selector && selector.includes(':contains(')) {
       return {
         valid: false,
-        error: 'The :contains() pseudo-selector is not valid CSS and is not supported by browsers. Use XPath with contains() or use kapturemcp_evaluate to find elements with specific text content.'
+        error: 'The :contains() pseudo-selector is not valid CSS and is not supported by browsers. Use XPath with contains() or use evaluate to find elements with specific text content.'
       };
     }
 

@@ -142,23 +142,25 @@ Then ask Claude to interact with web pages:
 
 ## Available MCP Tools
 
-- `kapturemcp_list_tabs` - List connected browser tabs
-- `kapturemcp_navigate` - Navigate to URL
-- `kapturemcp_go_back` - Browser back button
-- `kapturemcp_go_forward` - Browser forward button
-- `kapturemcp_screenshot` - Capture screenshots
-- `kapturemcp_click` - Click elements
-- `kapturemcp_hover` - Hover over elements
-- `kapturemcp_fill` - Fill input fields
-- `kapturemcp_select` - Select dropdown options (HTML `<select>` only)
-- `kapturemcp_evaluate` - Execute JavaScript
-- `kapturemcp_dom` - Get HTML content
+- `navigate` - Navigate to URL
+- `back` - Browser back button
+- `forward` - Browser forward button
+- `click` - Click elements
+- `hover` - Hover over elements
+- `fill` - Fill input fields
+- `select` - Select dropdown options (HTML `<select>` only)
+- `evaluate` - Execute JavaScript
+
+**Note**: The tools `list_tabs`, `screenshot`, and `dom` have been disabled. Use the corresponding resources instead for better integration.
 
 ### MCP Resources
 
-- `kapturemcp://tabs` - List all connected browser tabs
-- `kapturemcp://tab/{tabId}` - Get detailed information about a specific tab
-- `kapturemcp://tab/{tabId}/console` - Get console logs from a specific tab (with pagination support)
+- `kapture://tabs` - List all connected browser tabs
+- `kapture://tab/{tabId}` - Get detailed information about a specific tab
+- `kapture://tab/{tabId}/console` - Get console logs from a specific tab (with pagination support)
+- `kapture://tab/{tabId}/screenshot` - Capture screenshots of a tab or element
+- `kapture://tab/{tabId}/dom` - Get HTML content of a tab or element
+- `kapture://tab/{tabId}/elementsFromPoint` - Get elements at specific coordinates
 
 ## Development
 
@@ -228,7 +230,7 @@ After making changes:
 - Check element selectors are correct
 
 ### Performance Considerations
-**Important**: The `kapturemcp_click` and `kapturemcp_hover` tools may experience performance issues when the Kapture DevTools panel is not the active/selected tab in Chrome DevTools. For optimal performance:
+**Important**: The `click` and `hover` tools may experience performance issues when the Kapture DevTools panel is not the active/selected tab in Chrome DevTools. For optimal performance:
 - Keep the Kapture panel selected during automation
 - If experiencing delays with click/hover operations, switch to the Kapture panel
 - This is due to Chrome's optimization of inactive DevTools panels

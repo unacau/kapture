@@ -309,7 +309,7 @@ List all connected browser tabs.
 
 **Returns:** JSON array of all connected tabs with their information
 
-### kapturemcp://tab/{tabId}
+### kapture://tab/{tabId}
 Get detailed information about a specific tab.
 
 **Parameters:**
@@ -317,7 +317,7 @@ Get detailed information about a specific tab.
 
 **Returns:** JSON object with tab details including URL, title, dimensions, scroll position, etc.
 
-### kapturemcp://tab/{tabId}/console
+### kapture://tab/{tabId}/console
 Get console logs from a specific tab.
 
 **Parameters:**
@@ -338,7 +338,7 @@ Get console logs from a specific tab.
 - `kapturemcp://tab/abc123/console?level=error`
 - `kapturemcp://tab/abc123/console?level=warn&limit=20`
 
-### kapturemcp://tab/{tabId}/screenshot
+### kapture://tab/{tabId}/screenshot
 Capture a screenshot of a specific tab or element.
 
 **Parameters:**
@@ -368,7 +368,7 @@ Capture a screenshot of a specific tab or element.
 
 **Note:** This resource provides the same functionality as the `kapturemcp_screenshot` tool but as a resource for better integration with MCP clients.
 
-### kapturemcp://tab/{tabId}/elementsFromPoint
+### kapture://tab/{tabId}/elementsFromPoint
 Get information about all elements at a specific coordinate in the viewport.
 
 **Parameters:**
@@ -408,7 +408,7 @@ Get information about all elements at a specific coordinate in the viewport.
 
 **Note:** This uses the browser's `document.elementsFromPoint()` API to get all elements at the specified coordinates, from topmost to bottommost in the stacking order.
 
-### kapturemcp://tab/{tabId}/dom
+### kapture://tab/{tabId}/dom
 Get the DOM HTML of a specific tab or element.
 
 **Parameters:**
@@ -436,7 +436,7 @@ Get the DOM HTML of a specific tab or element.
 
 Kapture sends real-time notifications for various events:
 
-### kapturemcp/tabs_changed
+### kapture/tabs_changed
 Sent when tabs connect, disconnect, or update their information.
 
 **Payload:**
@@ -447,7 +447,7 @@ Sent when tabs connect, disconnect, or update their information.
 }
 ```
 
-### kapturemcp/tab_disconnected
+### kapture/tab_disconnected
 Sent when a specific tab disconnects.
 
 **Payload:**
@@ -458,7 +458,7 @@ Sent when a specific tab disconnects.
 }
 ```
 
-### kapturemcp/console_log
+### kapture/console_log
 Real-time console log events from browser tabs.
 
 **Payload:**
@@ -478,7 +478,7 @@ Real-time console log events from browser tabs.
 ```javascript
 // In your MCP client
 client.on('notification', (notification) => {
-  if (notification.method === 'kapturemcp/console_log') {
+  if (notification.method === 'kapture/console_log') {
     const { tabId, logEntry } = notification.params;
     console.log(`[${logEntry.level}] Tab ${tabId}: ${logEntry.message}`);
   }

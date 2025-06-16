@@ -107,13 +107,23 @@ Each AI assistant will automatically connect to its designated port and can cont
 
 ## Available MCP Tools
 
-- `kapturemcp_list_tabs` - List connected browser tabs
-- `kapturemcp_navigate` - Navigate to URL
-- `kapturemcp_screenshot` - Capture screenshots
-- `kapturemcp_click` - Click elements
-- `kapturemcp_fill` - Fill input fields
-- `kapturemcp_evaluate` - Execute JavaScript
-- And more...
+- `navigate` - Navigate to URL
+- `back` - Browser back button
+- `forward` - Browser forward button
+- `click` - Click elements
+- `hover` - Hover over elements
+- `fill` - Fill input fields
+- `select` - Select dropdown options
+- `evaluate` - Execute JavaScript
+
+## MCP Resources
+
+- `kapture://tabs` - List all connected browser tabs
+- `kapture://tab/{tabId}` - Get detailed tab information
+- `kapture://tab/{tabId}/console` - Get console logs
+- `kapture://tab/{tabId}/screenshot` - Capture screenshots
+- `kapture://tab/{tabId}/dom` - Get DOM HTML
+- `kapture://tab/{tabId}/elementsFromPoint` - Get elements at coordinates
 
 ## Documentation
 

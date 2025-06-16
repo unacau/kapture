@@ -382,7 +382,7 @@ function displaySelectedItem() {
     const tool = currentTools.find(t => t.name === selectedItem.name);
     if (tool) {
       // Navigation tools are handled via the navigation bar, not as separate cards
-      if (['kapturemcp_navigate', 'kapturemcp_go_back', 'kapturemcp_go_forward'].includes(tool.name)) {
+      if (['navigate', 'back', 'forward'].includes(tool.name)) {
         contentContainerEl.innerHTML = `
           <div class="empty-state">
             <h2>${tool.name}</h2>
@@ -749,21 +749,21 @@ async function executeTool(toolName, button) {
         } else if (content.clicked === false || content.hovered === false || content.filled === false || content.selected === false) {
           summaryEl.textContent = '⚠️ Element not found';
           resultEl.className = 'tool-result warning';
-        } else if (toolName === 'kapturemcp_screenshot') {
+        } else if (toolName === 'screenshot') {
           summaryEl.textContent = '✅ Screenshot captured';
-        } else if (toolName === 'kapturemcp_click') {
+        } else if (toolName === 'click') {
           summaryEl.textContent = '✅ Clicked successfully';
-        } else if (toolName === 'kapturemcp_hover') {
+        } else if (toolName === 'hover') {
           summaryEl.textContent = '✅ Hovered successfully';
-        } else if (toolName === 'kapturemcp_fill') {
+        } else if (toolName === 'fill') {
           summaryEl.textContent = '✅ Filled successfully';
-        } else if (toolName === 'kapturemcp_select') {
+        } else if (toolName === 'select') {
           summaryEl.textContent = '✅ Selected successfully';
-        } else if (toolName === 'kapturemcp_logs') {
+        } else if (toolName === 'logs') {
           summaryEl.textContent = `✅ Retrieved ${content.logs?.length || 0} logs`;
-        } else if (toolName === 'kapturemcp_evaluate') {
+        } else if (toolName === 'evaluate') {
           summaryEl.textContent = '✅ Evaluated successfully';
-        } else if (toolName === 'kapturemcp_dom') {
+        } else if (toolName === 'dom') {
           summaryEl.textContent = '✅ DOM retrieved';
         } else {
           summaryEl.textContent = '✅ Success';
@@ -985,12 +985,12 @@ async function executeNavigation(action, url = null) {
 
     switch (action) {
       case 'back':
-        toolName = 'kapturemcp_go_back';
+        toolName = 'back';
         params = { tabId: selectedTabId };
         log('Navigating back...');
         break;
       case 'forward':
-        toolName = 'kapturemcp_go_forward';
+        toolName = 'forward';
         params = { tabId: selectedTabId };
         log('Navigating forward...');
         break;
