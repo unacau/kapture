@@ -821,7 +821,8 @@ function injectConsoleCapture() {
         log: console.log,
         error: console.error,
         warn: console.warn,
-        info: console.info
+        info: console.info,
+        clear: console.clear
       };
 
       // Helper to serialize arguments
@@ -871,6 +872,21 @@ function injectConsoleCapture() {
           originalConsole[level].apply(console, args);
         };
       });
+      
+      // Override console.clear
+      console.clear = function() {
+        // Dispatch clear event
+        const event = new CustomEvent('kapture-console', {
+          detail: {
+            level: 'clear'
+          }
+        });
+        originalConsole.log('[Kapture] Dispatching console clear event');
+        window.dispatchEvent(event);
+        
+        // Call original method
+        originalConsole.clear.apply(console);
+      };
       
       // Log that injection is complete
       originalConsole.log('[Kapture] Console capture injected into page context');
@@ -1005,6 +1021,20 @@ function connectToBackground() {
           }));
         }
 
+        // Update the log count display
+        updateLogCount();
+      } else if (msg.type === 'console-clear') {
+        // Console clear received
+        // Clear the log array
+        window.consoleLogs = [];
+        
+        // Forward to server
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'console-clear'
+          }));
+        }
+        
         // Update the log count display
         updateLogCount();
       }

@@ -7,23 +7,36 @@ if (!window.__kaptureConsoleListenerSetup) {
   
   // Listen for console events from the page and forward to background
   window.addEventListener('kapture-console', (event) => {
-  if (event.detail && event.detail.args) {
-    const entry = {
-      timestamp: event.detail.timestamp || new Date().toISOString(),
-      level: event.detail.level,
-      message: event.detail.args.join(' ')
-    };
-
-    // Send real-time console log update to background script
-    try {
-      if (chrome.runtime?.id) {
-        chrome.runtime.sendMessage({
-          type: 'kapture-console-log',
-          logEntry: entry
-        });
+  if (event.detail) {
+    // Handle console.clear separately
+    if (event.detail.level === 'clear') {
+      try {
+        if (chrome.runtime?.id) {
+          chrome.runtime.sendMessage({
+            type: 'kapture-console-clear'
+          });
+        }
+      } catch (e) {
+        // Extension context may have been invalidated
       }
-    } catch (e) {
-      // Extension context may have been invalidated
+    } else if (event.detail.args) {
+      const entry = {
+        timestamp: event.detail.timestamp || new Date().toISOString(),
+        level: event.detail.level,
+        message: event.detail.args.join(' ')
+      };
+
+      // Send real-time console log update to background script
+      try {
+        if (chrome.runtime?.id) {
+          chrome.runtime.sendMessage({
+            type: 'kapture-console-log',
+            logEntry: entry
+          });
+        }
+      } catch (e) {
+        // Extension context may have been invalidated
+      }
     }
   }
   });

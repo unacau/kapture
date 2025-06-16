@@ -55,6 +55,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return;
   }
 
+  // Forward console clear from content script to DevTools panel
+  if (request.type === 'kapture-console-clear' && sender.tab) {
+    const tabId = sender.tab.id;
+    const connection = devToolsConnections.get(tabId);
+    if (connection) {
+      connection.postMessage({
+        type: 'console-clear'
+      });
+    }
+    sendResponse({ success: true });
+    return;
+  }
+
   // Register DevTools panel connection
   if (request.type === 'register-devtools-panel') {
     // This will be handled by onConnect listener below

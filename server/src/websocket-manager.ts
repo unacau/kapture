@@ -182,6 +182,22 @@ export class WebSocketManager {
         }
         break;
       
+      case 'console-clear':
+        // Handle console clear
+        const clearConnection = this.tabRegistry.findByWebSocket(ws);
+        if (clearConnection) {
+          logger.log(`Console clear received for tab ${clearConnection.tabId}`);
+          // Notify MCP handler about console clear with a special log entry
+          if (this.consoleLogHandler) {
+            this.consoleLogHandler(clearConnection.tabId, {
+              timestamp: new Date().toISOString(),
+              level: 'clear',
+              message: '[Console cleared]'
+            });
+          }
+        }
+        break;
+      
       default:
         logger.warn('Unknown message type:', message.type);
         ws.send(JSON.stringify({
