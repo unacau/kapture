@@ -30,6 +30,7 @@ interface ResponseMessage extends Message {
 
 export class WebSocketManager {
   private responseHandler?: (response: ResponseMessage) => void;
+  private consoleLogHandler?: (tabId: string, logEntry: any) => void;
   private mcpClientInfo: { name?: string; version?: string } = {};
 
   constructor(
@@ -41,6 +42,10 @@ export class WebSocketManager {
 
   setResponseHandler(handler: (response: ResponseMessage) => void): void {
     this.responseHandler = handler;
+  }
+
+  setConsoleLogHandler(handler: (tabId: string, logEntry: any) => void): void {
+    this.consoleLogHandler = handler;
   }
   
   setMcpClientInfo(info: { name?: string; version?: string }): void {
@@ -145,6 +150,18 @@ export class WebSocketManager {
             pageLoadTimes: message.pageLoadTimes
           });
           logger.log(`Tab ${connection.tabId} info updated: ${message.url}`);
+        }
+        break;
+      
+      case 'console-log':
+        // Handle console log updates - forward to MCP notification handler
+        const logConnection = this.tabRegistry.findByWebSocket(ws);
+        if (logConnection && message.logEntry) {
+          logger.log(`Console log received for tab ${logConnection.tabId}: ${message.logEntry.level}`);
+          // Notify MCP handler about the console log
+          if (this.consoleLogHandler) {
+            this.consoleLogHandler(logConnection.tabId, message.logEntry);
+          }
         }
         break;
       

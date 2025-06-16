@@ -5,22 +5,6 @@
   // Check if already injected
   if (window.__kaptureContentScript) return;
 
-  // Include all page-helpers functionality inline
-  const nodeTypes = {
-    1: "ELEMENT_NODE",
-    2: "ATTRIBUTE_NODE",
-    3: "TEXT_NODE",
-    4: "CDATA_SECTION_NODE",
-    5: "ENTITY_REFERENCE_NODE",
-    6: "ENTITY_NODE",
-    7: "PROCESSING_INSTRUCTION_NODE",
-    8: "COMMENT_NODE",
-    9: "DOCUMENT_NODE",
-    10: "DOCUMENT_TYPE_NODE",
-    11: "DOCUMENT_FRAGMENT_NODE",
-    12: "NOTATION_NODE"
-  };
-
   // Helper functions
   const helpers = {
     // Mouse cursor management
@@ -325,9 +309,34 @@
     },
 
     // Console log capture
-    getLogs: function(max) {
-      if (!window.__kaptureLogs) return [];
-      return window.__kaptureLogs.slice(-max).reverse();
+    getLogs: function(before, limit) {
+      if (!window.__kaptureLogs) return { logs: [], total: 0 };
+
+      const allLogs = window.__kaptureLogs;
+      let filteredLogs = allLogs;
+
+      // If 'before' timestamp is provided, filter logs older than that timestamp
+      if (before) {
+        filteredLogs = allLogs.filter(log => log.timestamp < before);
+      }
+
+      // If limit is 0, just return the count
+      if (limit === 0) {
+        return {
+          logs: [],
+          total: allLogs.length
+        };
+      }
+
+      // Get the most recent logs up to the limit (newest first)
+      const actualLimit = limit || 100;
+      const startIndex = Math.max(0, filteredLogs.length - actualLimit);
+      const logs = filteredLogs.slice(startIndex).reverse();
+
+      return {
+        logs: logs,
+        total: allLogs.length
+      };
     },
 
     // Safe serialization helper for evaluate results
@@ -455,11 +464,11 @@
     getTabInfo: function() {
       // Get navigation timing data
       const perfData = window.performance.timing;
-      const loadTime = perfData.loadEventEnd > 0 ? 
+      const loadTime = perfData.loadEventEnd > 0 ?
         perfData.loadEventEnd - perfData.navigationStart : null;
       const domContentLoadedTime = perfData.domContentLoadedEventEnd > 0 ?
         perfData.domContentLoadedEventEnd - perfData.navigationStart : null;
-      
+
       return {
         url: window.location.href,
         title: document.title,
@@ -486,7 +495,7 @@
           // Time to first byte
           ttfb: perfData.responseStart - perfData.navigationStart,
           // Total time including redirects
-          total: perfData.loadEventEnd > 0 ? 
+          total: perfData.loadEventEnd > 0 ?
             perfData.loadEventEnd - perfData.fetchStart : null
         }
       };
@@ -518,7 +527,7 @@
       if (window.__kaptureLogs.length > 1000) {
         window.__kaptureLogs.shift();
       }
-      
+
       // Send real-time console log update
       chrome.runtime.sendMessage({
         type: 'kapture-console-log',
@@ -666,12 +675,21 @@
 
       // Console operations
       case 'getLogs':
-        const maxLogs = params.max || 100;
-        return { logs: helpers.getLogs(maxLogs) };
-      
+        const { before, limit = 100 } = params;
+        // Note: originalLog is not in scope here, so we'll just return the logs without debug logging
+        return helpers.getLogs(before, limit);
+
       case 'clearLogs':
         window.__kaptureLogs = [];
         return { cleared: true };
+
+      case 'testLog':
+        // Create a test log entry using the overridden console.log
+        console.log('Test log from Kapture at', new Date().toISOString());
+        return {
+          logged: true,
+          logsCount: window.__kaptureLogs ? window.__kaptureLogs.length : 0
+        };
 
 
       // Scroll operations
@@ -742,13 +760,13 @@
   let scrollDebounceTimer = null;
   let resizeDebounceTimer = null;
   let lastSentTabInfo = null;
-  
+
   // Helper to check if tab info has changed
   function hasTabInfoChanged(newInfo, oldInfo) {
     if (!oldInfo) return true;
     return JSON.stringify(newInfo) !== JSON.stringify(oldInfo);
   }
-  
+
   // Send tab info update to background script
   function sendTabInfoUpdate() {
     const tabInfo = helpers.getTabInfo();
@@ -779,25 +797,25 @@
 
   // Listen for scroll events
   window.addEventListener('scroll', handleScroll, { passive: true });
-  
+
   // Listen for resize events
   window.addEventListener('resize', handleResize);
-  
+
   // Listen for visibility changes (immediate)
   document.addEventListener('visibilitychange', () => {
     sendTabInfoUpdate();
   });
-  
+
   // Listen for title changes (immediate)
   const titleObserver = new MutationObserver(() => {
     sendTabInfoUpdate();
   });
   const titleElement = document.querySelector('title');
   if (titleElement) {
-    titleObserver.observe(titleElement, { 
-      childList: true, 
-      characterData: true, 
-      subtree: true 
+    titleObserver.observe(titleElement, {
+      childList: true,
+      characterData: true,
+      subtree: true
     });
   } else {
     // If no title element exists yet, watch for it
@@ -805,10 +823,10 @@
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeName === 'TITLE') {
-            titleObserver.observe(node, { 
-              childList: true, 
-              characterData: true, 
-              subtree: true 
+            titleObserver.observe(node, {
+              childList: true,
+              characterData: true,
+              subtree: true
             });
             headObserver.disconnect();
             break;
@@ -821,26 +839,26 @@
       headObserver.observe(head, { childList: true });
     }
   }
-  
+
   // Listen for history changes (immediate)
   window.addEventListener('popstate', () => {
     sendTabInfoUpdate();
   });
-  
+
   // Override pushState and replaceState to catch programmatic navigation
   const originalPushState = history.pushState;
   const originalReplaceState = history.replaceState;
-  
+
   history.pushState = function() {
     originalPushState.apply(history, arguments);
     setTimeout(sendTabInfoUpdate, 0); // Allow URL to update
   };
-  
+
   history.replaceState = function() {
     originalReplaceState.apply(history, arguments);
     setTimeout(sendTabInfoUpdate, 0); // Allow URL to update
   };
-  
+
   // Send initial tab info
   sendTabInfoUpdate();
 })();

@@ -21,7 +21,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const tabId = sender.tab?.id || request.tabId;
     if (tabId) {
       contentScriptReady.set(parseInt(tabId), true);
+      console.log(`Content script ready for tab ${tabId}`);
     }
+    sendResponse({ success: true });
     return;
   }
   
@@ -35,6 +37,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         tabInfo: request.tabInfo
       });
     }
+    sendResponse({ success: true });
     return;
   }
   
@@ -48,6 +51,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         logEntry: request.logEntry
       });
     }
+    sendResponse({ success: true });
     return;
   }
   
@@ -63,11 +67,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     // Check if content script is ready
     if (!contentScriptReady.get(tabId)) {
+      console.log(`Content script not ready for tab ${tabId}, attempting injection...`);
       // Try to inject content script programmatically
       chrome.scripting.executeScript({
         target: { tabId: tabId },
-        files: ['content-script.js']
+        files: ['content-script.js'],
+        world: 'ISOLATED'
       }).then(() => {
+        console.log(`Content script injected successfully for tab ${tabId}`);
+        contentScriptReady.set(tabId, true);
         // After injection, forward the command
         chrome.tabs.sendMessage(tabId, request, (response) => {
           if (chrome.runtime.lastError) {
@@ -85,6 +93,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
         });
       }).catch(error => {
+        console.error(`Failed to inject content script for tab ${tabId}:`, error);
         sendResponse({
           type: 'kapture-response',
           requestId: request.requestId,
@@ -148,10 +157,36 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   devToolsConnections.delete(tabId);
 });
 
-// Clean up on navigation (content script will need to reload)
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === 'loading') {
+// Listen for tab navigation to clear content script ready state
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'loading' || changeInfo.url) {
+    // Clear the ready state when the tab navigates
     contentScriptReady.delete(tabId);
+    console.log(`Tab ${tabId} navigated, cleared content script ready state`);
+  }
+  
+  // For file:// and localhost URLs, we may need to manually inject after navigation completes
+  if (changeInfo.status === 'complete' && tab.url && 
+      (tab.url.startsWith('file://') || tab.url.includes('localhost'))) {
+    console.log(`Tab ${tabId} completed loading ${tab.url.substring(0, 50)}..., checking content script...`);
+    // Give it a moment for the content script to load naturally
+    setTimeout(() => {
+      if (!contentScriptReady.get(tabId)) {
+        console.log(`Content script not ready for ${tab.url.substring(0, 30)}..., attempting injection...`);
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['content-script.js'],
+          world: 'ISOLATED' // Ensure it runs in the isolated world with access to chrome APIs
+        }).then(() => {
+          console.log(`Content script injected for tab ${tabId}`);
+          contentScriptReady.set(tabId, true);
+        }).catch(err => {
+          console.error(`Failed to inject content script:`, err);
+        });
+      } else {
+        console.log(`Content script already ready for tab ${tabId}`);
+      }
+    }, 500);
   }
 });
 

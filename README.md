@@ -152,8 +152,13 @@ Then ask Claude to interact with web pages:
 - `kapturemcp_fill` - Fill input fields
 - `kapturemcp_select` - Select dropdown options (HTML `<select>` only)
 - `kapturemcp_evaluate` - Execute JavaScript
-- `kapturemcp_logs` - Retrieve console logs
 - `kapturemcp_dom` - Get HTML content
+
+### MCP Resources
+
+- `kapturemcp://tabs` - List all connected browser tabs
+- `kapturemcp://tab/{tabId}` - Get detailed information about a specific tab
+- `kapturemcp://tab/{tabId}/console` - Get console logs from a specific tab (with pagination support)
 
 ## Development
 

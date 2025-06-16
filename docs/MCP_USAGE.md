@@ -287,15 +287,6 @@ Execute JavaScript in the browser context.
 
 **Returns:** Serialized result of execution
 
-### kapturemcp_logs
-Retrieve console logs from the browser.
-
-**Parameters:**
-- `tabId` (string, required): Target tab ID
-- `max` (number, optional): Maximum log entries (default: 100)
-
-**Returns:** Array of log entries with timestamp, level, and message
-
 ### kapturemcp_dom
 Get outerHTML of the body or a specific element.
 
@@ -308,6 +299,97 @@ Get outerHTML of the body or a specific element.
 - `html` (string): The outerHTML content (if found)
 - `selector` (string): The selector used
 - `error` (object): Error details if element not found
+
+## MCP Resources
+
+In addition to tools, Kapture provides MCP resources for accessing data:
+
+### kapturemcp://tabs
+List all connected browser tabs.
+
+**Returns:** JSON array of all connected tabs with their information
+
+### kapturemcp://tab/{tabId}
+Get detailed information about a specific tab.
+
+**Parameters:**
+- `tabId` (in URL path): The tab ID
+
+**Returns:** JSON object with tab details including URL, title, dimensions, scroll position, etc.
+
+### kapturemcp://tab/{tabId}/console
+Get console logs from a specific tab.
+
+**Parameters:**
+- `tabId` (in URL path): The tab ID
+- `before` (query param, optional): ISO timestamp to get logs before
+- `limit` (query param, optional): Maximum number of logs to return (default: 100)
+- `level` (query param, optional): Filter by log level (log, info, warn, error)
+
+**Returns:** JSON object with:
+- `logs` (array): Log entries (newest first) with timestamp, level, and message
+- `total` (number): Total number of logs available
+- `filteredTotal` (number): Number of logs matching the filter criteria
+- `nextCursor` (string): Timestamp for pagination
+- `level` (string): The level filter applied (if any)
+
+**Examples:** 
+- `kapturemcp://tab/abc123/console?limit=50&before=2024-01-01T00:00:00.000Z`
+- `kapturemcp://tab/abc123/console?level=error`
+- `kapturemcp://tab/abc123/console?level=warn&limit=20`
+
+## MCP Notifications
+
+Kapture sends real-time notifications for various events:
+
+### kapturemcp/tabs_changed
+Sent when tabs connect, disconnect, or update their information.
+
+**Payload:**
+```json
+{
+  "tabs": [/* array of tab objects */],
+  "timestamp": 1234567890
+}
+```
+
+### kapturemcp/tab_disconnected
+Sent when a specific tab disconnects.
+
+**Payload:**
+```json
+{
+  "tabId": "tab-123",
+  "timestamp": 1234567890
+}
+```
+
+### kapturemcp/console_log
+Real-time console log events from browser tabs.
+
+**Payload:**
+```json
+{
+  "tabId": "tab-123",
+  "logEntry": {
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "level": "error",
+    "message": "Error message"
+  },
+  "timestamp": 1234567890
+}
+```
+
+**Example: Subscribing to Console Logs**
+```javascript
+// In your MCP client
+client.on('notification', (notification) => {
+  if (notification.method === 'kapturemcp/console_log') {
+    const { tabId, logEntry } = notification.params;
+    console.log(`[${logEntry.level}] Tab ${tabId}: ${logEntry.message}`);
+  }
+});
+```
 
 ## Usage Examples
 
@@ -404,11 +486,9 @@ await client.callTool('kapturemcp_evaluate', {
   `
 });
 
-// Retrieve console logs
-const { logs } = await client.callTool('kapturemcp_logs', {
-  tabId,
-  max: 50
-});
+// Retrieve console logs using MCP resource
+const resource = await client.readResource(`kapturemcp://tab/${tabId}/console?limit=50`);
+const { logs } = JSON.parse(resource.contents[0].text);
 
 // Process logs
 logs.forEach(log => {

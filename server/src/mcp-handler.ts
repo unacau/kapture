@@ -158,6 +158,12 @@ export class MCPHandler {
     };
   }
 
+  async getConsoleLogs(tabId: string, before?: string, limit: number = 100, level?: string): Promise<any> {
+    // Execute getLogs command on the extension with timestamp-based pagination and level filtering
+    // Note: This is used by the console resource, not a direct MCP tool
+    return this.executeCommand('getLogs', { tabId, before, limit, level });
+  }
+
   cleanup(): void {
     // Clear all pending commands
     for (const [commandId, pending] of this.pendingCommands) {

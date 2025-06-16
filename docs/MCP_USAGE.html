@@ -266,6 +266,7 @@
                 <li><a href="#prerequisites">Prerequisites</a></li>
                 <li><a href="#setup">Setup</a></li>
                 <li><a href="#available-tools">Available Tools</a></li>
+                <li><a href="#mcp-resources">MCP Resources</a></li>
                 <li><a href="#usage-examples">Usage Examples</a></li>
                 <li><a href="#error-handling">Error Handling</a></li>
                 <li><a href="#best-practices">Best Practices</a></li>
@@ -442,15 +443,6 @@ await client.connect(transport);</code></pre>
         </ul>
         <p><strong>Returns:</strong> Serialized result of execution</p>
 
-        <h3>kapturemcp_logs</h3>
-        <p>Retrieve console logs from the browser.</p>
-        <p><strong>Parameters:</strong></p>
-        <ul>
-            <li><code>tabId</code> (string, required): Target tab ID</li>
-            <li><code>max</code> (number, optional): Maximum log entries (default: 100)</li>
-        </ul>
-        <p><strong>Returns:</strong> Array of log entries with timestamp, level, and message</p>
-
         <h3>kapturemcp_dom</h3>
         <p>Get outerHTML of the body or a specific element.</p>
         <p><strong>Parameters:</strong></p>
@@ -465,6 +457,38 @@ await client.connect(transport);</code></pre>
             <li><code>selector</code> (string): The selector used</li>
             <li><code>error</code> (object): Error details if element not found</li>
         </ul>
+
+        <h2 id="mcp-resources">MCP Resources</h2>
+
+        <p>In addition to tools, Kapture provides MCP resources for accessing data:</p>
+
+        <h3>kapturemcp://tabs</h3>
+        <p>List all connected browser tabs.</p>
+        <p><strong>Returns:</strong> JSON array of all connected tabs with their information</p>
+
+        <h3>kapturemcp://tab/{tabId}</h3>
+        <p>Get detailed information about a specific tab.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (in URL path): The tab ID</li>
+        </ul>
+        <p><strong>Returns:</strong> JSON object with tab details including URL, title, dimensions, scroll position, etc.</p>
+
+        <h3>kapturemcp://tab/{tabId}/console</h3>
+        <p>Get console logs from a specific tab.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (in URL path): The tab ID</li>
+            <li><code>before</code> (query param, optional): ISO timestamp to get logs before</li>
+            <li><code>limit</code> (query param, optional): Maximum number of logs to return (default: 100)</li>
+        </ul>
+        <p><strong>Returns:</strong> JSON object with:</p>
+        <ul>
+            <li><code>logs</code> (array): Log entries (newest first) with timestamp, level, and message</li>
+            <li><code>total</code> (number): Total number of logs available</li>
+            <li><code>nextCursor</code> (string): Timestamp for pagination</li>
+        </ul>
+        <p><strong>Example:</strong> <code>kapturemcp://tab/abc123/console?limit=50&before=2024-01-01T00:00:00.000Z</code></p>
 
         <h2 id="usage-examples">Usage Examples</h2>
 
@@ -553,11 +577,9 @@ await client.callTool('kapturemcp_evaluate', {
   `
 });
 
-// Retrieve console logs
-const { logs } = await client.callTool('kapturemcp_logs', {
-  tabId,
-  max: 50
-});
+// Retrieve console logs using MCP resource
+const resource = await client.readResource(`kapturemcp://tab/${tabId}/console?limit=50`);
+const { logs } = JSON.parse(resource.contents[0].text);
 
 // Process logs
 logs.forEach(log => {

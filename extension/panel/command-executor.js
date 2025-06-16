@@ -55,9 +55,6 @@ class CommandExecutor {
         case 'kapturemcp_click':
           return await this.click(params);
 
-        case 'kapturemcp_logs':
-          return await this.getLogs(params);
-
         case 'kapturemcp_fill':
           return await this.fill(params);
 
@@ -72,6 +69,9 @@ class CommandExecutor {
 
         case 'kapturemcp_dom':
           return await this.getDom(params);
+
+        case 'getLogs':
+          return await this.getLogs(params);
 
         default:
           throw new Error(`Unknown command: ${command}`);
@@ -377,16 +377,6 @@ class CommandExecutor {
     });
   }
 
-  // Get console logs
-  async getLogs(params) {
-    const { max = 100 } = params;
-
-    const logsResult = await window.MessagePassing.executeInPage('getLogs', { max });
-    return await this.getTabInfoWithCommand({
-      logs: logsResult.logs || [],
-      total: logsResult.logs ? logsResult.logs.length : 0
-    });
-  }
 
   // Fill input element
   async fill(params) {
@@ -807,6 +797,18 @@ class CommandExecutor {
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Get DOM failed: ${error.message}`);
+    }
+  }
+
+  // Get console logs
+  async getLogs(params) {
+    const { before, limit = 100, level } = params;
+
+    try {
+      const result = await window.MessagePassing.executeInPage('getLogs', { before, limit, level });
+      return result;
+    } catch (error) {
+      throw new Error(`Get logs failed: ${error.message}`);
     }
   }
 }

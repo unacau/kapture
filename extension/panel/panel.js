@@ -302,7 +302,7 @@ async function discoverServers() {
   const shouldAutoConnect = discovered.length > 0 && !selectedPort;
   if (shouldAutoConnect) {
     selectedPort = discovered[0].port;
-    
+
     // Load saved tab ID for this port
     const savedTabId = getSavedTabIdForPort(selectedPort);
     if (savedTabId) {
@@ -314,7 +314,7 @@ async function discoverServers() {
   }
 
   updateServerDropdown();
-  
+
   // Update connection status to reflect current state
   updateConnectionStatus(isConnected, isRetrying);
 
@@ -404,7 +404,7 @@ function updateServerDropdown() {
 function startDiscovery() {
   // Update status to show we're searching
   updateConnectionStatus(false, false);
-  
+
   // Initial discovery
   discoverServers().then(found => {
     // If we're retrying and found servers, connect to the first one
@@ -439,15 +439,15 @@ async function getCurrentTabInfo() {
   try {
     // Ensure content script is ready
     await window.MessagePassing.ensureContentScript();
-    
+
     // Get tab info via message passing
     const result = await window.MessagePassing.executeInPage('getTabInfo', {});
-    
+
     // Add the tab ID from the DevTools API
     if (chrome.devtools && chrome.devtools.inspectedWindow) {
       result.id = chrome.devtools.inspectedWindow.tabId;
     }
-    
+
     return result;
   } catch (error) {
     console.error('Failed to get tab info:', error);
@@ -537,7 +537,7 @@ async function connect(fromRetry = false) {
           tabId = message.tabId;
           previousTabId = tabId;  // Store for reconnection
           tabIdElement.textContent = `Tab: ${tabId}`;
-          
+
           // Save tab ID for this port
           saveTabIdForPort(selectedPort, tabId);
 
@@ -695,8 +695,8 @@ async function updateLogCount() {
   if (commandExecutor && isConnected) {
     try {
       // Get log count from content script
-      const logsResult = await window.MessagePassing.executeInPage('getLogs', { max: 0 });
-      const logCount = logsResult.logs ? logsResult.logs.length : 0;
+      const logsResult = await window.MessagePassing.executeInPage('getLogs', { limit: 0 });
+      const logCount = logsResult.total || 0;
       logCountElement.textContent = `Log length: ${logCount}`;
     } catch (error) {
       // If we can't get logs, just show 0
@@ -735,7 +735,7 @@ serverDropdown.addEventListener('change', (e) => {
   if (newPort && newPort !== selectedPort) {
     selectedPort = newPort;
     isManualDisconnect = false; // Auto-connect when selecting a server
-    
+
     // Load saved tab ID for this port
     const savedTabId = getSavedTabIdForPort(newPort);
     if (savedTabId) {
@@ -886,29 +886,50 @@ let backgroundPort = null;
 // Establish connection to background script
 function connectToBackground() {
   if (!backgroundPort) {
-    backgroundPort = chrome.runtime.connect({ name: 'devtools-panel' });
-    
+    try {
+      backgroundPort = chrome.runtime.connect({ name: 'devtools-panel' });
+    } catch (error) {
+      console.error('Failed to connect to background:', error);
+      // Extension was likely reloaded, show a message to the user
+      if (error.message && error.message.includes('Extension context invalidated')) {
+        updateStatus('Extension reloaded - please close and reopen DevTools', 'error');
+      }
+      return;
+    }
+
     // Register with our tab ID
     if (chrome.devtools && chrome.devtools.inspectedWindow) {
-      backgroundPort.postMessage({
-        type: 'register',
-        tabId: chrome.devtools.inspectedWindow.tabId
-      });
+      try {
+        backgroundPort.postMessage({
+          type: 'register',
+          tabId: chrome.devtools.inspectedWindow.tabId
+        });
+      } catch (error) {
+        console.error('Failed to send message:', error);
+        updateStatus('Extension reloaded - please close and reopen DevTools', 'error');
+        backgroundPort = null;
+        return;
+      }
     }
-    
+
     // Handle incoming messages
     backgroundPort.onMessage.addListener((msg) => {
       if (msg.type === 'tab-info-update' && msg.tabInfo) {
-        console.log('Received real-time tab info update:', msg.tabInfo);
         sendTabInfoUpdate(msg.tabInfo);
       } else if (msg.type === 'console-log' && msg.logEntry) {
         // Real-time console log received
-        // The log is already captured in the content script's __kaptureLogs array
-        // Just update the log count display
+        // Forward to server
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'console-log',
+            logEntry: msg.logEntry
+          }));
+        }
+        // Update the log count display
         updateLogCount();
       }
     });
-    
+
     // Handle disconnection
     backgroundPort.onDisconnect.addListener(() => {
       backgroundPort = null;

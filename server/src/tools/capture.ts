@@ -12,15 +12,6 @@ export const screenshotTool = {
   }),
 };
 
-export const logsTool = {
-  name: 'kapturemcp_logs',
-  description: 'Retrieve console log messages from browser tab (most recent first)',
-  inputSchema: z.object({
-    tabId: z.string().describe('Target tab ID'),
-    max: z.number().optional().default(100).describe('Maximum number of log entries to return')
-  }),
-};
-
 export const evaluateTool = {
   name: 'kapturemcp_evaluate',
   description: 'Execute JavaScript code in the browser context. Return values are automatically serialized to JSON-safe format: functions become "[Function: name]", DOM elements include unique CSS selectors, NodeLists/HTMLCollections are converted to arrays with selectors, circular references are handled, etc.',

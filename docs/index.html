@@ -601,6 +601,11 @@
             .showcase-features {
                 grid-template-columns: 1fr;
             }
+            
+            /* Stack tools and resources on mobile */
+            .tools-resources-grid {
+                grid-template-columns: 1fr !important;
+            }
         }
     </style>
 </head>
@@ -712,45 +717,113 @@
     <section class="tools-section" id="tools">
         <div class="container">
             <div class="section-header">
-                <h2>Available Tools</h2>
-                <p>12 MCP tools for comprehensive browser automation</p>
+                <h2>MCP Capabilities</h2>
+                <p>Complete browser automation through Model Context Protocol</p>
             </div>
 
-            <div class="tools-showcase">
-                <div class="tool-categories">
-                    <div class="tool-category">
-                        <h4>Navigation</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">navigate</span>
-                            <span class="tool-item">go_back</span>
-                            <span class="tool-item">go_forward</span>
+            <div class="tools-resources-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px; margin-top: 40px;">
+                <!-- Available Tools Column -->
+                <div>
+                    <h3 style="text-align: center; margin-bottom: 30px; color: #2d3748;">Tools</h3>
+                    <div class="tools-showcase">
+                        <div class="tool-categories">
+                            <div class="tool-category">
+                                <h4>Navigation</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">navigate</span>
+                                    <span class="tool-item">go_back</span>
+                                    <span class="tool-item">go_forward</span>
+                                </div>
+                            </div>
+
+                            <div class="tool-category">
+                                <h4>Interaction</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">click</span>
+                                    <span class="tool-item">hover</span>
+                                    <span class="tool-item">fill</span>
+                                    <span class="tool-item">select</span>
+                                </div>
+                            </div>
+
+                            <div class="tool-category">
+                                <h4>Information</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">screenshot</span>
+                                    <span class="tool-item">dom</span>
+                                    <span class="tool-item">list_tabs</span>
+                                </div>
+                            </div>
+
+                            <div class="tool-category">
+                                <h4>Advanced</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">evaluate</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="tool-category">
-                        <h4>Interaction</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">click</span>
-                            <span class="tool-item">hover</span>
-                            <span class="tool-item">fill</span>
-                            <span class="tool-item">select</span>
+                <!-- MCP Resources Column -->
+                <div>
+                    <h3 style="text-align: center; margin-bottom: 30px; color: #2d3748;">Resources</h3>
+                    <div class="tools-showcase">
+                        <div class="tool-categories">
+                            <div class="tool-category">
+                                <h4>Tab Management</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">kapturemcp://tabs</span>
+                                    <span class="tool-item">kapturemcp://tab/{tabId}</span>
+                                </div>
+                            </div>
+
+                            <div class="tool-category">
+                                <h4>Console Logs</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">kapturemcp://tab/{tabId}/console</span>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                                    Supports pagination with <code>?before={timestamp}&limit={count}</code><br>
+                                    and filtering by <code>?level={log|info|warn|error}</code>
+                                </p>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="tool-category">
-                        <h4>Information</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">screenshot</span>
-                            <span class="tool-item">logs</span>
-                            <span class="tool-item">dom</span>
-                            <span class="tool-item">list_tabs</span>
-                        </div>
-                    </div>
+                <!-- Notifications Column -->
+                <div>
+                    <h3 style="text-align: center; margin-bottom: 30px; color: #2d3748;">Notifications</h3>
+                    <div class="tools-showcase">
+                        <div class="tool-categories">
+                            <div class="tool-category">
+                                <h4>Tab Events</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">kapturemcp/tabs_changed</span>
+                                    <span class="tool-item">kapturemcp/tab_disconnected</span>
+                                </div>
+                            </div>
 
-                    <div class="tool-category">
-                        <h4>Advanced</h4>
-                        <div class="tool-list">
-                            <span class="tool-item">evaluate</span>
+                            <div class="tool-category">
+                                <h4>Real-time Updates</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">kapturemcp/console_log</span>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                                    Live console log events from browser tabs
+                                </p>
+                            </div>
+
+                            <div class="tool-category">
+                                <h4>Resource Updates</h4>
+                                <div class="tool-list">
+                                    <span class="tool-item">resources/list_changed</span>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                                    Standard MCP notification when resources change
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -849,7 +922,7 @@
                     <p>Kapture comes with a powerful Electron-based test application that lets developers connect to the MCP server and test commands as if they were an AI agent.</p>
                     <p>Perfect for debugging, development, and understanding how AI agents will interact with your browser automation setup.</p>
                     <ul class="test-app-features">
-                        <li>Test all 12 MCP tools interactively</li>
+                        <li>Test all 11 MCP tools interactively</li>
                         <li>Real-time console output</li>
                         <li>Parameter validation</li>
                         <li>Connection status monitoring</li>

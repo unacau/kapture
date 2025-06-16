@@ -135,6 +135,24 @@ wsManager.setResponseHandler((response) => {
   mcpHandler.handleCommandResponse(response);
 });
 
+// Set up console log handler to send MCP notifications
+wsManager.setConsoleLogHandler(async (tabId: string, logEntry: any) => {
+  try {
+    // Send MCP notification for console log
+    await server.notification({
+      method: 'kapturemcp/console_log',
+      params: {
+        tabId,
+        logEntry,
+        timestamp: Date.now()
+      }
+    });
+    logger.log(`Sent console_log notification for tab ${tabId}`);
+  } catch (error) {
+    logger.error('Failed to send console_log notification:', error);
+  }
+});
+
 // Store client info
 let mcpClientInfo: { name?: string; version?: string } = {};
 
@@ -274,6 +292,69 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     };
   }
   
+  // Check if it's a console resource with optional pagination
+  const consoleMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)\/console(?:\?.*)?$/);
+  if (consoleMatch) {
+    const [fullPath, tabId] = consoleMatch;
+    
+    // Parse query parameters for pagination and filtering
+    let before: string | undefined;
+    let limit = 100;
+    let level: string | undefined;
+    const queryMatch = uri.match(/\?(.+)$/);
+    if (queryMatch) {
+      const params = new URLSearchParams(queryMatch[1]);
+      before = params.get('before') || undefined;
+      limit = parseInt(params.get('limit') || '100', 10);
+      level = params.get('level') || undefined;
+      
+      // Validate parameters
+      if (isNaN(limit) || limit < 1) limit = 100;
+      if (limit > 500) limit = 500; // Max 500 per page
+      // Validate level if provided
+      if (level && !['log', 'info', 'warn', 'error'].includes(level)) {
+        level = undefined;
+      }
+    }
+    
+    const tab = tabRegistry.get(tabId);
+    
+    if (!tab) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+    
+    // Get console logs from the extension with pagination and filtering
+    try {
+      const logsData = await mcpHandler.getConsoleLogs(tabId, before, limit, level);
+      
+      // Add tab info and pagination info to the response
+      const logs = logsData.logs || [];
+      const responseData = {
+        logs: logs,
+        total: logsData.total || 0,
+        limit: limit,
+        level: level,
+        // Next page cursor is the timestamp of the oldest log in this page
+        nextCursor: logs.length > 0 ? logs[logs.length - 1].timestamp : null,
+        tabId: tabId,
+        url: tab.url,
+        title: tab.title
+      };
+      
+      return {
+        contents: [
+          {
+            uri: uri,
+            mimeType: 'application/json',
+            text: JSON.stringify(responseData, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      throw new Error(`Failed to get console logs: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
   // Check if it's a tab-specific resource
   const tabMatch = uri.match(/^kapturemcp:\/\/tab\/(.+)$/);
   if (tabMatch) {
@@ -351,6 +432,27 @@ async function sendTabListChangeNotification() {
   }
 }
 
+// Helper function to update tab resources
+function updateTabResources(tabId: string, tabTitle: string) {
+  // Add/update dynamic resource for this tab
+  const tabResource = {
+    uri: `kapturemcp://tab/${tabId}`,
+    name: `Browser Tab: ${tabTitle}`,
+    description: `Information about browser tab ${tabId}`,
+    mimeType: 'application/json'
+  };
+  dynamicTabResources.set(tabId, tabResource);
+  
+  // Add/update console resource for this tab
+  const consoleResource = {
+    uri: `kapturemcp://tab/${tabId}/console`,
+    name: `Console Logs: ${tabTitle}`,
+    description: `Console log messages from browser tab ${tabId}`,
+    mimeType: 'application/json'
+  };
+  dynamicTabResources.set(`${tabId}/console`, consoleResource);
+}
+
 // Set up tab connect notification
 tabRegistry.setConnectCallback(async (tabId: string) => {
   logger.log(`Tab connected: ${tabId}`);
@@ -359,14 +461,8 @@ tabRegistry.setConnectCallback(async (tabId: string) => {
   const tab = tabRegistry.get(tabId);
   const tabTitle = tab?.title || `Tab ${tabId}`;
   
-  // Add dynamic resource for this tab
-  const tabResource = {
-    uri: `kapturemcp://tab/${tabId}`,
-    name: `Browser Tab: ${tabTitle}`,
-    description: `Information about browser tab ${tabId}`,
-    mimeType: 'application/json'
-  };
-  dynamicTabResources.set(tabId, tabResource);
+  // Update resources for this tab
+  updateTabResources(tabId, tabTitle);
   
   // Send MCP notification that resources have changed
   try {
@@ -391,13 +487,8 @@ tabRegistry.setUpdateCallback(async (tabId: string) => {
     const tab = tabRegistry.get(tabId);
     const tabTitle = tab?.title || `Tab ${tabId}`;
     
-    const tabResource = {
-      uri: `kapturemcp://tab/${tabId}`,
-      name: `Browser Tab: ${tabTitle}`,
-      description: `Information about browser tab ${tabId}`,
-      mimeType: 'application/json'
-    };
-    dynamicTabResources.set(tabId, tabResource);
+    // Update resources for this tab
+    updateTabResources(tabId, tabTitle);
     
     // Send MCP notification that resources have changed
     try {
@@ -417,8 +508,9 @@ tabRegistry.setUpdateCallback(async (tabId: string) => {
 // Set up tab disconnect notification
 tabRegistry.setDisconnectCallback(async (tabId: string) => {
   try {
-    // Remove the dynamic resource for this tab
+    // Remove the dynamic resources for this tab
     dynamicTabResources.delete(tabId);
+    dynamicTabResources.delete(`${tabId}/console`);
     
     // Send MCP notification that resources have changed
     await server.notification({
@@ -470,6 +562,41 @@ handleResourceEndpoint = async (resourcePath: string) => {
       }
     }
     
+    // Check if it's a console resource (e.g., "tab/123/console")
+    const consoleMatch = resourcePath.match(/^tab\/(.+)\/console$/);
+    if (consoleMatch) {
+      const tabId = consoleMatch[1];
+      const tab = tabRegistry.get(tabId);
+      
+      if (tab) {
+        try {
+          // Get console logs from the extension (first page, no before parameter)
+          const logsData = await mcpHandler.getConsoleLogs(tabId, undefined, 100);
+          
+          // Add tab info to the response
+          const logs = logsData.logs || [];
+          const responseData = {
+            logs: logs,
+            total: logsData.total || 0,
+            limit: 100,
+            // Next page cursor is the timestamp of the oldest log in this page
+            nextCursor: logs.length > 0 ? logs[logs.length - 1].timestamp : null,
+            tabId: tabId,
+            url: tab.url,
+            title: tab.title
+          };
+          
+          return {
+            content: JSON.stringify(responseData, null, 2),
+            mimeType: 'application/json'
+          };
+        } catch (error) {
+          logger.error(`Failed to get console logs for tab ${tabId}:`, error);
+          return null;
+        }
+      }
+    }
+    
     // Check if it's a tab-specific resource (e.g., "tab/123")
     const tabMatch = resourcePath.match(/^tab\/(.+)$/);
     if (tabMatch) {
@@ -514,6 +641,7 @@ async function startServer() {
     logger.log(`HTTP endpoints available at http://localhost:${PORT}/`);
     logger.log(`Resource endpoints: http://localhost:${PORT}/tabs`);
     logger.log(`Dynamic tab endpoints: http://localhost:${PORT}/tab/{tabId}`);
+    logger.log(`Console log endpoints: http://localhost:${PORT}/tab/{tabId}/console`);
     // Server is ready
   } catch (error) {
     logger.error('Failed to start MCP server:', error);
