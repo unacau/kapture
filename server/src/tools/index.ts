@@ -18,9 +18,11 @@ export const allTools = [
   hoverTool,
   fillTool,
   selectTool,
-  // screenshotTool,  // Disabled - use kapturemcp://tab/{tabId}/screenshot resource instead
   evaluateTool,
-  // domTool,  // Disabled - use kapturemcp://tab/{tabId}/dom resource instead
-  // elementsFromPointTool,
-  // listTabsTool  // Disabled - use kapturemcp://tabs resource instead
+  elementsFromPointTool,
+
+  // Keeping these around since Claude Desktop doesn't offer great interactions with Resources
+  screenshotTool,  // use kapturemcp://tab/{tabId}/screenshot resource instead
+  domTool,  // use kapturemcp://tab/{tabId}/dom resource instead
+  listTabsTool  // use kapturemcp://tabs resource instead
 ];
