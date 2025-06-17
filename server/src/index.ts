@@ -149,6 +149,12 @@ wsManager.setResponseHandler((response) => {
 
 // Set up console log handler to send MCP notifications
 wsManager.setConsoleLogHandler(async (tabId: string, logEntry: any) => {
+  // Only send notifications if client has initialized
+  if (!clientInitialized) {
+    logger.log('Skipping console_log notification - client not yet initialized');
+    return;
+  }
+  
   try {
     // Send MCP notification for console log
     await server.notification({
@@ -167,6 +173,9 @@ wsManager.setConsoleLogHandler(async (tabId: string, logEntry: any) => {
 
 // Store client info
 let mcpClientInfo: { name?: string; version?: string } = {};
+
+// Track if client has sent notifications/initialized
+let clientInitialized = false;
 
 // Create MCP server
 const server = new Server(
@@ -213,6 +222,19 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
   };
 });
 
+// Handle notifications/initialized to know when client is ready
+server.oninitialized = () => {
+  logger.log('Client sent notifications/initialized - client is now ready for notifications');
+  clientInitialized = true;
+  
+  // Send any pending notifications now that client is ready
+  // For example, if tabs are already connected, send the tabs_changed notification
+  if (tabRegistry.getAll().length > 0) {
+    sendTabListChangeNotification().catch(error => {
+      logger.error('Failed to send initial tabs notification:', error);
+    });
+  }
+};
 
 // Register handler for listing tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -752,6 +774,12 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 // Helper function to send tab list change notification
 async function sendTabListChangeNotification() {
+  // Only send notifications if client has initialized
+  if (!clientInitialized) {
+    logger.log('Skipping tabs_changed notification - client not yet initialized');
+    return;
+  }
+  
   try {
     // Get current tabs data
     const tabs = tabRegistry.getAll().map(tab => ({
@@ -846,18 +874,22 @@ tabRegistry.setConnectCallback(async (tabId: string) => {
   // Update resources for this tab
   updateTabResources(tabId, tabTitle);
   
-  // Send MCP notification that resources have changed
-  try {
-    await server.notification({
-      method: 'notifications/resources/list_changed',
-      params: {}
-    });
-    logger.log(`Sent resources/list_changed notification for tab ${tabId} connect`);
-  } catch (error) {
-    logger.error('Failed to send resources/list_changed notification:', error);
+  // Send MCP notification that resources have changed (only if client is ready)
+  if (clientInitialized) {
+    try {
+      await server.notification({
+        method: 'notifications/resources/list_changed',
+        params: {}
+      });
+      logger.log(`Sent resources/list_changed notification for tab ${tabId} connect`);
+    } catch (error) {
+      logger.error('Failed to send resources/list_changed notification:', error);
+    }
+    
+    await sendTabListChangeNotification();
+  } else {
+    logger.log('Skipping connect notifications - client not yet initialized');
   }
-  
-  await sendTabListChangeNotification();
 });
 
 // Set up tab update notification
@@ -872,15 +904,19 @@ tabRegistry.setUpdateCallback(async (tabId: string) => {
     // Update resources for this tab
     updateTabResources(tabId, tabTitle);
     
-    // Send MCP notification that resources have changed
-    try {
-      await server.notification({
-        method: 'notifications/resources/list_changed',
-        params: {}
-      });
-      logger.log(`Sent resources/list_changed notification for tab ${tabId} update`);
-    } catch (error) {
-      logger.error('Failed to send resources/list_changed notification:', error);
+    // Send MCP notification that resources have changed (only if client is ready)
+    if (clientInitialized) {
+      try {
+        await server.notification({
+          method: 'notifications/resources/list_changed',
+          params: {}
+        });
+        logger.log(`Sent resources/list_changed notification for tab ${tabId} update`);
+      } catch (error) {
+        logger.error('Failed to send resources/list_changed notification:', error);
+      }
+    } else {
+      logger.log('Skipping update notification - client not yet initialized');
     }
   }
   
@@ -889,32 +925,39 @@ tabRegistry.setUpdateCallback(async (tabId: string) => {
 
 // Set up tab disconnect notification
 tabRegistry.setDisconnectCallback(async (tabId: string) => {
-  try {
-    // Remove the dynamic resources for this tab
-    dynamicTabResources.delete(tabId);
-    dynamicTabResources.delete(`${tabId}/console`);
-    dynamicTabResources.delete(`${tabId}/screenshot`);
-    
-    // Send MCP notification that resources have changed
-    await server.notification({
-      method: 'notifications/resources/list_changed',
-      params: {}
-    });
-    logger.log(`Sent resources/list_changed notification for tab ${tabId} disconnect`);
-    
-    await server.notification({
-      method: 'kapturemcp/tab_disconnected',
-      params: {
-        tabId,
-        timestamp: Date.now()
-      }
-    });
-    logger.log(`Sent disconnect notification for tab ${tabId}`);
-    
-    // Also send the updated tab list
-    await sendTabListChangeNotification();
-  } catch (error) {
-    logger.error(`Failed to send disconnect notification for tab ${tabId}:`, error);
+  // Remove the dynamic resources for this tab
+  dynamicTabResources.delete(tabId);
+  dynamicTabResources.delete(`${tabId}/console`);
+  dynamicTabResources.delete(`${tabId}/screenshot`);
+  dynamicTabResources.delete(`${tabId}/elementsFromPoint`);
+  dynamicTabResources.delete(`${tabId}/dom`);
+  
+  // Only send notifications if client is ready
+  if (clientInitialized) {
+    try {
+      // Send MCP notification that resources have changed
+      await server.notification({
+        method: 'notifications/resources/list_changed',
+        params: {}
+      });
+      logger.log(`Sent resources/list_changed notification for tab ${tabId} disconnect`);
+      
+      await server.notification({
+        method: 'kapturemcp/tab_disconnected',
+        params: {
+          tabId,
+          timestamp: Date.now()
+        }
+      });
+      logger.log(`Sent disconnect notification for tab ${tabId}`);
+      
+      // Also send the updated tab list
+      await sendTabListChangeNotification();
+    } catch (error) {
+      logger.error(`Failed to send disconnect notification for tab ${tabId}:`, error);
+    }
+  } else {
+    logger.log(`Tab ${tabId} disconnected but skipping notifications - client not yet initialized`);
   }
 });
 
@@ -1260,7 +1303,51 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
 // Start the MCP server with stdio transport
 async function startServer() {
   try {
+    // Reset client initialization state
+    clientInitialized = false;
+    
     const transport = new StdioServerTransport();
+    
+    // Add disconnect detection for stdin
+    // The StdioServerTransport doesn't detect when stdin is closed by the MCP client
+    // We need to add our own listeners for the 'end' and 'close' events
+    process.stdin.on('end', () => {
+      logger.log('stdin ended - MCP client disconnected');
+      // Trigger the transport's onclose callback if it exists
+      if (transport.onclose) {
+        transport.onclose();
+      }
+    });
+    
+    process.stdin.on('close', () => {
+      logger.log('stdin closed - MCP client disconnected');
+      // Trigger the transport's onclose callback if it exists
+      if (transport.onclose) {
+        transport.onclose();
+      }
+    });
+    
+    // Set up server disconnect handler
+    server.onclose = () => {
+      logger.log('MCP server connection closed - cleaning up and exiting');
+      
+      // Clean up all resources
+      mcpHandler.cleanup();
+      wsManager.shutdown();
+      
+      // Close HTTP server
+      httpServer.close(() => {
+        logger.log('HTTP server closed');
+        process.exit(0);
+      });
+      
+      // Force exit after 5 seconds if graceful shutdown fails
+      setTimeout(() => {
+        logger.error('Graceful shutdown timeout - forcing exit');
+        process.exit(0);
+      }, 5000);
+    };
+    
     await server.connect(transport);
     logger.log('MCP server started');
     logger.log(`HTTP endpoints available at http://localhost:${PORT}/`);
@@ -1280,11 +1367,23 @@ async function startServer() {
 
 startServer();
 
-// Handle server shutdown
+// Handle server shutdown via SIGINT (Ctrl+C)
 process.on('SIGINT', () => {
+  logger.log('Received SIGINT - shutting down server');
+  
+  // Clean up resources
   mcpHandler.cleanup();
   wsManager.shutdown();
+  
+  // Close HTTP server
   httpServer.close(() => {
+    logger.log('HTTP server closed via SIGINT');
     process.exit(0);
   });
+  
+  // Force exit after 5 seconds if graceful shutdown fails
+  setTimeout(() => {
+    logger.error('SIGINT shutdown timeout - forcing exit');
+    process.exit(0);
+  }, 5000);
 });

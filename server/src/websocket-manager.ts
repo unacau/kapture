@@ -72,7 +72,10 @@ export class WebSocketManager {
       // Check if this is an MCP connection
       if (request.url === '/mcp') {
         if (this.mcpWebSocketHandler) {
-          this.mcpWebSocketHandler.handleConnection(ws);
+          this.mcpWebSocketHandler.handleConnection(ws).catch((error: any) => {
+            logger.error('Failed to handle MCP WebSocket connection:', error);
+            ws.close(1011, 'Failed to establish MCP connection');
+          });
         } else {
           logger.error('MCP WebSocket handler not configured');
           ws.close(1011, 'MCP WebSocket handler not available');
