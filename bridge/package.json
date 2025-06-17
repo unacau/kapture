@@ -1,0 +1,27 @@
+{
+  "name": "@kapture/mcp-websocket-bridge",
+  "version": "1.0.0",
+  "description": "MCP stdio-to-WebSocket bridge for Claude Desktop integration",
+  "main": "mcp-websocket-bridge.js",
+  "bin": {
+    "mcp-websocket-bridge": "./mcp-websocket-bridge.js"
+  },
+  "scripts": {
+    "start": "node mcp-websocket-bridge.js"
+  },
+  "keywords": [
+    "mcp",
+    "websocket",
+    "bridge",
+    "claude",
+    "stdio"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
