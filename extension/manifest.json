@@ -7,7 +7,6 @@
   "author": "William Kapke",
   "homepage_url": "https://github.com/williamkapke/kapture",
   "permissions": [
-    "tabs",
     "activeTab",
     "debugger",
     "scripting"

@@ -77,7 +77,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Route commands from DevTools to content scripts
   if (request.type === 'kapture-command') {
     const tabId = parseInt(request.tabId);
-    
+
     // Check if content script is ready
     if (!contentScriptReady.get(tabId)) {
       console.log(`Content script not ready for tab ${tabId}, attempting injection...`);
@@ -135,14 +135,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       });
     }
-    
-    return true; // Will respond asynchronously
-  }
 
-  // Forward responses from content scripts back to DevTools
-  if (request.type === 'kapture-response') {
-    // This is handled by the DevTools panel directly
-    return;
+    return true; // Will respond asynchronously
   }
 });
 
@@ -177,9 +171,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     contentScriptReady.delete(tabId);
     console.log(`Tab ${tabId} navigated, cleared content script ready state`);
   }
-  
+
   // For file:// and localhost URLs, we may need to manually inject after navigation completes
-  if (changeInfo.status === 'complete' && tab.url && 
+  if (changeInfo.status === 'complete' && tab.url &&
       (tab.url.startsWith('file://') || tab.url.includes('localhost'))) {
     console.log(`Tab ${tabId} completed loading ${tab.url.substring(0, 50)}..., checking content script...`);
     // Give it a moment for the content script to load naturally
@@ -208,14 +202,11 @@ async function captureScreenshot(tabId, bounds, scale, format = 'webp', quality 
     // First, make the tab active to ensure we can capture it
     await chrome.tabs.update(tabId, { active: true });
 
-    // Get the tab to find its window ID
-    const tab = await chrome.tabs.get(tabId);
-
     // Small delay to ensure tab is fully active
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Capture the visible tab
-    const fullDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
+    const fullDataUrl = await chrome.tabs.captureVisibleTab({
       format: 'png'
     });
 
