@@ -317,6 +317,22 @@ const prompts = [
         required: true
       }
     ]
+  },
+  {
+    name: 'navigate-to-url',
+    description: 'Navigate a browser tab to a specific URL',
+    arguments: [
+      {
+        name: 'tabId',
+        description: 'The ID of the tab to navigate',
+        required: true
+      },
+      {
+        name: 'url',
+        description: 'The URL to navigate to',
+        required: true
+      }
+    ]
   }
 ];
 
@@ -348,18 +364,33 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
           role: 'user',
           content: {
             type: 'text',
-            text: 'Please list all available browser tabs.'
+            text: 'Please list all available browser tabs connected to Kapture.'
           }
         },
         {
           role: 'assistant',
           content: {
-            type: 'resource',
-            resource: {
-              uri: 'kapture://tabs',
-              mimeType: 'application/json',
-              text: JSON.stringify(tabsArray, null, 2)
-            }
+            type: 'text',
+            text: tabsArray.length === 0 
+              ? `No browser tabs are currently connected to Kapture.
+
+To connect a browser tab:
+1. Make sure the Kapture Chrome extension is installed
+2. Open Chrome DevTools (F12 or right-click → Inspect)
+3. Navigate to the "Kapture" panel in DevTools
+4. The tab will automatically connect to this server
+
+The server is running on port ${PORT} and waiting for connections.`
+              : `Found ${tabsArray.length} connected browser tab${tabsArray.length === 1 ? '' : 's'}:
+
+${tabsArray.map((tab: any, index: number) => 
+`${index + 1}. Tab ID: ${tab.tabId}
+   URL: ${tab.url || 'about:blank'}
+   Title: ${tab.title || 'New Tab'}
+   Connected: ${new Date(tab.connectedAt).toLocaleString()}`
+).join('\n\n')}
+
+You can use these tab IDs with other Kapture tools like navigate, click, fill, etc.`
           }
         }
       ]
@@ -384,30 +415,113 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
           role: 'user',
           content: {
             type: 'text',
-            text: `Please show details for tab ${args.tabId}.`
+            text: `Show me detailed information about tab ${args.tabId}.`
           }
         },
         {
           role: 'assistant',
           content: {
-            type: 'resource',
-            resource: {
-              uri: `kapture://tab/${args.tabId}`,
-              mimeType: 'application/json',
-              text: JSON.stringify({
-                tabId: tab.tabId,
-                url: tab.url,
-                title: tab.title,
-                connectedAt: tab.connectedAt,
-                lastPing: tab.lastPing,
-                domSize: tab.domSize,
-                fullPageDimensions: tab.fullPageDimensions,
-                viewportDimensions: tab.viewportDimensions,
-                scrollPosition: tab.scrollPosition,
-                pageVisibility: tab.pageVisibility,
-                pageLoadTimes: tab.pageLoadTimes
-              }, null, 2)
-            }
+            type: 'text',
+            text: `Here are the details for tab ${args.tabId}:
+
+**Basic Information:**
+- URL: ${tab.url || 'about:blank'}
+- Title: ${tab.title || 'New Tab'}
+- Tab ID: ${tab.tabId}
+- Connected: ${new Date(tab.connectedAt).toLocaleString()}
+- Last Active: ${tab.lastPing ? new Date(tab.lastPing).toLocaleString() : 'Unknown'}
+
+**Page Dimensions:**
+- Viewport: ${tab.viewportDimensions ? `${tab.viewportDimensions.width}×${tab.viewportDimensions.height}` : 'Unknown'}
+- Full Page: ${tab.fullPageDimensions ? `${tab.fullPageDimensions.width}×${tab.fullPageDimensions.height}` : 'Unknown'}
+- Scroll Position: ${tab.scrollPosition ? `(${tab.scrollPosition.x}, ${tab.scrollPosition.y})` : 'Unknown'}
+
+**Page Status:**
+- Visibility: ${tab.pageVisibility || 'Unknown'}
+- DOM Size: ${tab.domSize ? `${tab.domSize.toLocaleString()} nodes` : 'Unknown'}
+${tab.pageLoadTimes ? `
+**Performance Metrics:**
+- DOM Content Loaded: ${tab.pageLoadTimes.domContentLoaded}ms
+- Page Load Complete: ${tab.pageLoadTimes.load !== null ? `${tab.pageLoadTimes.load}ms` : 'N/A'}` : ''}
+
+You can interact with this tab using tools like:
+- \`navigate\` to go to a different URL
+- \`click\`, \`fill\`, \`select\` for form interactions
+- \`screenshot\` to capture the page
+- \`evaluate\` to run JavaScript`
+          }
+        }
+      ]
+    };
+  }
+  
+  if (name === 'navigate-to-url') {
+    // Validate required arguments
+    if (!args?.tabId) {
+      throw new Error('tabId argument is required');
+    }
+    if (!args?.url) {
+      throw new Error('url argument is required');
+    }
+    
+    const tab = tabRegistry.get(args.tabId);
+    if (!tab) {
+      throw new Error(`Tab ${args.tabId} not found`);
+    }
+    
+    // Ensure URL has a protocol
+    let targetUrl = args.url;
+    if (!targetUrl.match(/^https?:\/\//i)) {
+      targetUrl = `https://${targetUrl}`;
+    }
+    
+    return {
+      description: prompt.description,
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: `Navigate tab ${args.tabId} to ${args.url}`
+          }
+        },
+        {
+          role: 'assistant',
+          content: {
+            type: 'text',
+            text: `I'll navigate the browser tab to ${targetUrl}.
+
+**Current Tab State:**
+- Tab ID: ${tab.tabId}
+- Current URL: ${tab.url || 'about:blank'}
+- Current Title: ${tab.title || 'New Tab'}
+
+**Navigation Plan:**
+1. Navigate to: ${targetUrl}
+2. Wait for page to fully load
+3. Confirm navigation success
+
+To execute this navigation, use the \`navigate\` tool:
+\`\`\`json
+{
+  "tool": "navigate",
+  "arguments": {
+    "tabId": "${args.tabId}",
+    "url": "${targetUrl}"
+  }
+}
+\`\`\`
+
+**What happens next:**
+- The browser will navigate to the new URL
+- The page will load completely before the tool returns
+- You'll receive the new page title and URL in the response
+- If navigation fails, you'll get an error message
+
+**Follow-up actions you might want:**
+- Use \`screenshot\` to capture the loaded page
+- Use \`evaluate\` to check page content
+- Use \`click\` or \`fill\` to interact with page elements`
           }
         }
       ]
