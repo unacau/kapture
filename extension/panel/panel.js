@@ -278,12 +278,22 @@ async function discoverServers() {
         return null;
       })
       .then(data => {
-        if (data && data.mcpClient) {
-          discovered.push({
-            port,
-            mcpClient: data.mcpClient,
-            label: `${data.mcpClient.name} ${data.mcpClient.version} (${port})`
-          });
+        if (data) {
+          // Server is running, even if MCP client not connected yet
+          if (data.mcpClient) {
+            discovered.push({
+              port,
+              mcpClient: data.mcpClient,
+              label: `${data.mcpClient.name} ${data.mcpClient.version} (${port})`
+            });
+          } else {
+            // Server running but no MCP client connected
+            discovered.push({
+              port,
+              mcpClient: null,
+              label: `Kapture Server (${port}) - No MCP client`
+            });
+          }
         }
       })
       .catch(() => {
