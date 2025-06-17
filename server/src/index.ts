@@ -5,7 +5,9 @@ import {
   CallToolRequestSchema,
   InitializeRequestSchema,
   ListResourcesRequestSchema,
-  ReadResourceRequestSchema
+  ReadResourceRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { WebSocketServer } from 'ws';
@@ -176,6 +178,7 @@ const server = new Server(
     capabilities: {
       tools: {},
       resources: {},
+      prompts: {},
     },
   }
 );
@@ -200,7 +203,8 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
     protocolVersion: '2024-11-05',
     capabilities: {
       tools: {},
-      resources: {}
+      resources: {},
+      prompts: {}
     },
     serverInfo: {
       name: 'kapture-mcp-server',
@@ -272,6 +276,123 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       isError: true
     };
   }
+});
+
+// Define available prompts
+const prompts = [
+  {
+    name: 'list-tabs',
+    description: 'Get a list of all browser tabs connected to Kapture',
+    arguments: []
+  },
+  {
+    name: 'tab-details',
+    description: 'Get detailed information about a specific browser tab',
+    arguments: [
+      {
+        name: 'tabId',
+        description: 'The ID of the tab to get details for',
+        required: true
+      }
+    ]
+  }
+];
+
+// Register handler for listing prompts
+server.setRequestHandler(ListPromptsRequestSchema, async () => {
+  return {
+    prompts: prompts
+  };
+});
+
+// Register handler for getting a specific prompt
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+  
+  const prompt = prompts.find(p => p.name === name);
+  if (!prompt) {
+    throw new Error(`Unknown prompt: ${name}`);
+  }
+  
+  // Handle different prompts
+  if (name === 'list-tabs') {
+    const tabsData = mcpHandler.listTabs();
+    const tabsArray = tabsData.tabs || [];
+    
+    return {
+      description: prompt.description,
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: 'Please list all available browser tabs.'
+          }
+        },
+        {
+          role: 'assistant',
+          content: {
+            type: 'resource',
+            resource: {
+              uri: 'kapture://tabs',
+              mimeType: 'application/json',
+              text: JSON.stringify(tabsArray, null, 2)
+            }
+          }
+        }
+      ]
+    };
+  }
+  
+  if (name === 'tab-details') {
+    // Validate required argument
+    if (!args?.tabId) {
+      throw new Error('tabId argument is required');
+    }
+    
+    const tab = tabRegistry.get(args.tabId);
+    if (!tab) {
+      throw new Error(`Tab ${args.tabId} not found`);
+    }
+    
+    return {
+      description: prompt.description,
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: `Please show details for tab ${args.tabId}.`
+          }
+        },
+        {
+          role: 'assistant',
+          content: {
+            type: 'resource',
+            resource: {
+              uri: `kapture://tab/${args.tabId}`,
+              mimeType: 'application/json',
+              text: JSON.stringify({
+                tabId: tab.tabId,
+                url: tab.url,
+                title: tab.title,
+                connectedAt: tab.connectedAt,
+                lastPing: tab.lastPing,
+                domSize: tab.domSize,
+                fullPageDimensions: tab.fullPageDimensions,
+                viewportDimensions: tab.viewportDimensions,
+                scrollPosition: tab.scrollPosition,
+                pageVisibility: tab.pageVisibility,
+                pageLoadTimes: tab.pageLoadTimes
+              }, null, 2)
+            }
+          }
+        }
+      ]
+    };
+  }
+  
+  throw new Error(`Prompt ${name} not implemented`);
 });
 
 // Define available resources
