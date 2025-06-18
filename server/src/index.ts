@@ -289,12 +289,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const match = result.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
       if (match) {
         const [, mimeType, base64Data] = match;
+        
+        // Build URL for HTTP endpoint
+        const params = new URLSearchParams();
+        if (args?.selector) params.append('selector', String(args.selector));
+        if (args?.scale) params.append('scale', String(args.scale));
+        if (args?.format) params.append('format', String(args.format));
+        if (args?.quality) params.append('quality', String(args.quality));
+        
+        const queryString = params.toString();
+        const screenshotUrl = `http://localhost:${PORT}/tab/${args?.tabId}/screenshot/view${queryString ? '?' + queryString : ''}`;
+        
+        const enhancedResult = {
+          preview: screenshotUrl,
+          ...result
+        };
+        
         return {
           content: [
             {
               type: 'image',
               data: base64Data,
               mimeType: mimeType
+            },
+            {
+              type: 'text',
+              text: JSON.stringify(enhancedResult, null, 2)
             }
           ]
         };
@@ -844,6 +864,16 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
         quality
       });
       
+      // Build URL for HTTP endpoint
+      const viewParams = new URLSearchParams();
+      if (selector) viewParams.append('selector', selector);
+      viewParams.append('scale', scale.toString());
+      viewParams.append('format', format);
+      viewParams.append('quality', quality.toString());
+      
+      const viewQueryString = viewParams.toString();
+      const screenshotUrl = `http://localhost:${PORT}/tab/${tabId}/screenshot/view${viewQueryString ? '?' + viewQueryString : ''}`;
+      
       // Return the screenshot data as JSON
       return {
         contents: [
@@ -860,7 +890,10 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
                 format,
                 quality
               },
-              screenshot: screenshotData
+              screenshot: {
+                preview: screenshotUrl,
+                ...screenshotData
+              }
             }, null, 2)
           }
         ]
