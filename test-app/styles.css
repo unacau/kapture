@@ -122,13 +122,13 @@ body {
 }
 
 /* Tab List in Sidebar */
-.tab-list {
+.sidebar-tab-list {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.tab-item {
+.sidebar-tab-item {
   background: none;
   border: none;
   padding: 0.5rem;
@@ -143,11 +143,11 @@ body {
   font-size: 0.875rem;
 }
 
-.tab-item:hover {
+.sidebar-tab-item:hover {
   background: #f0f0f0;
 }
 
-.tab-item.active {
+.sidebar-tab-item.active {
   background: #3498db;
   color: white;
 }

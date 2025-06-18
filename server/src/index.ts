@@ -123,13 +123,36 @@ const httpServer = createServer(async (req, res) => {
   res.end(JSON.stringify({ error: 'Not found' }));
 });
 
-// Initialize WebSocket server attached to HTTP server
-const wss = new WebSocketServer({ server: httpServer });
+// Initialize WebSocket server with noServer option to handle upgrades manually
+const wss = new WebSocketServer({ noServer: true });
 
 // Add error handling for HTTP server
 httpServer.on('error', (error) => {
   logger.error('HTTP server error:', error);
   process.exit(1);
+});
+
+// Handle WebSocket upgrade requests
+httpServer.on('upgrade', (request, socket, head) => {
+  const url = request.url || '';
+  
+  // Check if this is an MCP WebSocket connection attempt
+  if (url === '/mcp' && clientInitialized) {
+    // Reject the upgrade if stdio client is already active
+    logger.log('Rejecting MCP WebSocket upgrade - stdio client is already active');
+    socket.write('HTTP/1.1 503 Service Unavailable\r\n' +
+                 'Content-Type: text/plain\r\n' +
+                 'Connection: close\r\n' +
+                 '\r\n' +
+                 'MCP connection already established via stdio\r\n');
+    socket.destroy();
+    return;
+  }
+  
+  // Allow the WebSocket upgrade
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit('connection', ws, request);
+  });
 });
 
 // Start listening
@@ -141,7 +164,6 @@ const wsManager = new WebSocketManager(wss, tabRegistry);
 
 // Initialize MCP handler
 const mcpHandler = new MCPHandler(wsManager, tabRegistry);
-
 
 // Connect WebSocket responses to MCP handler
 wsManager.setResponseHandler((response) => {

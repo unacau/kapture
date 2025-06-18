@@ -148,13 +148,13 @@ async function refreshTabs(silent = false) {
       selectTab(currentTabs[0].tabId);
     } else if (selectedTabId) {
       // Update tab content if already selected
-      displayTabContent();
+      updateTabInfo();
     }
 
     // If selected tab is gone, clear selection
     if (selectedTabId && !currentTabs.find(t => t.tabId === selectedTabId)) {
       selectedTabId = null;
-      displayTabContent();
+      updateTabInfo();
     }
   } catch (error) {
     if (!silent) {

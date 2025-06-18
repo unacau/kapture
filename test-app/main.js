@@ -415,6 +415,12 @@ function sendMCPRequest(method, params = {}) {
       method: 'log',
       params: { message: `[STDIO SEND] ${requestStr}`, type: 'debug' }
     });
+    
+    if (!mcpProcess || !mcpProcess.stdin) {
+      reject(new Error('MCP process not available'));
+      return;
+    }
+    
     mcpProcess.stdin.write(requestStr + '\n');
   });
 }
