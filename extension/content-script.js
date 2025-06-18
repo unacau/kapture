@@ -4,7 +4,7 @@
 // Check if we've already set up the console listener
 if (!window.__kaptureConsoleListenerSetup) {
   window.__kaptureConsoleListenerSetup = true;
-  
+
   // Listen for console events from the page and forward to background
   window.addEventListener('kapture-console', (event) => {
   if (event.detail) {
@@ -45,6 +45,9 @@ if (!window.__kaptureConsoleListenerSetup) {
 (function() {
   // Check if already injected
   if (window.__kaptureContentScript) return;
+
+  // Counter for generating unique IDs
+  let kaptureIdCounter = 0;
 
   // Helper functions
   const helpers = {
@@ -280,6 +283,12 @@ if (!window.__kaptureConsoleListenerSetup) {
         }
       }
 
+      // If element doesn't have an ID, add a unique kapture ID
+      if (!element.id) {
+        element.id = 'kapture-' + (++kaptureIdCounter);
+        return '#' + element.id;
+      }
+
       // Build path from element to root
       const path = [];
       let current = element;
@@ -354,7 +363,7 @@ if (!window.__kaptureConsoleListenerSetup) {
       try {
         // Get all elements at the specified coordinates
         const elements = document.elementsFromPoint(x, y);
-        
+
         if (!elements || elements.length === 0) {
           return {
             found: false,
@@ -363,65 +372,22 @@ if (!window.__kaptureConsoleListenerSetup) {
             elements: []
           };
         }
-        
-        // Generate unique selector for an element
-        const getUniqueSelector = function(element) {
-          if (!element || !(element instanceof Element)) return null;
-          
-          // Try ID first
-          if (element.id && /^[a-zA-Z][\w-]*$/.test(element.id)) {
-            if (document.querySelectorAll('#' + CSS.escape(element.id)).length === 1) {
-              return '#' + CSS.escape(element.id);
-            }
-          }
-          
-          // Build path from element to root
-          const path = [];
-          let current = element;
-          
-          while (current && current.nodeType === Node.ELEMENT_NODE) {
-            let selector = current.tagName.toLowerCase();
-            
-            // Add classes
-            if (current.classList.length > 0) {
-              const classes = Array.from(current.classList)
-                .filter(c => /^[a-zA-Z][\w-]*$/.test(c))
-                .slice(0, 3);
-              if (classes.length > 0) {
-                selector += '.' + classes.join('.');
-              }
-            }
-            
-            // Add nth-of-type if necessary
-            if (current.parentElement) {
-              const siblings = Array.from(current.parentElement.children);
-              const sameTagSiblings = siblings.filter(s => s.tagName === current.tagName);
-              if (sameTagSiblings.length > 1) {
-                const index = sameTagSiblings.indexOf(current) + 1;
-                selector += ':nth-of-type(' + index + ')';
-              }
-            }
-            
-            path.unshift(selector);
-            if (path.length >= 4) break; // Limit depth
-            current = current.parentElement;
-          }
-          
-          return path.join(' > ');
-        };
-        
+
         // Map elements to return data
         const elementData = elements.map((element, index) => {
           const rect = element.getBoundingClientRect();
           const computedStyle = window.getComputedStyle(element);
           
+          // Get the selector (which may add an ID to the element)
+          const selector = helpers.getUniqueSelector(element);
+
           return {
             index: index,
             tagName: element.tagName.toLowerCase(),
             id: element.id || null,
             className: element.className || null,
             classList: element.classList ? Array.from(element.classList) : [],
-            selector: getUniqueSelector(element),
+            selector: selector,
             text: element.textContent ? element.textContent.trim().substring(0, 100) : '',
             href: element.href || null,
             src: element.src || null,
@@ -454,13 +420,13 @@ if (!window.__kaptureConsoleListenerSetup) {
               position: computedStyle.position,
               pointerEvents: computedStyle.pointerEvents
             },
-            isVisible: rect.width > 0 && rect.height > 0 && 
-                      computedStyle.display !== 'none' && 
+            isVisible: rect.width > 0 && rect.height > 0 &&
+                      computedStyle.display !== 'none' &&
                       computedStyle.visibility !== 'hidden' &&
                       computedStyle.opacity !== '0'
           };
         });
-        
+
         return {
           found: true,
           x: x,
