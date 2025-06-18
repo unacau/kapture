@@ -342,7 +342,7 @@ ipcMain.handle('mcp-connect', async () => {
 
     // Send initialize request
     const response = await sendMCPRequest('initialize', {
-      protocolVersion: '0.1.0',
+      protocolVersion: '2024-11-05',
       capabilities: {
         roots: {}
       },
@@ -353,7 +353,7 @@ ipcMain.handle('mcp-connect', async () => {
     });
 
     // Send initialized notification
-    sendMCPNotification('initialized', {});
+    sendMCPNotification('notifications/initialized', {});
 
     return { success: true, capabilities: response.capabilities };
   } catch (error) {
