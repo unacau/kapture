@@ -242,11 +242,6 @@ function updateTabInfo() {
   // Tab ID
   infoHTML += `<span class="info-item"><span class="info-label">Tab:</span> <span class="info-value">${tab.tabId}</span></span>`;
   
-  // URL
-  if (tab.url) {
-    infoHTML += `<span class="info-item url"><span class="info-label">URL:</span> <span class="info-value" title="${tab.url}">${tab.url}</span></span>`;
-  }
-  
   // DOM Size
   if (tab.domSize) {
     infoHTML += `<span class="info-item"><span class="info-label">DOM:</span> <span class="info-value">${(tab.domSize / 1024).toFixed(1)} KB</span></span>`;
