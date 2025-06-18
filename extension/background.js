@@ -133,17 +133,25 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 async function captureScreenshot(tabId, bounds, scale, format = 'webp', quality = 0.85) {
+  let debuggerAttached = false;
+  
   try {
-    // First, make the tab active to ensure we can capture it
-    await chrome.tabs.update(tabId, { active: true });
-
-    // Small delay to ensure tab is fully active
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Capture the visible tab
-    const fullDataUrl = await chrome.tabs.captureVisibleTab({
-      format: 'png'
-    });
+    // Attach debugger to capture screenshot without making tab active
+    await chrome.debugger.attach({ tabId: tabId }, '1.3');
+    debuggerAttached = true;
+    
+    // Enable the Page domain
+    await chrome.debugger.sendCommand({ tabId: tabId }, 'Page.enable');
+    
+    // Capture screenshot using debugger protocol
+    const screenshot = await chrome.debugger.sendCommand(
+      { tabId: tabId },
+      'Page.captureScreenshot',
+      { format: 'png' }
+    );
+    
+    // Convert base64 to data URL
+    const fullDataUrl = `data:image/png;base64,${screenshot.data}`;
 
     // Auto-detect high DPI and adjust scale if not explicitly set
     let effectiveScale = scale;
@@ -177,6 +185,15 @@ async function captureScreenshot(tabId, bounds, scale, format = 'webp', quality 
       throw new Error('Screenshot requires the extension to have access to the current page');
     }
     throw error;
+  } finally {
+    // Always detach debugger if attached
+    if (debuggerAttached) {
+      try {
+        await chrome.debugger.detach({ tabId: tabId });
+      } catch (detachError) {
+        console.error('Failed to detach debugger after screenshot:', detachError);
+      }
+    }
   }
 }
 
