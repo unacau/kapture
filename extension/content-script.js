@@ -51,6 +51,73 @@ if (!window.__kaptureConsoleListenerSetup) {
 
   // Helper functions
   const helpers = {
+    // Standardized element data extraction
+    getElementData: function(element, index = 0) {
+      const rect = element.getBoundingClientRect();
+      const computedStyle = window.getComputedStyle(element);
+
+      // Get the selector (which may add an ID to the element)
+      const selector = this.getUniqueSelector(element);
+
+      const data = {
+        index: index,
+        tagName: element.tagName.toLowerCase(),
+        id: element.id || null,
+        className: element.className || null,
+        // classList: element.classList ? Array.from(element.classList) : [],
+        selector: selector,
+        // text: element.textContent ? element.textContent.trim().substring(0, 100) : '',
+        // alt: element.alt || null,
+        type: element.type || null,
+        // dataAttributes: Object.fromEntries(
+        //   Array.from(element.attributes)
+        //     .filter(attr => attr.name.startsWith('data-'))
+        //     .map(attr => [attr.name, attr.value])
+        // ),
+        bounds: {
+          x: Math.round(rect.x),
+          y: Math.round(rect.y),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          // top: Math.round(rect.top),
+          // right: Math.round(rect.right),
+          // bottom: Math.round(rect.bottom),
+          // left: Math.round(rect.left)
+        },
+        // style: {
+        //   display: computedStyle.display,
+        //   visibility: computedStyle.visibility,
+        //   opacity: computedStyle.opacity,
+        //   zIndex: computedStyle.zIndex,
+        //   position: computedStyle.position,
+        //   pointerEvents: computedStyle.pointerEvents
+        // },
+        isVisible: rect.width > 0 && rect.height > 0 &&
+                  computedStyle.display !== 'none' &&
+                  computedStyle.visibility !== 'hidden' &&
+                  computedStyle.opacity !== '0'
+      };
+      // Conditionally add attributes
+      ["href", "src", "value", "name"].forEach(attr => {
+        if (element[attr]) {
+          data[attr] = element[attr];
+        }
+      });
+
+
+      // If it's a select element, add the options
+      if (element.tagName.toLowerCase() === 'select') {
+        data.options = Array.from(element.options).map((option, optionIndex) => ({
+          index: optionIndex,
+          value: option.value,
+          text: option.text,
+          selected: option.selected,
+          disabled: option.disabled
+        }));
+      }
+
+      return data;
+    },
     // Mouse cursor management
     createCursor: function() {
       const existingCursor = document.getElementById('kapture-mouse-cursor');
@@ -375,56 +442,7 @@ if (!window.__kaptureConsoleListenerSetup) {
 
         // Map elements to return data
         const elementData = elements.map((element, index) => {
-          const rect = element.getBoundingClientRect();
-          const computedStyle = window.getComputedStyle(element);
-          
-          // Get the selector (which may add an ID to the element)
-          const selector = helpers.getUniqueSelector(element);
-
-          return {
-            index: index,
-            tagName: element.tagName.toLowerCase(),
-            id: element.id || null,
-            className: element.className || null,
-            classList: element.classList ? Array.from(element.classList) : [],
-            selector: selector,
-            text: element.textContent ? element.textContent.trim().substring(0, 100) : '',
-            href: element.href || null,
-            src: element.src || null,
-            alt: element.alt || null,
-            value: element.value || null,
-            type: element.type || null,
-            name: element.name || null,
-            role: element.getAttribute('role') || null,
-            ariaLabel: element.getAttribute('aria-label') || null,
-            dataAttributes: Object.fromEntries(
-              Array.from(element.attributes)
-                .filter(attr => attr.name.startsWith('data-'))
-                .map(attr => [attr.name, attr.value])
-            ),
-            bounds: {
-              x: Math.round(rect.x),
-              y: Math.round(rect.y),
-              width: Math.round(rect.width),
-              height: Math.round(rect.height),
-              top: Math.round(rect.top),
-              right: Math.round(rect.right),
-              bottom: Math.round(rect.bottom),
-              left: Math.round(rect.left)
-            },
-            style: {
-              display: computedStyle.display,
-              visibility: computedStyle.visibility,
-              opacity: computedStyle.opacity,
-              zIndex: computedStyle.zIndex,
-              position: computedStyle.position,
-              pointerEvents: computedStyle.pointerEvents
-            },
-            isVisible: rect.width > 0 && rect.height > 0 &&
-                      computedStyle.display !== 'none' &&
-                      computedStyle.visibility !== 'hidden' &&
-                      computedStyle.opacity !== '0'
-          };
+          return helpers.getElementData(element, index);
         });
 
         return {
@@ -440,6 +458,42 @@ if (!window.__kaptureConsoleListenerSetup) {
           y: y,
           error: {
             code: 'EXECUTION_ERROR',
+            message: error.message
+          }
+        };
+      }
+    },
+
+    // Get all elements matching a CSS selector
+    querySelectorAll: function(selector) {
+      try {
+        const elements = document.querySelectorAll(selector);
+
+        if (!elements || elements.length === 0) {
+          return {
+            found: false,
+            selector: selector,
+            elements: []
+          };
+        }
+
+        // Map elements to return data using the standardized helper
+        const elementData = Array.from(elements).map((element, index) => {
+          return helpers.getElementData(element, index);
+        });
+
+        return {
+          found: true,
+          selector: selector,
+          count: elementData.length,
+          elements: elementData
+        };
+      } catch (error) {
+        return {
+          found: false,
+          selector: selector,
+          error: {
+            code: 'INVALID_SELECTOR',
             message: error.message
           }
         };
@@ -660,6 +714,10 @@ if (!window.__kaptureConsoleListenerSetup) {
           throw new Error('Both x and y coordinates are required');
         }
         return helpers.getElementsFromPoint(params.x, params.y);
+
+      case 'querySelectorAll':
+        if (!params.selector) throw new Error('Selector parameter required');
+        return helpers.querySelectorAll(params.selector);
 
       case 'scrollAndGetElementPosition':
         if (!params.selector) throw new Error('Selector parameter required');

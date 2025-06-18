@@ -39,3 +39,12 @@ export const elementsFromPointTool = {
     y: z.number().describe('Y coordinate relative to the viewport')
   }),
 };
+
+export const querySelectorAllTool = {
+  name: 'querySelectorAll',
+  description: 'Query all elements matching a CSS selector and get detailed information about each element',
+  inputSchema: z.object({
+    tabId: z.string().describe('Target tab ID'),
+    selector: z.string().describe('CSS selector to query elements')
+  }),
+};

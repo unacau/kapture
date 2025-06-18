@@ -73,6 +73,9 @@ class CommandExecutor {
         case 'elementsFromPoint':
           return await this.getElementsFromPoint(params);
 
+        case 'querySelectorAll':
+          return await this.querySelectorAll(params);
+
         case 'getLogs':
           return await this.getLogs(params);
 
@@ -817,6 +820,29 @@ class CommandExecutor {
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Get elements from point failed: ${error.message}`);
+    }
+  }
+
+  // Query all elements matching a CSS selector
+  async querySelectorAll(params) {
+    const { selector } = params;
+
+    if (!selector) {
+      throw new Error('Selector parameter is required');
+    }
+
+    // Validate selector
+    const validation = this.validateSelector(selector);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    try {
+      // Execute querySelectorAll in the page context
+      const result = await window.MessagePassing.executeInPage('querySelectorAll', { selector });
+      return await this.getTabInfoWithCommand(result);
+    } catch (error) {
+      throw new Error(`Query selector all failed: ${error.message}`);
     }
   }
 

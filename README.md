@@ -150,6 +150,7 @@ Then ask Claude to interact with web pages:
 - `fill` - Fill input fields
 - `select` - Select dropdown options (HTML `<select>` only)
 - `evaluate` - Execute JavaScript
+- `querySelectorAll` - Query all elements matching a CSS selector
 
 ### MCP Resources
 
@@ -159,6 +160,7 @@ Then ask Claude to interact with web pages:
 - `kapture://tab/{tabId}/screenshot` - Capture screenshots of a tab or element
 - `kapture://tab/{tabId}/dom` - Get HTML content of a tab or element
 - `kapture://tab/{tabId}/elementsFromPoint` - Get elements at specific coordinates
+- `kapture://tab/{tabId}/querySelectorAll?selector={selector}` - Query all elements matching a CSS selector
 
 ## Development
 

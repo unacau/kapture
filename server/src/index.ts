@@ -960,7 +960,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     
     try {
       // Execute DOM command
-      const domData = await mcpHandler.executeCommand('kapturemcp_dom', {
+      const domData = await mcpHandler.executeCommand('dom', {
         tabId,
         selector
       });
@@ -983,6 +983,58 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       };
     } catch (error) {
       throw new Error(`Failed to get DOM: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
+  // Check if it's a querySelectorAll resource with optional query parameters
+  const querySelectorMatch = uri.match(/^kapture:\/\/tab\/(.+)\/querySelectorAll(?:\?.*)?$/);
+  if (querySelectorMatch) {
+    const tabId = querySelectorMatch[1];
+    const tab = tabRegistry.get(tabId);
+    
+    if (!tab) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+    
+    // Parse query parameters for selector
+    let selector: string | undefined;
+    
+    const queryIndex = uri.indexOf('?');
+    if (queryIndex !== -1) {
+      const params = new URLSearchParams(uri.substring(queryIndex + 1));
+      selector = params.get('selector') || undefined;
+    }
+    
+    // Validate that selector is provided
+    if (!selector) {
+      throw new Error('Selector parameter is required');
+    }
+    
+    try {
+      // Execute querySelectorAll command
+      const result = await mcpHandler.executeCommand('querySelectorAll', {
+        tabId,
+        selector
+      });
+      
+      // Return the elements data as JSON
+      return {
+        contents: [
+          {
+            uri: uri,
+            mimeType: 'application/json',
+            text: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              selector: selector,
+              ...result
+            }, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      throw new Error(`Failed to query selector: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   
@@ -1115,6 +1167,15 @@ function updateTabResources(tabId: string, tabTitle: string) {
     mimeType: 'application/json'
   };
   dynamicTabResources.set(`${tabId}/dom`, domResource);
+  
+  // Add/update querySelectorAll resource for this tab
+  const querySelectorResource = {
+    uri: `kapture://tab/${tabId}/querySelectorAll`,
+    name: `Query Selector All: ${tabTitle}`,
+    description: `Query elements by CSS selector in browser tab ${tabId}`,
+    mimeType: 'application/json'
+  };
+  dynamicTabResources.set(`${tabId}/querySelectorAll`, querySelectorResource);
 }
 
 // Set up tab connect notification
@@ -1185,6 +1246,7 @@ tabRegistry.setDisconnectCallback(async (tabId: string) => {
   dynamicTabResources.delete(`${tabId}/screenshot`);
   dynamicTabResources.delete(`${tabId}/elementsFromPoint`);
   dynamicTabResources.delete(`${tabId}/dom`);
+  dynamicTabResources.delete(`${tabId}/querySelectorAll`);
   
   // Only send notifications if client is ready
   if (clientInitialized) {
@@ -1519,6 +1581,55 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
       }
     }
     
+    // Check if it's a querySelectorAll resource (e.g., "tab/123/querySelectorAll")
+    const querySelectorMatch = resourcePath.match(/^tab\/(.+)\/querySelectorAll$/);
+    if (querySelectorMatch) {
+      const tabId = querySelectorMatch[1];
+      const tab = tabRegistry.get(tabId);
+      
+      if (tab) {
+        try {
+          // Parse query parameters for selector
+          let selector: string | undefined;
+          
+          if (queryString) {
+            const params = new URLSearchParams(queryString);
+            selector = params.get('selector') || undefined;
+          }
+          
+          // Validate that selector is provided
+          if (!selector) {
+            return {
+              content: JSON.stringify({ error: 'Selector parameter is required' }),
+              mimeType: 'application/json',
+              statusCode: 400
+            };
+          }
+          
+          // Execute querySelectorAll command
+          const result = await mcpHandler.executeCommand('querySelectorAll', {
+            tabId,
+            selector
+          });
+          
+          // Return the elements data as JSON
+          return {
+            content: JSON.stringify({
+              tabId: tabId,
+              url: tab.url,
+              title: tab.title,
+              selector: selector,
+              ...result
+            }, null, 2),
+            mimeType: 'application/json'
+          };
+        } catch (error) {
+          logger.error(`Failed to query selector for tab ${tabId}:`, error);
+          return null;
+        }
+      }
+    }
+    
     // Check if it's a tab-specific resource (e.g., "tab/123")
     const tabMatch = resourcePath.match(/^tab\/(.+)$/);
     if (tabMatch) {
@@ -1612,6 +1723,7 @@ async function startServer() {
     logger.log(`Screenshot view endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot/view`);
     logger.log(`Elements at point endpoints: http://localhost:${PORT}/tab/{tabId}/elementsFromPoint?x={x}&y={y}`);
     logger.log(`DOM endpoints: http://localhost:${PORT}/tab/{tabId}/dom`);
+    logger.log(`Query selector endpoints: http://localhost:${PORT}/tab/{tabId}/querySelectorAll?selector={selector}`);
     // Server is ready
   } catch (error) {
     logger.error('Failed to start MCP server:', error);

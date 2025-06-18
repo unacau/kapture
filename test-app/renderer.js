@@ -525,6 +525,9 @@ function createResourceCard(resource) {
   // Check if this is the console resource that supports parameters
   const isConsoleResource = resource.uri.includes('/console');
   const isScreenshotResource = resource.uri.includes('/screenshot');
+  const isElementsFromPointResource = resource.uri.includes('/elementsFromPoint');
+  const isQuerySelectorAllResource = resource.uri.includes('/querySelectorAll');
+  const isDomResource = resource.uri.includes('/dom');
   
   let paramsHtml = '';
   if (isConsoleResource) {
@@ -597,6 +600,48 @@ function createResourceCard(resource) {
             quality
           </label>
           <input type="number" id="${resource.uri}-quality" min="0.1" max="1.0" step="0.1" value="0.85">
+        </div>
+      </div>
+    `;
+  } else if (isElementsFromPointResource) {
+    // Add parameter inputs for elementsFromPoint resource
+    paramsHtml = `
+      <div class="tool-params">
+        <div class="param-group">
+          <label for="${resource.uri}-x">
+            x <span style="color: #f56565;">*</span>
+          </label>
+          <input type="number" id="${resource.uri}-x" required>
+        </div>
+        <div class="param-group">
+          <label for="${resource.uri}-y">
+            y <span style="color: #f56565;">*</span>
+          </label>
+          <input type="number" id="${resource.uri}-y" required>
+        </div>
+      </div>
+    `;
+  } else if (isQuerySelectorAllResource) {
+    // Add parameter inputs for querySelectorAll resource
+    paramsHtml = `
+      <div class="tool-params">
+        <div class="param-group">
+          <label for="${resource.uri}-selector">
+            selector <span style="color: #f56565;">*</span>
+          </label>
+          <input type="text" id="${resource.uri}-selector" placeholder="CSS selector (e.g., button, .class, #id)" required>
+        </div>
+      </div>
+    `;
+  } else if (isDomResource) {
+    // Add parameter inputs for DOM resource
+    paramsHtml = `
+      <div class="tool-params">
+        <div class="param-group">
+          <label for="${resource.uri}-selector">
+            selector <span style="color: #999; font-size: 0.85rem;">(optional, defaults to body)</span>
+          </label>
+          <input type="text" id="${resource.uri}-selector" placeholder="CSS selector (e.g., body, .content, #main)">
         </div>
       </div>
     `;
@@ -902,6 +947,28 @@ async function queryResource(resourceUri, button) {
       }
       if (qualityInput && qualityInput.value) {
         params.append('quality', qualityInput.value);
+      }
+    } else if (resourceUri.includes('/elementsFromPoint')) {
+      const xInput = document.getElementById(`${resourceUri}-x`);
+      const yInput = document.getElementById(`${resourceUri}-y`);
+      
+      if (xInput && xInput.value) {
+        params.append('x', xInput.value);
+      }
+      if (yInput && yInput.value) {
+        params.append('y', yInput.value);
+      }
+    } else if (resourceUri.includes('/querySelectorAll')) {
+      const selectorInput = document.getElementById(`${resourceUri}-selector`);
+      
+      if (selectorInput && selectorInput.value) {
+        params.append('selector', selectorInput.value);
+      }
+    } else if (resourceUri.includes('/dom')) {
+      const selectorInput = document.getElementById(`${resourceUri}-selector`);
+      
+      if (selectorInput && selectorInput.value) {
+        params.append('selector', selectorInput.value);
       }
     }
     
