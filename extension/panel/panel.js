@@ -820,7 +820,7 @@ function injectConsoleCapture() {
   const injectionCode = `
     (function() {
       const isOverridden = !console.log.toString().includes('[native code]');
-      console.log('[Kapture] Console overridden?', isOverridden);
+
       // Check if already injected with a recent timestamp (within last 5 seconds)
       if (isOverridden) {
         return;
