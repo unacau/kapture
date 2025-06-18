@@ -27,7 +27,7 @@ class Logger {
     }
     // else if (process.env.KAPTURE_DEBUG) {
     //   // Only write to stderr if debug mode is enabled
-    //   process.stderr.write(logLine);
+      process.stderr.write(logLine);
     // }
   }
 
@@ -59,7 +59,7 @@ class Logger {
       this.logFile.write(logLine);
     }
     // else if (process.env.KAPTURE_DEBUG) {
-    //   process.stderr.write(logLine);
+      process.stderr.write(logLine);
     // }
   }
 }

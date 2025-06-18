@@ -36,12 +36,13 @@ function parseArgs() {
         process.exit(1);
       }
     } else if (args[i] === '--help' || args[i] === '-h') {
-      console.log('Kapture MCP Server');
-      console.log('Usage: node dist/index.js [options]');
-      console.log('');
-      console.log('Options:');
-      console.log('  -p, --port <number>  WebSocket port (default: 61822)');
-      console.log('  -h, --help          Show this help message');
+      // Use stderr for help message to avoid breaking MCP protocol on stdout
+      process.stderr.write('Kapture MCP Server\n');
+      process.stderr.write('Usage: node dist/index.js [options]\n');
+      process.stderr.write('\n');
+      process.stderr.write('Options:\n');
+      process.stderr.write('  -p, --port <number>  WebSocket port (default: 61822)\n');
+      process.stderr.write('  -h, --help          Show this help message\n');
       process.exit(0);
     }
   }
@@ -333,6 +334,32 @@ const prompts = [
         required: true
       }
     ]
+  },
+  {
+    name: 'take-screenshot',
+    description: 'Capture a screenshot of a browser tab or specific element',
+    arguments: [
+      {
+        name: 'tabId',
+        description: 'The ID of the tab to capture',
+        required: true
+      },
+      {
+        name: 'selector',
+        description: 'CSS selector for a specific element (optional, captures full page if not provided)',
+        required: false
+      },
+      {
+        name: 'scale',
+        description: 'Scale factor for the screenshot (0.1-1.0, default: 0.3)',
+        required: false
+      },
+      {
+        name: 'format',
+        description: 'Image format: webp, jpeg, or png (default: webp)',
+        required: false
+      }
+    ]
   }
 ];
 
@@ -522,6 +549,97 @@ To execute this navigation, use the \`navigate\` tool:
 - Use \`screenshot\` to capture the loaded page
 - Use \`evaluate\` to check page content
 - Use \`click\` or \`fill\` to interact with page elements`
+          }
+        }
+      ]
+    };
+  }
+  
+  if (name === 'take-screenshot') {
+    // Validate required argument
+    if (!args?.tabId) {
+      throw new Error('tabId argument is required');
+    }
+    
+    const tab = tabRegistry.get(args.tabId);
+    if (!tab) {
+      throw new Error(`Tab ${args.tabId} not found`);
+    }
+    
+    // Parse optional parameters with defaults
+    const selector = args.selector || null;
+    const scale = args.scale || 0.3;
+    const format = args.format || 'webp';
+    const quality = format === 'png' ? 1.0 : 0.85;
+    
+    // Validate scale
+    const validScale = Math.min(Math.max(typeof scale === 'string' ? parseFloat(scale) : scale, 0.1), 1.0);
+    
+    // Validate format
+    const validFormats = ['webp', 'jpeg', 'png'];
+    const validFormat = validFormats.includes(format) ? format : 'webp';
+    
+    return {
+      description: prompt.description,
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: selector 
+              ? `Take a screenshot of the element matching "${selector}" in tab ${args.tabId}`
+              : `Take a screenshot of tab ${args.tabId}`
+          }
+        },
+        {
+          role: 'assistant',
+          content: {
+            type: 'text',
+            text: `I'll capture a screenshot of ${selector ? `the element matching "${selector}"` : 'the entire page'} from tab ${args.tabId}.
+
+**Current Tab:**
+- Tab ID: ${tab.tabId}
+- URL: ${tab.url || 'about:blank'}
+- Title: ${tab.title || 'New Tab'}
+
+**Screenshot Configuration:**
+- Target: ${selector ? `Element with selector "${selector}"` : 'Full page'}
+- Scale: ${validScale} (${Math.round(validScale * 100)}% of original size)
+- Format: ${validFormat.toUpperCase()}
+- Quality: ${quality === 1.0 ? 'Maximum' : `${Math.round(quality * 100)}%`}
+
+**To capture the screenshot, use the \`screenshot\` tool:**
+\`\`\`json
+{
+  "tool": "screenshot",
+  "arguments": {
+    "tabId": "${args.tabId}"${selector ? `,
+    "selector": "${selector}"` : ''},
+    "scale": ${validScale},
+    "format": "${validFormat}",
+    "quality": ${quality}
+  }
+}
+\`\`\`
+
+**What you'll receive:**
+- A base64-encoded image in the response
+- The image will be displayed directly in the interface
+- Format: ${validFormat.toUpperCase()} image data
+
+**Tips:**
+${selector ? `- Make sure the element is visible on the page
+- If the element is not found, the tool will return an error
+- Use specific selectors like "#id" or ".class" for best results` : 
+`- The screenshot captures the entire scrollable page content
+- Large pages may take longer to capture
+- Consider using a selector to capture specific sections`}
+
+**Common use cases:**
+- Document visual state of a page
+- Capture form data before submission
+- Save error messages or important information
+- Create visual comparisons of page changes`
           }
         }
       ]
