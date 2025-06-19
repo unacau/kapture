@@ -85,17 +85,23 @@ async function checkContentScriptReady() {
 
 // Ensure content script is loaded
 async function ensureContentScript() {
-  const isReady = await checkContentScriptReady();
-  if (!isReady) {
-    // Content script should be auto-injected by background script
-    // Wait a bit and check again
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const isReadyAfterWait = await checkContentScriptReady();
-    if (!isReadyAfterWait) {
-      throw new Error('Content script not available');
+  // Try multiple times with increasing delays
+  const maxAttempts = 5;
+  const delays = [100, 200, 300, 500, 1000];
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    const isReady = await checkContentScriptReady();
+    if (isReady) {
+      return true;
+    }
+    
+    // If not the last attempt, wait before trying again
+    if (i < maxAttempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, delays[i]));
     }
   }
-  return true;
+  
+  throw new Error('Content script not available after multiple attempts');
 }
 
 // Export functions

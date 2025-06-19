@@ -124,6 +124,10 @@ body {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.status-indicator.error .status-dot {
+  background: #f44336;
+}
+
 @keyframes pulse {
   0% {
     opacity: 0.6;

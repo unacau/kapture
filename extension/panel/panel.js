@@ -72,27 +72,37 @@ function updateConnectionStatus(connected, retrying = false) {
   isConnected = connected;
   isRetrying = retrying;
 
-  if (connected) {
+  // Check if we're in error state
+  const isError = statusIndicator.classList.contains('error');
+
+  if (connected && !isError) {
     statusIndicator.classList.add('connected');
     statusIndicator.classList.remove('retrying');
+    statusIndicator.classList.remove('error');
     statusText.textContent = 'Connected';
     statusTextHover.textContent = 'Disconnect';
   } else if (retrying) {
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.add('retrying');
+    statusIndicator.classList.remove('error');
     statusText.textContent = 'Retrying';
     statusTextHover.textContent = 'Stop';
     tabIdElement.textContent = 'Tab: -';
+  } else if (isError) {
+    // Keep error state - don't override it
+    return;
   } else if (!hasDiscoveredOnce || (discoveredServers.length === 0 && !selectedPort)) {
     // Still searching for servers
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.remove('retrying');
+    statusIndicator.classList.remove('error');
     statusText.textContent = 'Searching...';
     statusTextHover.textContent = 'Searching...';
     tabIdElement.textContent = 'Tab: -';
   } else {
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.remove('retrying');
+    statusIndicator.classList.remove('error');
     statusText.textContent = 'Disconnected';
     statusTextHover.textContent = 'Connect';
     tabIdElement.textContent = 'Tab: -';
@@ -465,7 +475,16 @@ async function getCurrentTabInfo() {
     return result;
   } catch (error) {
     console.error('Failed to get tab info:', error);
-    return null;
+    
+    // If content script is not available, show error state
+    if (error.message.includes('Content script not available')) {
+      statusIndicator.classList.remove('connected');
+      statusIndicator.classList.add('error');
+      statusText.textContent = 'Content script error';
+      statusTextHover.textContent = 'Please reload the page and reopen DevTools';
+    }
+    
+    throw error; // Re-throw to prevent connection with invalid state
   }
 }
 
@@ -487,14 +506,13 @@ async function connect(fromRetry = false) {
   }
 
   try {
-    // Get current tab info (optional - don't fail if unavailable)
-    let tabInfo = await getCurrentTabInfo();
-    if (!tabInfo) {
-      // Use defaults if tab info is not available
-      tabInfo = {
-        url: 'unknown',
-        title: 'unknown'
-      };
+    // Get current tab info (required for proper connection)
+    let tabInfo;
+    try {
+      tabInfo = await getCurrentTabInfo();
+    } catch (error) {
+      isConnecting = false;  // Clear connecting flag
+      throw error;  // Re-throw to stop connection attempt
     }
 
     // Stop discovery when connecting
@@ -506,6 +524,8 @@ async function connect(fromRetry = false) {
     ws.onopen = () => {
       console.log('WebSocket connected');
       isConnecting = false;  // Clear connecting flag
+      // Clear any error state
+      statusIndicator.classList.remove('error');
       // Stop retrying if we were
       stopRetrying();
 
