@@ -756,12 +756,38 @@ async function executeTool(toolName, button) {
     resultEl.className = 'tool-result success';
 
     // Parse and display result
-    if (result.content && result.content[0]) {
-      const responseContent = result.content[0];
+    if (result.content && result.content.length > 0) {
+      // Check if we have multiple content items (e.g., screenshot with both image and JSON)
+      const hasMultipleContent = result.content.length > 1;
+      const imageContent = result.content.find(c => c.type === 'image');
+      const textContent = result.content.find(c => c.type === 'text');
       
-      // Handle different content types
-      if (responseContent.type === 'image') {
-        // Handle image response from screenshot tool
+      if (hasMultipleContent && imageContent && textContent) {
+        // Handle screenshot tool with both image and JSON response
+        summaryEl.textContent = '✅ Screenshot captured';
+        
+        // Display the JSON response in the content area
+        let jsonData;
+        try {
+          jsonData = JSON.parse(textContent.text);
+          contentEl.textContent = JSON.stringify(jsonData, null, 2);
+        } catch (e) {
+          contentEl.textContent = textContent.text;
+        }
+        
+        // Create a preview section for the image OUTSIDE the details section
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'screenshot-preview';
+        
+        const img = document.createElement('img');
+        img.src = `data:${imageContent.mimeType};base64,${imageContent.data}`;
+        
+        previewDiv.appendChild(img);
+        // Append the preview after the result details element
+        resultEl.appendChild(previewDiv);
+      } else if (result.content[0].type === 'image') {
+        // Handle image-only response
+        const responseContent = result.content[0];
         summaryEl.textContent = '✅ Screenshot captured';
         
         // Create an image element to display the screenshot
@@ -772,7 +798,8 @@ async function executeTool(toolName, button) {
         
         contentEl.innerHTML = '';
         contentEl.appendChild(img);
-      } else if (responseContent.type === 'text') {
+      } else if (result.content[0].type === 'text') {
+        const responseContent = result.content[0];
         // Handle text/JSON responses
         let content;
         try {
