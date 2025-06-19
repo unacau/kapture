@@ -13,12 +13,6 @@ export interface TabConnection {
   viewportDimensions?: { width: number; height: number };
   scrollPosition?: { x: number; y: number };
   pageVisibility?: { visible: boolean; visibilityState: string };
-  pageLoadTimes?: {
-    domContentLoaded: number | null;
-    load: number | null;
-    ttfb: number;
-    total: number | null;
-  };
 }
 
 export class TabRegistry {
@@ -152,12 +146,6 @@ export class TabRegistry {
     viewportDimensions?: { width: number; height: number };
     scrollPosition?: { x: number; y: number };
     pageVisibility?: { visible: boolean; visibilityState: string };
-    pageLoadTimes?: {
-      domContentLoaded: number | null;
-      load: number | null;
-      ttfb: number;
-      total: number | null;
-    };
   }): void {
     const connection = this.tabs.get(tabId);
     if (connection) {
@@ -167,8 +155,7 @@ export class TabRegistry {
                        (info.fullPageDimensions !== undefined) ||
                        (info.viewportDimensions !== undefined) ||
                        (info.scrollPosition !== undefined) ||
-                       (info.pageVisibility !== undefined) ||
-                       (info.pageLoadTimes !== undefined);
+                       (info.pageVisibility !== undefined);
       
       if (info.url !== undefined) connection.url = info.url;
       if (info.title !== undefined) connection.title = info.title;
@@ -177,7 +164,6 @@ export class TabRegistry {
       if (info.viewportDimensions !== undefined) connection.viewportDimensions = info.viewportDimensions;
       if (info.scrollPosition !== undefined) connection.scrollPosition = info.scrollPosition;
       if (info.pageVisibility !== undefined) connection.pageVisibility = info.pageVisibility;
-      if (info.pageLoadTimes !== undefined) connection.pageLoadTimes = info.pageLoadTimes;
       
       // Call the update callback if there was a change
       if (hadChange && this.updateCallback) {

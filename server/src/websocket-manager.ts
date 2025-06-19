@@ -166,8 +166,7 @@ export class WebSocketManager {
             fullPageDimensions: message.fullPageDimensions,
             viewportDimensions: message.viewportDimensions,
             scrollPosition: message.scrollPosition,
-            pageVisibility: message.pageVisibility,
-            pageLoadTimes: message.pageLoadTimes
+            pageVisibility: message.pageVisibility
           });
           logger.log(`Tab ${connection.tabId} info updated: ${message.url}`);
         }
@@ -215,7 +214,7 @@ export class WebSocketManager {
 
   private handleRegister(ws: WebSocket, message: RegisterMessage): void {
     const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions, 
-            scrollPosition, pageVisibility, pageLoadTimes } = message;
+            scrollPosition, pageVisibility } = message;
     
     // Server assigns the tab ID
     const assignedTabId = this.tabRegistry.assignTabId(requestedTabId);
@@ -236,7 +235,7 @@ export class WebSocketManager {
 
     // Update tab info if provided
     if (url || title || domSize || fullPageDimensions || viewportDimensions || 
-        scrollPosition || pageVisibility || pageLoadTimes) {
+        scrollPosition || pageVisibility) {
       this.tabRegistry.updateTabInfo(assignedTabId, { 
         url, 
         title,
@@ -244,8 +243,7 @@ export class WebSocketManager {
         fullPageDimensions,
         viewportDimensions,
         scrollPosition,
-        pageVisibility,
-        pageLoadTimes
+        pageVisibility
       });
     }
     

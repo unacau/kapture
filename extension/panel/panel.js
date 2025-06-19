@@ -538,8 +538,7 @@ async function connect(fromRetry = false) {
         fullPageDimensions: tabInfo.fullPageDimensions,
         viewportDimensions: tabInfo.viewportDimensions,
         scrollPosition: tabInfo.scrollPosition,
-        pageVisibility: tabInfo.pageVisibility,
-        pageLoadTimes: tabInfo.pageLoadTimes
+        pageVisibility: tabInfo.pageVisibility
       };
 
       // Only use saved tab ID for this specific port
@@ -975,8 +974,7 @@ async function sendTabInfoUpdate(tabInfo) {
       fullPageDimensions: tabInfo.fullPageDimensions,
       viewportDimensions: tabInfo.viewportDimensions,
       scrollPosition: tabInfo.scrollPosition,
-      pageVisibility: tabInfo.pageVisibility,
-      pageLoadTimes: tabInfo.pageLoadTimes
+      pageVisibility: tabInfo.pageVisibility
     };
     ws.send(JSON.stringify(updateMessage));
     console.log('Sent tab info update:', updateMessage);

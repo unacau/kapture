@@ -832,8 +832,7 @@ Returns detailed information about a specific tab.
   "fullPageDimensions": {"width": 1200, "height": 2400},
   "viewportDimensions": {"width": 1200, "height": 800},
   "scrollPosition": {"x": 0, "y": 0},
-  "pageVisibility": {"visible": true, "visibilityState": "visible"},
-  "pageLoadTimes": {/* timing data */}
+  "pageVisibility": {"visible": true, "visibilityState": "visible"}
 }
 ```
 

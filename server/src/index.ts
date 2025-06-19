@@ -508,10 +508,6 @@ You can use these tab IDs with other Kapture tools like navigate, click, fill, e
 **Page Status:**
 - Visibility: ${tab.pageVisibility || 'Unknown'}
 - DOM Size: ${tab.domSize ? `${tab.domSize.toLocaleString()} nodes` : 'Unknown'}
-${tab.pageLoadTimes ? `
-**Performance Metrics:**
-- DOM Content Loaded: ${tab.pageLoadTimes.domContentLoaded}ms
-- Page Load Complete: ${tab.pageLoadTimes.load !== null ? `${tab.pageLoadTimes.load}ms` : 'N/A'}` : ''}
 
 You can interact with this tab using tools like:
 - \`navigate\` to go to a different URL
@@ -1092,8 +1088,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       fullPageDimensions: tab.fullPageDimensions,
       viewportDimensions: tab.viewportDimensions,
       scrollPosition: tab.scrollPosition,
-      pageVisibility: tab.pageVisibility,
-      pageLoadTimes: tab.pageLoadTimes
+      pageVisibility: tab.pageVisibility
     };
     
     return {
@@ -1131,8 +1126,7 @@ async function sendTabListChangeNotification() {
       fullPageDimensions: tab.fullPageDimensions,
       viewportDimensions: tab.viewportDimensions,
       scrollPosition: tab.scrollPosition,
-      pageVisibility: tab.pageVisibility,
-      pageLoadTimes: tab.pageLoadTimes
+      pageVisibility: tab.pageVisibility
     }));
     
     // Debug: Log what we're sending
@@ -1681,8 +1675,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           fullPageDimensions: tab.fullPageDimensions,
           viewportDimensions: tab.viewportDimensions,
           scrollPosition: tab.scrollPosition,
-          pageVisibility: tab.pageVisibility,
-          pageLoadTimes: tab.pageLoadTimes
+          pageVisibility: tab.pageVisibility
         };
         
         return {

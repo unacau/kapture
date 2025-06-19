@@ -268,10 +268,6 @@ function updateTabInfo() {
     infoHTML += `<span class="info-item"><span class="info-label">Visible:</span> <span class="info-value">${visibleIcon} ${tab.pageVisibility.visibilityState}</span></span>`;
   }
   
-  // Page Load Time
-  if (tab.pageLoadTimes && tab.pageLoadTimes.load) {
-    infoHTML += `<span class="info-item"><span class="info-label">Load:</span> <span class="info-value">${tab.pageLoadTimes.load}ms</span></span>`;
-  }
   
   tabInfoEl.innerHTML = infoHTML;
 }
