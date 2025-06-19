@@ -901,6 +901,9 @@
                     <div class="mcp-item">querySelectorAll
                         <div class="mcp-item-description">Query elements by CSS selector</div>
                     </div>
+                    <div class="mcp-item">elementsFromPoint
+                        <div class="mcp-item-description">Get all elements at specific coordinates</div>
+                    </div>
                 </div>
             </div>
 
@@ -934,7 +937,8 @@
                     <div class="mcp-item">kapture://tab/{tabId}/console
                         <div class="mcp-item-description">
                             Get console logs with pagination: <code>?before={timestamp}&limit={count}</code><br>
-                            Filter by level: <code>?level={log|info|warn|error}</code>
+                            Filter by level: <code>?level={log|info|warn|error}</code><br>
+                            Max 500 logs per page • Returns <code>nextCursor</code> for pagination
                         </div>
                     </div>
                 </div>
@@ -1015,10 +1019,10 @@
                             <p>Browser tab lifecycle events</p>
                         </div>
                     </div>
-                    <div class="mcp-item">kapture/tabs_changed
+                    <div class="mcp-item">kapturemcp/tabs_changed
                         <div class="mcp-item-description">Fired when tabs connect, disconnect, or update</div>
                     </div>
-                    <div class="mcp-item">kapture/tab_disconnected
+                    <div class="mcp-item">kapturemcp/tab_disconnected
                         <div class="mcp-item-description">Fired when a specific tab disconnects</div>
                     </div>
                 </div>
@@ -1031,7 +1035,7 @@
                             <p>Live data streams</p>
                         </div>
                     </div>
-                    <div class="mcp-item">kapture/console_log
+                    <div class="mcp-item">kapturemcp/console_log
                         <div class="mcp-item-description">Real-time console log events from browser tabs</div>
                     </div>
                 </div>
@@ -1050,22 +1054,87 @@
                 </div>
             </div>
 
+            <!-- Prompts Section -->
+            <div class="mcp-section-header" style="margin-top: 40px;">💬 MCP Prompts</div>
+            <div class="mcp-grid">
+                <div class="mcp-card">
+                    <div class="mcp-card-header">
+                        <div class="mcp-card-icon">📋</div>
+                        <div class="mcp-card-title">
+                            <h4>list-tabs</h4>
+                            <p>Quick tab overview</p>
+                        </div>
+                    </div>
+                    <div class="mcp-item">Get a list of all browser tabs connected to Kapture
+                        <div class="mcp-item-description">Returns tab IDs, URLs, titles, and connection status for all active tabs</div>
+                    </div>
+                </div>
+
+                <div class="mcp-card">
+                    <div class="mcp-card-header">
+                        <div class="mcp-card-icon">🔍</div>
+                        <div class="mcp-card-title">
+                            <h4>tab-details</h4>
+                            <p>Detailed tab information</p>
+                        </div>
+                    </div>
+                    <div class="mcp-item">Get detailed information about a specific browser tab
+                        <div class="mcp-item-description">Provides comprehensive data including DOM size, dimensions, scroll position, and performance metrics</div>
+                    </div>
+                </div>
+
+                <div class="mcp-card">
+                    <div class="mcp-card-header">
+                        <div class="mcp-card-icon">🌐</div>
+                        <div class="mcp-card-title">
+                            <h4>navigate-to-url</h4>
+                            <p>Browser navigation</p>
+                        </div>
+                    </div>
+                    <div class="mcp-item">Navigate a browser tab to a specific URL
+                        <div class="mcp-item-description">Accepts tab ID and URL parameters to navigate any connected tab to a new page</div>
+                    </div>
+                </div>
+
+                <div class="mcp-card">
+                    <div class="mcp-card-header">
+                        <div class="mcp-card-icon">📸</div>
+                        <div class="mcp-card-title">
+                            <h4>take-screenshot</h4>
+                            <p>Capture screenshots</p>
+                        </div>
+                    </div>
+                    <div class="mcp-item">Capture a screenshot of a browser tab or specific element
+                        <div class="mcp-item-description">Supports element selectors, scaling, and multiple formats (PNG, JPEG, WebP)</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- HTTP Endpoints Section -->
             <div style="margin-top: 60px; text-align: center;">
                 <h3 style="margin-bottom: 20px; color: #2d3748;">Direct HTTP Endpoints</h3>
-                <p style="color: #718096; margin-bottom: 30px;">Access data and images directly via HTTP for debugging and integration</p>
+                <p style="color: #718096; margin-bottom: 10px;">Access data and images directly via HTTP for debugging and integration</p>
+                <p style="color: #718096; margin-bottom: 30px; font-size: 0.9rem;">
+                    Base URL: <code>http://localhost:{PORT}/</code> • Default port: 61822<br>
+                    Extension automatically scans ports 61822-61832 for available servers
+                </p>
                 <div class="tools-showcase" style="max-width: 800px; margin: 0 auto;">
                     <div class="tool-categories">
                         <div class="tool-category">
                             <h4>Data Endpoints</h4>
                             <div class="tool-list">
+                                <span class="tool-item">GET /</span>
                                 <span class="tool-item">GET /tabs</span>
                                 <span class="tool-item">GET /tab/{tabId}</span>
                                 <span class="tool-item">GET /tab/{tabId}/console</span>
                                 <span class="tool-item">GET /tab/{tabId}/screenshot</span>
                                 <span class="tool-item">GET /tab/{tabId}/elementsFromPoint</span>
                                 <span class="tool-item">GET /tab/{tabId}/dom</span>
+                                <span class="tool-item">GET /tab/{tabId}/querySelectorAll</span>
                             </div>
+                            <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                                <code>GET /</code> returns server status and MCP client info for discovery
+                            </p>
                         </div>
                         <div class="tool-category">
                             <h4>Image Endpoints</h4>
