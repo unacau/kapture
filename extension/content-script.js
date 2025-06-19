@@ -177,17 +177,8 @@ if (!window.__kaptureConsoleListenerSetup) {
         };
       }
 
-      const rect = element.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-
-      return {
-        x: x,
-        y: y,
-        selector: selector,
-        tagName: element.tagName,
-        text: element.textContent?.trim().substring(0, 100) || ''
-      };
+      // Use the standardized element data extraction
+      return helpers.getElementData(element);
     },
 
     scrollAndGetElementPosition: function(selector) {
@@ -312,6 +303,15 @@ if (!window.__kaptureConsoleListenerSetup) {
         };
       }
 
+      // Get all available options
+      const options = Array.from(element.options).map((opt, index) => ({
+        index: index,
+        value: opt.value,
+        text: opt.text,
+        selected: opt.selected,
+        disabled: opt.disabled
+      }));
+
       // Find option by value
       const option = Array.from(element.options).find(opt => opt.value === value);
       if (!option) {
@@ -319,7 +319,8 @@ if (!window.__kaptureConsoleListenerSetup) {
           error: true,
           code: 'OPTION_NOT_FOUND',
           message: 'Option not found with value: ' + value,
-          selector: selector
+          selector: selector,
+          options: options
         };
       }
 
@@ -334,7 +335,8 @@ if (!window.__kaptureConsoleListenerSetup) {
         selector: selector,
         value: value,
         selectedText: option.text,
-        selected: true
+        selected: true,
+        options: options
       };
     },
 

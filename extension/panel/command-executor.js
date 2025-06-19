@@ -461,7 +461,8 @@ class CommandExecutor {
               code: result.code,
               message: result.message
             },
-            selector: result.selector
+            selector: result.selector,
+            options: result.options
           };
         }
       }
