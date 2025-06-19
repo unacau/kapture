@@ -875,10 +875,10 @@ async function executeTool(toolName, button) {
           // Insert after the details element
           resultEl.parentNode.insertBefore(img, resultEl.nextSibling);
         }
-      } else if (responseContent.type === 'error') {
-        throw new Error(responseContent.text || 'Unknown error');
+      } else if (result.content[0].type === 'error') {
+        throw new Error(result.content[0].text || 'Unknown error');
       } else {
-        throw new Error(`Unsupported content type: ${responseContent.type}`);
+        throw new Error(`Unsupported content type: ${result.content[0].type}`);
       }
     } else {
       summaryEl.textContent = '✅ Success';
