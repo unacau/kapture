@@ -1,45 +1,32 @@
 # Base resources available regardless of connected tabs
 baseResources:
-  - uri: kapture://tabs
+  tabs:
     name: Connected Browser Tabs
     description: List of all browser tabs connected to the Kapture server
-    mimeType: application/json
 
 # Dynamic resources created for each connected tab
 # {tabId} and {tabTitle} will be replaced with actual values
 dynamicTabResources:
-  - key: "{tabId}"
-    uri: "kapture://tab/{tabId}"
+  "{tabId}":
     name: "Browser Tab: {tabTitle}"
     description: "Information about browser tab {tabId}"
-    mimeType: application/json
-
-  - key: "{tabId}/console"
-    uri: "kapture://tab/{tabId}/console"
+  
+  "{tabId}/console":
     name: "Console Logs: {tabTitle}"
     description: "Console log messages from browser tab {tabId}"
-    mimeType: application/json
-
-  - key: "{tabId}/screenshot"
-    uri: "kapture://tab/{tabId}/screenshot"
+  
+  "{tabId}/screenshot":
     name: "Screenshot: {tabTitle}"
     description: "Take a screenshot of browser tab {tabId}"
-    mimeType: application/json
-
-  - key: "{tabId}/elementsFromPoint"
-    uri: "kapture://tab/{tabId}/elementsFromPoint"
+  
+  "{tabId}/elementsFromPoint":
     name: "Elements at Point: {tabTitle}"
     description: "Get information about elements at a coordinate in browser tab {tabId}"
-    mimeType: application/json
-
-  - key: "{tabId}/dom"
-    uri: "kapture://tab/{tabId}/dom"
+  
+  "{tabId}/dom":
     name: "DOM: {tabTitle}"
     description: "Get the DOM HTML of browser tab {tabId}"
-    mimeType: application/json
-
-  - key: "{tabId}/querySelectorAll"
-    uri: "kapture://tab/{tabId}/querySelectorAll"
+  
+  "{tabId}/querySelectorAll":
     name: "Query Selector All: {tabTitle}"
     description: "Query elements by CSS selector in browser tab {tabId}"
-    mimeType: application/json

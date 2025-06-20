@@ -12,11 +12,90 @@ const toolsYaml = fs.readFileSync(path.join(__dirname, 'tools.yaml'), 'utf8');
 const resourcesYaml = fs.readFileSync(path.join(__dirname, 'resources.yaml'), 'utf8');
 const promptsYaml = fs.readFileSync(path.join(__dirname, 'prompts.yaml'), 'utf8');
 
+// Function to pre-process compact YAML format to standard JSON Schema
+function preprocessToolDefinition(tool: any): ToolDefinition {
+  // If tool already has inputSchema, it's in the old format
+  if (tool.inputSchema) {
+    return tool as ToolDefinition;
+  }
+  
+  // Transform compact format to standard format
+  const inputSchema: any = {
+    type: 'object'
+  };
+  
+  // Move properties if they exist
+  if (tool.properties && Object.keys(tool.properties).length > 0) {
+    inputSchema.properties = tool.properties;
+  }
+  
+  // Move required if it exists and is not empty
+  if (tool.required && tool.required.length > 0) {
+    inputSchema.required = tool.required;
+  }
+  
+  // Move oneOf if it exists
+  if (tool.oneOf) {
+    inputSchema.oneOf = tool.oneOf;
+  }
+  
+  // Create the tool definition in standard format
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema
+  };
+}
+
 // Parse YAML
-const toolsConfig = yaml.load(toolsYaml) as { tools: ToolDefinition[] };
-const resourcesConfig = yaml.load(resourcesYaml) as {
-  baseResources: any[];
-  dynamicTabResources: any[];
+const rawToolsConfig = yaml.load(toolsYaml) as { tools: Record<string, any> | any[] };
+
+// Handle both array and object formats
+let toolsConfig: { tools: ToolDefinition[] };
+if (Array.isArray(rawToolsConfig.tools)) {
+  // Legacy array format
+  toolsConfig = {
+    tools: rawToolsConfig.tools.map(preprocessToolDefinition)
+  };
+} else {
+  // New object format
+  const toolsArray: ToolDefinition[] = [];
+  for (const [name, toolDef] of Object.entries(rawToolsConfig.tools)) {
+    const toolWithName = { name, ...toolDef };
+    toolsArray.push(preprocessToolDefinition(toolWithName));
+  }
+  toolsConfig = { tools: toolsArray };
+}
+
+const rawResourcesConfig = yaml.load(resourcesYaml) as {
+  baseResources: Record<string, any> | any[];
+  dynamicTabResources: Record<string, any> | any[];
+};
+
+// Process resources to handle both array and object formats
+function processResources(resources: Record<string, any> | any[], isDynamic: boolean = false) {
+  if (Array.isArray(resources)) {
+    // Legacy array format
+    return resources;
+  }
+  
+  // New object format - convert to array with generated uri
+  const resourcesArray: any[] = [];
+  for (const [key, resource] of Object.entries(resources)) {
+    const processedResource = {
+      ...resource,
+      key: isDynamic ? key : undefined,
+      uri: isDynamic ? `kapture://tab/${key}` : `kapture://${key}`,
+      mimeType: resource.mimeType || 'application/json'
+    };
+    resourcesArray.push(processedResource);
+  }
+  return resourcesArray;
+}
+
+const resourcesConfig = {
+  baseResources: processResources(rawResourcesConfig.baseResources),
+  dynamicTabResources: processResources(rawResourcesConfig.dynamicTabResources, true)
 };
 const promptsConfig = yaml.load(promptsYaml) as { prompts: any[] };
 
