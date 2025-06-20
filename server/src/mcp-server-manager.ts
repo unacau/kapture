@@ -173,7 +173,7 @@ export class MCPServerManager {
         });
         
         await connection.server.notification({
-          method: 'kapturemcp/tab_disconnected',
+          method: 'kapture/tab_disconnected',
           params: {
             tabId,
             timestamp: Date.now()
@@ -188,7 +188,7 @@ export class MCPServerManager {
     this.wsManager.setConsoleLogHandler(async (tabId: string, logEntry: any) => {
       await this.notifyAllConnections(async (connection) => {
         await connection.server.notification({
-          method: 'kapturemcp/console_log',
+          method: 'kapture/console_log',
           params: {
             tabId,
             logEntry,
@@ -277,7 +277,7 @@ export class MCPServerManager {
     
     await this.notifyAllConnections(async (connection) => {
       await connection.server.notification({
-        method: 'kapturemcp/tabs_changed',
+        method: 'kapture/tabs_changed',
         params: {
           tabs,
           timestamp: Date.now()

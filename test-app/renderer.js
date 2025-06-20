@@ -51,7 +51,7 @@ async function connectToServer() {
     if (result.success) {
       connected = true;
       statusEl.classList.add('connected');
-      
+
       // Get the port number
       const port = await window.electronAPI.getPort();
       statusTextEl.textContent = `Connected to MCP (ws://localhost:${port}/mcp)`;
@@ -63,7 +63,7 @@ async function connectToServer() {
       // Auto-discover tools and resources
       await discoverTools();
       await discoverResources();
-      
+
       // Don't poll - we'll get notifications when tabs connect
       log('Waiting for tab connections...', 'info');
     } else {
@@ -115,13 +115,13 @@ async function refreshTabs(silent = false) {
     if (!silent) {
       log('Querying tabs resource...');
     }
-    
+
     const response = await window.electronAPI.sendMCPRequest('resources/read', {
       uri: 'kapture://tabs'
     });
-    
+
     // Parse the resource data
-    const newTabs = response.contents && response.contents[0] 
+    const newTabs = response.contents && response.contents[0]
       ? JSON.parse(response.contents[0].text)
       : [];
 
@@ -166,7 +166,7 @@ function displayTabs() {
 
   // Debug: Log what we're about to display
   log(`Displaying ${currentTabs.length} tabs`, 'debug');
-  
+
   currentTabs.forEach(tab => {
     const tabEl = document.createElement('button');
     tabEl.className = 'tab-item';
@@ -175,7 +175,7 @@ function displayTabs() {
     }
 
     tabEl.innerHTML = `<span class="tab-title">${tab.title || 'Untitled'}</span>`;
-    
+
     // Add tooltip with tab dimensions
     let tooltipText = `Tab ID: ${tab.tabId}\nURL: ${tab.url || 'Unknown'}`;
     if (tab.domSize) {
@@ -198,12 +198,12 @@ function selectTab(tabId) {
   selectedTabId = tabId;
   displayTabs();
   updateTabInfo();
-  
+
   // Clear selected item when tab changes
   selectedItem = null;
   displayToolsList();
   displayResourcesList();
-  
+
   // Show empty state message
   contentContainerEl.innerHTML = `
     <div class="empty-state">
@@ -211,7 +211,7 @@ function selectTab(tabId) {
       <p>Choose a tool or resource from the left sidebar</p>
     </div>
   `;
-  
+
   // Update URL in navigation bar
   const tab = currentTabs.find(t => t.tabId === selectedTabId);
   if (tab && tab.url) {
@@ -224,63 +224,63 @@ function selectTab(tabId) {
 
 function updateTabInfo() {
   const tab = currentTabs.find(t => t.tabId === selectedTabId);
-  
+
   if (!tab) {
     tabInfoEl.innerHTML = '<span class="info-placeholder">No tab selected</span>';
     return;
   }
-  
+
   let infoHTML = '';
-  
+
   // Tab ID
   infoHTML += `<span class="info-item"><span class="info-label">Tab:</span> <span class="info-value">${tab.tabId}</span></span>`;
-  
+
   // DOM Size
   if (tab.domSize) {
     infoHTML += `<span class="info-item"><span class="info-label">DOM:</span> <span class="info-value">${(tab.domSize / 1024).toFixed(1)} KB</span></span>`;
   }
-  
+
   // Viewport
   if (tab.viewportDimensions) {
     infoHTML += `<span class="info-item"><span class="info-label">Viewport:</span> <span class="info-value">${tab.viewportDimensions.width}×${tab.viewportDimensions.height}</span></span>`;
   }
-  
+
   // Page Size
   if (tab.fullPageDimensions) {
     infoHTML += `<span class="info-item"><span class="info-label">Page:</span> <span class="info-value">${tab.fullPageDimensions.width}×${tab.fullPageDimensions.height}</span></span>`;
   }
-  
+
   // Scroll Position
   if (tab.scrollPosition) {
     infoHTML += `<span class="info-item"><span class="info-label">Scroll:</span> <span class="info-value">${tab.scrollPosition.x}, ${tab.scrollPosition.y}</span></span>`;
   }
-  
+
   // Page Visibility
   if (tab.pageVisibility) {
     const visibleIcon = tab.pageVisibility.visible ? '👁️' : '🚫';
     infoHTML += `<span class="info-item"><span class="info-label">Visible:</span> <span class="info-value">${visibleIcon} ${tab.pageVisibility.visibilityState}</span></span>`;
   }
-  
-  
+
+
   tabInfoEl.innerHTML = infoHTML;
 }
 
 // Display tools in sidebar
 function displayToolsList() {
   toolsListEl.innerHTML = '';
-  
+
   if (currentTools.length === 0) {
     toolsListEl.innerHTML = '<div class="empty-state" style="padding: 0.5rem; color: #999;">No tools available</div>';
     return;
   }
-  
+
   currentTools.forEach(tool => {
     const toolEl = document.createElement('button');
     toolEl.className = 'sidebar-item';
     if (selectedItem && selectedItem.type === 'tool' && selectedItem.name === tool.name) {
       toolEl.classList.add('active');
     }
-    
+
     // Choose appropriate icon
     let icon = '🔧';
     if (tool.name.includes('click')) icon = '👆';
@@ -294,12 +294,12 @@ function displayToolsList() {
     else if (tool.name.includes('navigate')) icon = '🧭';
     else if (tool.name.includes('back')) icon = '⬅️';
     else if (tool.name.includes('forward')) icon = '➡️';
-    
+
     toolEl.innerHTML = `
       <span class="sidebar-item-icon">${icon}</span>
       <span>${tool.name}</span>
     `;
-    
+
     toolEl.addEventListener('click', () => selectSidebarItem('tool', tool.name));
     toolsListEl.appendChild(toolEl);
   });
@@ -308,30 +308,30 @@ function displayToolsList() {
 // Display resources in sidebar
 function displayResourcesList() {
   resourcesListEl.innerHTML = '';
-  
+
   if (currentResources.length === 0) {
     resourcesListEl.innerHTML = '<div class="empty-state" style="padding: 0.5rem; color: #999;">No resources available</div>';
     return;
   }
-  
+
   currentResources.forEach(resource => {
     const resourceEl = document.createElement('button');
     resourceEl.className = 'sidebar-item';
     if (selectedItem && selectedItem.type === 'resource' && selectedItem.name === resource.uri) {
       resourceEl.classList.add('active');
     }
-    
+
     // Choose appropriate icon
     let icon = '📄';
     if (resource.uri.includes('console')) icon = '📋';
     else if (resource.uri.includes('screenshot')) icon = '📸';
     else if (resource.uri.includes('tabs')) icon = '🗂️';
-    
+
     resourceEl.innerHTML = `
       <span class="sidebar-item-icon">${icon}</span>
       <span>${resource.uri}</span>
     `;
-    
+
     resourceEl.addEventListener('click', () => selectSidebarItem('resource', resource.uri));
     resourcesListEl.appendChild(resourceEl);
   });
@@ -340,11 +340,11 @@ function displayResourcesList() {
 // Handle sidebar item selection
 function selectSidebarItem(type, name) {
   selectedItem = { type, name };
-  
+
   // Update active states
   displayToolsList();
   displayResourcesList();
-  
+
   // Display the selected item in content area
   displaySelectedItem();
 }
@@ -361,7 +361,7 @@ function displaySelectedItem() {
     `;
     return;
   }
-  
+
   if (selectedItem.type === 'tool') {
     const tool = currentTools.find(t => t.name === selectedItem.name);
     if (tool) {
@@ -380,7 +380,7 @@ function displaySelectedItem() {
             ${createToolCard(tool)}
           </div>
         `;
-        
+
         // Restore form data if exists
         if (tabFormData[selectedTabId] && tabFormData[selectedTabId][tool.name]) {
           Object.entries(tabFormData[selectedTabId][tool.name]).forEach(([paramName, value]) => {
@@ -393,7 +393,7 @@ function displaySelectedItem() {
             }
           });
         }
-        
+
         // Add event listeners
         addToolEventListeners();
       }
@@ -406,7 +406,7 @@ function displaySelectedItem() {
           ${createResourceCard(resource)}
         </div>
       `;
-      
+
       // Add event listeners
       addToolEventListeners();
     }
@@ -446,7 +446,7 @@ function setupNavigationListeners() {
 function createToolCard(tool) {
   const params = tool.inputSchema?.properties || {};
   const required = tool.inputSchema?.required || [];
-  
+
   // Check if tool has both selector and xpath
   const hasSelectorAndXpath = params.selector && params.xpath;
 
@@ -523,7 +523,7 @@ function createResourceCard(resource) {
   const isElementsFromPointResource = resource.uri.includes('/elementsFromPoint');
   const isQuerySelectorAllResource = resource.uri.includes('/querySelectorAll');
   const isDomResource = resource.uri.includes('/dom');
-  
+
   let paramsHtml = '';
   if (isConsoleResource) {
     // Add parameter inputs for console resource
@@ -662,7 +662,7 @@ function createResourceCard(resource) {
       </div>
     `;
   }
-  
+
   return `
     <div class="tool-card">
       <h3>${resource.uri}</h3>
@@ -782,11 +782,11 @@ async function executeTool(toolName, button) {
       const hasMultipleContent = result.content.length > 1;
       const imageContent = result.content.find(c => c.type === 'image');
       const textContent = result.content.find(c => c.type === 'text');
-      
+
       if (hasMultipleContent && imageContent && textContent) {
         // Handle screenshot tool with both image and JSON response
         summaryEl.textContent = '✅ Screenshot captured';
-        
+
         // Display the JSON response in the content area
         let jsonData;
         try {
@@ -795,14 +795,14 @@ async function executeTool(toolName, button) {
         } catch (e) {
           contentEl.textContent = textContent.text;
         }
-        
+
         // Create a preview section for the image OUTSIDE the details section
         const previewDiv = document.createElement('div');
         previewDiv.className = 'screenshot-preview';
-        
+
         const img = document.createElement('img');
         img.src = `data:${imageContent.mimeType};base64,${imageContent.data}`;
-        
+
         previewDiv.appendChild(img);
         // Append the preview after the result details element
         resultEl.appendChild(previewDiv);
@@ -810,13 +810,13 @@ async function executeTool(toolName, button) {
         // Handle image-only response
         const responseContent = result.content[0];
         summaryEl.textContent = '✅ Screenshot captured';
-        
+
         // Create an image element to display the screenshot
         const img = document.createElement('img');
         img.src = `data:${responseContent.mimeType};base64,${responseContent.data}`;
         img.style.maxWidth = '100%';
         img.style.height = 'auto';
-        
+
         contentEl.innerHTML = '';
         contentEl.appendChild(img);
       } else if (result.content[0].type === 'text') {
@@ -945,7 +945,7 @@ async function queryResource(resourceUri, button) {
   const resultEl = document.getElementById(resultId);
   const summaryEl = resultEl.querySelector('summary');
   const contentEl = resultEl.querySelector('.result-content');
-  
+
   try {
     button.disabled = true;
     button.textContent = 'Querying...';
@@ -954,16 +954,16 @@ async function queryResource(resourceUri, button) {
     resultEl.className = 'tool-result';
     summaryEl.textContent = 'Querying...';
     contentEl.textContent = '';
-    
+
     // Build URI with query parameters
     let finalUri = resourceUri;
     const params = new URLSearchParams();
-    
+
     if (resourceUri.includes('/console')) {
       const levelInput = document.getElementById(`${resourceUri}-level`);
       const limitInput = document.getElementById(`${resourceUri}-limit`);
       const beforeInput = document.getElementById(`${resourceUri}-before`);
-      
+
       if (levelInput && levelInput.value) {
         params.append('level', levelInput.value);
       }
@@ -979,7 +979,7 @@ async function queryResource(resourceUri, button) {
       const scaleInput = document.getElementById(`${resourceUri}-scale`);
       const formatRadio = document.querySelector(`input[name="${resourceUri}-format"]:checked`);
       const qualityInput = document.getElementById(`${resourceUri}-quality`);
-      
+
       if (selectorInput && selectorInput.value) {
         params.append('selector', selectorInput.value);
       }
@@ -998,7 +998,7 @@ async function queryResource(resourceUri, button) {
     } else if (resourceUri.includes('/elementsFromPoint')) {
       const xInput = document.getElementById(`${resourceUri}-x`);
       const yInput = document.getElementById(`${resourceUri}-y`);
-      
+
       if (xInput && xInput.value) {
         params.append('x', xInput.value);
       }
@@ -1008,7 +1008,7 @@ async function queryResource(resourceUri, button) {
     } else if (resourceUri.includes('/querySelectorAll')) {
       const selectorInput = document.getElementById(`${resourceUri}-selector`);
       const xpathInput = document.getElementById(`${resourceUri}-xpath`);
-      
+
       if (selectorInput && selectorInput.value) {
         params.append('selector', selectorInput.value);
       }
@@ -1018,7 +1018,7 @@ async function queryResource(resourceUri, button) {
     } else if (resourceUri.includes('/dom')) {
       const selectorInput = document.getElementById(`${resourceUri}-selector`);
       const xpathInput = document.getElementById(`${resourceUri}-xpath`);
-      
+
       if (selectorInput && selectorInput.value) {
         params.append('selector', selectorInput.value);
       }
@@ -1026,21 +1026,21 @@ async function queryResource(resourceUri, button) {
         params.append('xpath', xpathInput.value);
       }
     }
-    
+
     if (params.toString()) {
       finalUri += '?' + params.toString();
     }
-    
+
     const response = await window.electronAPI.sendMCPRequest('resources/read', {
       uri: finalUri
     });
-    
+
     // Display the result
     if (response.contents && response.contents[0]) {
       const data = JSON.parse(response.contents[0].text);
-      
+
       resultEl.className = 'tool-result success';
-      
+
       // Set summary based on content
       if (resourceUri.includes('/console')) {
         const logCount = data.logs ? data.logs.length : 0;
@@ -1053,10 +1053,10 @@ async function queryResource(resourceUri, button) {
         contentEl.textContent = JSON.stringify(data, null, 2);
       } else if (resourceUri.includes('/screenshot')) {
         summaryEl.textContent = '✅ Screenshot captured';
-        
+
         // Display the raw JSON in the result content
         contentEl.textContent = JSON.stringify(data, null, 2);
-        
+
         // Create screenshot preview below the result
         if (data.screenshot && data.screenshot.dataUrl) {
           // Remove any existing screenshot preview
@@ -1064,7 +1064,7 @@ async function queryResource(resourceUri, button) {
           if (existingPreview) {
             existingPreview.remove();
           }
-          
+
           const previewDiv = document.createElement('div');
           previewDiv.className = 'screenshot-preview';
           const scaleInfo = data.parameters && data.parameters.scale < 1 ? ` (scaled to ${Math.round(data.parameters.scale * 100)}%)` : '';
@@ -1087,7 +1087,7 @@ async function queryResource(resourceUri, button) {
       summaryEl.textContent = '⚠️ No data returned';
       contentEl.textContent = 'The resource returned no content';
     }
-    
+
     log(`Successfully queried resource: ${finalUri}`, 'info');
   } catch (error) {
     resultEl.className = 'tool-result error';
@@ -1117,7 +1117,7 @@ async function executeNavigation(action, url = null) {
         log('Navigating forward...');
         break;
       case 'navigate':
-        toolName = 'kapturemcp_navigate';
+        toolName = 'navigate';
         params = { tabId: selectedTabId, url };
         log(`Navigating to ${url}...`);
         break;
@@ -1163,7 +1163,7 @@ document.getElementById('clear-console').addEventListener('click', () => {
 window.electronAPI.onMCPNotification((message) => {
   if (message.method === 'log' && message.params) {
     log(message.params.message, message.params.type || 'info');
-  } else if (message.method === 'kapturemcp/tab_disconnected' && message.params) {
+  } else if (message.method === 'kapture/tab_disconnected' && message.params) {
     // Handle tab disconnection notification
     const { tabId } = message.params;
     log(`Tab ${tabId} disconnected`, 'warning');
@@ -1180,27 +1180,27 @@ window.electronAPI.onMCPNotification((message) => {
 
     // Update UI
     displayTabs();
-  } else if (message.method === 'kapturemcp/tabs_changed' && message.params) {
+  } else if (message.method === 'kapture/tabs_changed' && message.params) {
     // Handle tabs list change notification
     const { tabs } = message.params;
     log(`Tabs list changed: ${tabs.length} tabs`, 'info');
-    
+
     // Debug: Log the full tab data
     if (tabs.length > 0) {
       log(`Tab data received: ${JSON.stringify(tabs)}`, 'debug');
     }
-    
+
     // Update current tabs
     currentTabs = tabs;
-    
+
     // Update UI
     displayTabs();
-    
+
     // If no tab selected and we have tabs, select the first one
     if (!selectedTabId && currentTabs.length > 0) {
       selectTab(currentTabs[0].tabId);
     }
-    
+
     // If selected tab is gone, clear selection
     if (selectedTabId && !currentTabs.find(t => t.tabId === selectedTabId)) {
       selectedTabId = null;
@@ -1210,7 +1210,7 @@ window.electronAPI.onMCPNotification((message) => {
       // Update tab info if selected tab still exists
       updateTabInfo();
     }
-  } else if (message.method === 'kapturemcp/console_log' && message.params) {
+  } else if (message.method === 'kapture/console_log' && message.params) {
     // Handle real-time console log notification
     const { tabId, logEntry } = message.params;
     const tabName = currentTabs.find(t => t.tabId === tabId)?.title || tabId;
@@ -1265,20 +1265,20 @@ window.electronAPI.onMCPReconnected(() => {
   log('Successfully reconnected to MCP server!', 'info');
   connected = true;
   statusEl.classList.add('connected');
-  
+
   const port = window.electronAPI.getPort().then(port => {
     statusTextEl.textContent = `Connected to MCP (ws://localhost:${port}/mcp)`;
   });
-  
+
   refreshTabsBtn.disabled = false;
-  
+
   // Re-discover tools and resources
   Promise.all([
     discoverTools(),
     discoverResources()
   ]).then(() => {
     log('Re-discovered tools and resources', 'info');
-    
+
     // Restore UI state if we had a selected tab
     if (selectedTabId && currentTabs.find(t => t.tabId === selectedTabId)) {
       displayTabContent();
@@ -1309,7 +1309,7 @@ consoleDividerEl.addEventListener('mousedown', (e) => {
 
 document.addEventListener('mousemove', (e) => {
   if (!isDragging) return;
-  
+
   const deltaY = startY - e.clientY;
   const newHeight = Math.max(50, Math.min(window.innerHeight - 200, startHeight + deltaY));
   consoleContainerEl.style.height = newHeight + 'px';
