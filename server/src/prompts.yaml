@@ -1,0 +1,37 @@
+prompts:
+  - name: list-tabs
+    description: Get a list of all browser tabs connected to Kapture
+    arguments: []
+
+  - name: tab-details
+    description: Get detailed information about a specific browser tab
+    arguments:
+      - name: tabId
+        description: The ID of the tab to get details for
+        required: true
+
+  - name: navigate-to-url
+    description: Navigate a browser tab to a specific URL
+    arguments:
+      - name: tabId
+        description: The ID of the tab to navigate
+        required: true
+      - name: url
+        description: The URL to navigate to
+        required: true
+
+  - name: take-screenshot
+    description: Capture a screenshot of a browser tab or specific element
+    arguments:
+      - name: tabId
+        description: The ID of the tab to capture
+        required: true
+      - name: selector
+        description: CSS selector for a specific element (optional, captures full page if not provided)
+        required: false
+      - name: scale
+        description: "Scale factor for the screenshot (0.1-1.0, default: 0.3)"
+        required: false
+      - name: format
+        description: "Image format: webp, jpeg, or png (default: webp)"
+        required: false

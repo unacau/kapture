@@ -15,8 +15,7 @@ import { logger } from './logger.js';
 import { TabRegistry } from './tab-registry.js';
 import { WebSocketManager } from './websocket-manager.js';
 import { MCPHandler } from './mcp-handler.js';
-import { allTools } from './tools/index.js';
-import { zodToJsonSchema } from './tools/schema-converter.js';
+import { allTools, baseResources, createTabResources, prompts } from './yaml-loader.js';
 
 interface MCPConnection {
   id: string;
@@ -28,9 +27,7 @@ interface MCPConnection {
 
 export class MCPServerManager {
   private connections: Map<string, MCPConnection> = new Map();
-  private baseResources: any[];
   private dynamicTabResources: Map<string, any> = new Map();
-  private prompts: any[];
 
   constructor(
     private wsManager: WebSocketManager,
@@ -39,75 +36,6 @@ export class MCPServerManager {
     private port: number,
     private handleResourceEndpoint: (path: string, queryString?: string) => Promise<{ content: string | Buffer; mimeType: string } | null>
   ) {
-    this.baseResources = [
-      {
-        uri: 'kapture://tabs',
-        name: 'Connected Browser Tabs',
-        description: 'List of all browser tabs connected to the Kapture server',
-        mimeType: 'application/json'
-      }
-    ];
-
-    this.prompts = [
-      {
-        name: 'list-tabs',
-        description: 'Get a list of all browser tabs connected to Kapture',
-        arguments: []
-      },
-      {
-        name: 'tab-details',
-        description: 'Get detailed information about a specific browser tab',
-        arguments: [
-          {
-            name: 'tabId',
-            description: 'The ID of the tab to get details for',
-            required: true
-          }
-        ]
-      },
-      {
-        name: 'navigate-to-url',
-        description: 'Navigate a browser tab to a specific URL',
-        arguments: [
-          {
-            name: 'tabId',
-            description: 'The ID of the tab to navigate',
-            required: true
-          },
-          {
-            name: 'url',
-            description: 'The URL to navigate to',
-            required: true
-          }
-        ]
-      },
-      {
-        name: 'take-screenshot',
-        description: 'Capture a screenshot of a browser tab or specific element',
-        arguments: [
-          {
-            name: 'tabId',
-            description: 'The ID of the tab to capture',
-            required: true
-          },
-          {
-            name: 'selector',
-            description: 'CSS selector for a specific element (optional, captures full page if not provided)',
-            required: false
-          },
-          {
-            name: 'scale',
-            description: 'Scale factor for the screenshot (0.1-1.0, default: 0.3)',
-            required: false
-          },
-          {
-            name: 'format',
-            description: 'Image format: webp, jpeg, or png (default: webp)',
-            required: false
-          }
-        ]
-      }
-    ];
 
     // Set up tab callbacks
     this.setupTabCallbacks();
@@ -200,47 +128,12 @@ export class MCPServerManager {
   }
 
   private updateTabResources(tabId: string, tabTitle: string): void {
-    this.dynamicTabResources.set(tabId, {
-      uri: `kapture://tab/${tabId}`,
-      name: `Browser Tab: ${tabTitle}`,
-      description: `Information about browser tab ${tabId}`,
-      mimeType: 'application/json'
-    });
+    const tabResources = createTabResources(tabId, tabTitle);
     
-    this.dynamicTabResources.set(`${tabId}/console`, {
-      uri: `kapture://tab/${tabId}/console`,
-      name: `Console Logs: ${tabTitle}`,
-      description: `Console log messages from browser tab ${tabId}`,
-      mimeType: 'application/json'
-    });
-    
-    this.dynamicTabResources.set(`${tabId}/screenshot`, {
-      uri: `kapture://tab/${tabId}/screenshot`,
-      name: `Screenshot: ${tabTitle}`,
-      description: `Take a screenshot of browser tab ${tabId}`,
-      mimeType: 'application/json'
-    });
-    
-    this.dynamicTabResources.set(`${tabId}/elementsFromPoint`, {
-      uri: `kapture://tab/${tabId}/elementsFromPoint`,
-      name: `Elements at Point: ${tabTitle}`,
-      description: `Get information about elements at a coordinate in browser tab ${tabId}`,
-      mimeType: 'application/json'
-    });
-    
-    this.dynamicTabResources.set(`${tabId}/dom`, {
-      uri: `kapture://tab/${tabId}/dom`,
-      name: `DOM: ${tabTitle}`,
-      description: `Get the DOM HTML of browser tab ${tabId}`,
-      mimeType: 'application/json'
-    });
-    
-    this.dynamicTabResources.set(`${tabId}/querySelectorAll`, {
-      uri: `kapture://tab/${tabId}/querySelectorAll`,
-      name: `Query Selector All: ${tabTitle}`,
-      description: `Query elements by CSS selector in browser tab ${tabId}`,
-      mimeType: 'application/json'
-    });
+    // Add all resources for this tab
+    for (const [key, resource] of tabResources) {
+      this.dynamicTabResources.set(key, resource);
+    }
   }
 
   private async notifyAllConnections(handler: (connection: MCPConnection) => Promise<void>): Promise<void> {
@@ -359,7 +252,7 @@ export class MCPServerManager {
         tools: allTools.map(tool => ({
           name: tool.name,
           description: tool.description,
-          inputSchema: zodToJsonSchema(tool.inputSchema)
+          inputSchema: (tool as any).jsonSchema || tool.inputSchema
         }))
       };
     });
@@ -450,7 +343,7 @@ export class MCPServerManager {
     // List resources handler
     server.setRequestHandler(ListResourcesRequestSchema, async () => {
       const allResources = [
-        ...this.baseResources,
+        ...baseResources,
         ...Array.from(this.dynamicTabResources.values())
       ];
       
@@ -471,7 +364,7 @@ export class MCPServerManager {
     // List prompts handler
     server.setRequestHandler(ListPromptsRequestSchema, async () => {
       return {
-        prompts: this.prompts
+        prompts: prompts
       };
     });
 
@@ -479,7 +372,7 @@ export class MCPServerManager {
     server.setRequestHandler(GetPromptRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
       
-      const prompt = this.prompts.find(p => p.name === name);
+      const prompt = prompts.find(p => p.name === name);
       if (!prompt) {
         throw new Error(`Unknown prompt: ${name}`);
       }
@@ -939,7 +832,7 @@ export class MCPServerManager {
 
   // Shared prompt logic
   private getPrompt(name: string, args: any): any {
-    const prompt = this.prompts.find(p => p.name === name);
+    const prompt = prompts.find((p: any) => p.name === name);
     if (!prompt) {
       throw new Error(`Unknown prompt: ${name}`);
     }

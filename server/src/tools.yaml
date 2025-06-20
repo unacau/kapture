@@ -1,0 +1,319 @@
+tools:
+  - name: navigate
+    description: Navigate browser tab to specified URL
+    inputSchema:
+      type: object
+      required:
+        - tabId
+        - url
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        url:
+          type: string
+          format: url
+          description: URL to navigate to
+        timeout:
+          type: number
+          default: 30000
+          description: Navigation timeout in milliseconds
+
+  - name: back
+    description: Navigate back in browser history
+    inputSchema:
+      type: object
+      required:
+        - tabId
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+
+  - name: forward
+    description: Navigate forward in browser history
+    inputSchema:
+      type: object
+      required:
+        - tabId
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+
+  # Interaction tools
+  - name: click
+    description: >-
+      Click on a page element using CSS selector or XPath. Only the first 
+      matching element will be clicked. Returns the unique selector of the 
+      clicked element. Note: May experience delays if Kapture DevTools panel 
+      is not the active tab.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+      oneOf:
+        - required: [selector]
+        - required: [xpath]
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        selector:
+          type: string
+          description: CSS selector of element to click (uses first matching element)
+        xpath:
+          type: string
+          description: XPath expression to find element (alternative to selector)
+
+  - name: hover
+    description: >-
+      Hover over a page element using CSS selector or XPath. Only the first 
+      matching element will be hovered. Returns the unique selector of the 
+      hovered element. Note: May experience delays if Kapture DevTools panel 
+      is not the active tab.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+      oneOf:
+        - required: [selector]
+        - required: [xpath]
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        selector:
+          type: string
+          description: CSS selector of element to hover over (uses first matching element)
+        xpath:
+          type: string
+          description: XPath expression to find element (alternative to selector)
+
+  - name: fill
+    description: >-
+      Fill an input field with a value using CSS selector or XPath. Only the 
+      first matching element will be filled. Returns the unique selector of 
+      the filled element.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+        - value
+      oneOf:
+        - required: [selector]
+        - required: [xpath]
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        selector:
+          type: string
+          description: CSS selector of input field (uses first matching element)
+        xpath:
+          type: string
+          description: XPath expression to find input field (alternative to selector)
+        value:
+          type: string
+          description: Value to fill in the input
+
+  - name: select
+    description: >-
+      Select an option from an HTML <select> dropdown element using CSS 
+      selector or XPath. Only the first matching select element will be used. 
+      Returns the unique selector of the select element. Note: Only works with 
+      native HTML select elements, not custom dropdowns.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+        - value
+      oneOf:
+        - required: [selector]
+        - required: [xpath]
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        selector:
+          type: string
+          description: CSS selector of HTML select element (uses first matching element)
+        xpath:
+          type: string
+          description: XPath expression to find select element (alternative to selector)
+        value:
+          type: string
+          description: Value attribute of the option to select
+
+  - name: keypress
+    description: >-
+      Send a keypress event to the current tab or a specific element. Uses 
+      Chrome DevTools Protocol for proper key simulation including navigation 
+      keys (Tab, PageDown, arrows) and function keys. When delay > 500ms, 
+      automatically simulates holding the key down with repeated events.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+        - key
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        key:
+          type: string
+          description: >-
+            The key combination to press. Can be a single key (e.g., "a", 
+            "Enter", "Tab", "PageDown", "F5") or a combination with modifiers 
+            (e.g., "Control+a", "Shift+Tab", "Alt+F4", "Meta+Shift+p"). 
+            Special keys: Enter, Tab, Delete, Backspace, Escape, Space, 
+            ArrowUp/Down/Left/Right, PageUp/Down, Home, End, Insert, F1-F12. 
+            Modifiers: Control (or Ctrl), Shift, Alt, Meta (or Cmd on Mac)
+        selector:
+          type: string
+          description: >-
+            CSS selector of element to send keypress to (uses first matching 
+            element). If not provided, sends to the active element or body
+        xpath:
+          type: string
+          description: XPath expression to find element (alternative to selector)
+        delay:
+          type: number
+          minimum: 0
+          maximum: 60000
+          default: 50
+          description: >-
+            Delay in milliseconds between keydown and keyup events. Default: 
+            50ms. Range: 0-60000ms. When > 500ms, simulates holding the key 
+            down with auto-repeat
+        timeout:
+          type: number
+          minimum: 1000
+          maximum: 70000
+          description: >-
+            Command timeout in milliseconds. Default: 5000ms. Automatically 
+            extended for long delays
+  - name: screenshot
+    description: >-
+      Capture a screenshot of the page or specific element using CSS selector 
+      or XPath. When a selector/xpath is provided, only the first matching 
+      element will be captured. Returns the unique selector of the captured 
+      element if applicable.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        selector:
+          type: string
+          description: CSS selector of element to capture (optional, uses first matching element)
+        xpath:
+          type: string
+          description: XPath expression to find element to capture (alternative to selector)
+        scale:
+          type: number
+          minimum: 0.1
+          maximum: 1
+          default: 0.3
+          description: Scale factor (0.1-1.0) to reduce screenshot size (default 0.3)
+        format:
+          type: string
+          enum: [webp, jpeg, png]
+          default: webp
+          description: Image format (default webp for best compression)
+        quality:
+          type: number
+          minimum: 0.1
+          maximum: 1
+          default: 0.85
+          description: Compression quality for webp/jpeg (0.1-1.0, default 0.85)
+
+  - name: evaluate
+    description: >-
+      Execute JavaScript code in the browser context. Return values are 
+      automatically serialized to JSON-safe format: functions become 
+      "[Function: name]", DOM elements include unique CSS selectors, 
+      NodeLists/HTMLCollections are converted to arrays with selectors, 
+      circular references are handled, etc.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+        - code
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        code:
+          type: string
+          description: JavaScript code to execute. The last expression is returned as the result.
+
+  - name: dom
+    description: >-
+      Get outerHTML of the body or a specific element using CSS selector or 
+      XPath. When a selector/xpath is provided, only the first matching 
+      element will be used. Returns the unique selector of the element if 
+      applicable.
+    inputSchema:
+      type: object
+      required:
+        - tabId
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        selector:
+          type: string
+          description: CSS selector of element (optional, defaults to body, uses first matching element)
+        xpath:
+          type: string
+          description: XPath expression to find element (alternative to selector)
+
+  - name: elementsFromPoint
+    description: Get information about all elements at a specific coordinate in the viewport
+    inputSchema:
+      type: object
+      required:
+        - tabId
+        - x
+        - y
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        x:
+          type: number
+          description: X coordinate relative to the viewport
+        y:
+          type: number
+          description: Y coordinate relative to the viewport
+
+  - name: querySelectorAll
+    description: >-
+      Query all elements matching a CSS selector or XPath and get detailed 
+      information about each element
+    inputSchema:
+      type: object
+      required:
+        - tabId
+      oneOf:
+        - required: [selector]
+        - required: [xpath]
+      properties:
+        tabId:
+          type: string
+          description: Target tab ID
+        selector:
+          type: string
+          description: CSS selector to query elements
+        xpath:
+          type: string
+          description: XPath expression to find elements (alternative to selector)
+  - name: list_tabs
+    description: List all connected browser tabs
+    inputSchema:
+      type: object
+      properties: {}
