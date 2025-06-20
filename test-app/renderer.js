@@ -1209,6 +1209,15 @@ window.electronAPI.onMCPNotification((message) => {
     } else if (selectedTabId) {
       // Update tab info if selected tab still exists
       updateTabInfo();
+
+      // Update URL in navigation bar if the selected tab's URL changed
+      const selectedTab = currentTabs.find(t => t.tabId === selectedTabId);
+      if (selectedTab && selectedTab.url) {
+        const urlInput = document.getElementById('nav-url');
+        if (urlInput) {
+          urlInput.value = selectedTab.url;
+        }
+      }
     }
   } else if (message.method === 'kapture/console_log' && message.params) {
     // Handle real-time console log notification
