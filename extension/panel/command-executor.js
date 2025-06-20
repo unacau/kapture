@@ -10,11 +10,11 @@ class CommandExecutor {
   // Shared validation for selector/xpath parameters
   validateSelectorOrXPath(params, commandName) {
     const { selector, xpath } = params;
-    
+
     if (!selector && !xpath) {
       throw new Error(`Either selector or xpath is required for ${commandName}`);
     }
-    
+
     // Validate selector if provided
     if (selector) {
       const validation = this.validateSelector(selector);
@@ -22,7 +22,7 @@ class CommandExecutor {
         throw new Error(validation.error);
       }
     }
-    
+
     return { selector, xpath };
   }
 
@@ -79,6 +79,9 @@ class CommandExecutor {
 
         case 'select':
           return await this.select(params);
+
+        case 'keypress':
+          return await this.keypress(params);
 
         case 'hover':
           return await this.hover(params);
@@ -275,12 +278,12 @@ class CommandExecutor {
                 message: coords.message || (coords.code === 'ELEMENT_NOT_FOUND' ? 'Element not found' : 'Element is not visible')
               }
             };
-            
+
             // Include element info if available (for visibility errors)
             if (coords.elementInfo) {
               responseData.elementInfo = coords.elementInfo;
             }
-            
+
             const result = await this.getTabInfoWithCommand(responseData);
             resolve(result);
           } catch (err) {
@@ -465,6 +468,310 @@ class CommandExecutor {
     }
   }
 
+  // Send keypress event
+  async keypress(params) {
+    const { key, selector, xpath, delay = 50 } = params;
+
+    if (!key) {
+      throw new Error('Key is required for keypress');
+    }
+
+    // Validate delay is within reasonable bounds (0-60000ms = 0-60 seconds)
+    const keypressDelay = Math.max(0, Math.min(60000, delay));
+
+    const tabId = chrome.devtools.inspectedWindow.tabId;
+
+    return new Promise(async (resolve, reject) => {
+      let debuggerAttached = false;
+
+      try {
+        // First, find and focus the target element if selector/xpath provided
+        if (selector || xpath) {
+          try {
+            const focusResult = await window.MessagePassing.executeInPage('focusElement', { selector, xpath });
+            if (focusResult.error) {
+              // Return success with error status for graceful handling
+              const result = await this.getTabInfoWithCommand({
+                selector: focusResult.selector,
+                keyPressed: false,
+                error: {
+                  code: focusResult.code,
+                  message: focusResult.message || 'Element not found'
+                }
+              });
+              resolve(result);
+              return;
+            }
+          } catch (error) {
+            throw new Error(`Failed to focus element: ${error.message}`);
+          }
+        }
+
+        // Parse key combination to extract key and modifiers
+        const keyData = this.parseKeyCombination(key);
+
+        // Attach debugger
+        await chrome.debugger.attach({ tabId }, '1.3');
+        debuggerAttached = true;
+
+        console.log(`Sending keyDown for key: ${keyData.key} (code: ${keyData.code}, modifiers: ${keyData.modifiers})`);
+        // Send initial keydown event
+        await chrome.debugger.sendCommand(
+          { tabId },
+          'Input.dispatchKeyEvent',
+          {
+            type: 'keyDown',
+            key: keyData.key,
+            code: keyData.code,
+            windowsVirtualKeyCode: keyData.keyCode,
+            nativeVirtualKeyCode: keyData.keyCode,
+            modifiers: keyData.modifiers,
+            autoRepeat: false
+          }
+        );
+
+        // For character keys, send char event
+        if (keyData.text) {
+          await chrome.debugger.sendCommand(
+            { tabId },
+            'Input.dispatchKeyEvent',
+            {
+              type: 'char',
+              text: keyData.text,
+              key: keyData.key,
+              code: keyData.code,
+              windowsVirtualKeyCode: keyData.keyCode,
+              nativeVirtualKeyCode: keyData.keyCode,
+              modifiers: keyData.modifiers
+            }
+          );
+        }
+
+        // If delay > 500ms, simulate key repeat
+        if (keypressDelay > 500) {
+          // Calculate number of repeat events based on delay
+          // Typical repeat rate is ~30ms between events
+          const repeatInterval = 30;
+          const repeatCount = Math.floor((keypressDelay - 100) / repeatInterval);
+          
+          // Wait a bit before starting repeat (typical OS behavior)
+          await new Promise(r => setTimeout(r, 100));
+          
+          // Send repeated keydown events
+          for (let i = 0; i < repeatCount; i++) {
+            await chrome.debugger.sendCommand(
+              { tabId },
+              'Input.dispatchKeyEvent',
+              {
+                type: 'keyDown',
+                key: keyData.key,
+                code: keyData.code,
+                windowsVirtualKeyCode: keyData.keyCode,
+                nativeVirtualKeyCode: keyData.keyCode,
+                modifiers: keyData.modifiers,
+                autoRepeat: true
+              }
+            );
+            
+            // For character keys, also repeat the char event
+            if (keyData.text) {
+              await chrome.debugger.sendCommand(
+                { tabId },
+                'Input.dispatchKeyEvent',
+                {
+                  type: 'char',
+                  text: keyData.text,
+                  key: keyData.key,
+                  code: keyData.code,
+                  windowsVirtualKeyCode: keyData.keyCode,
+                  nativeVirtualKeyCode: keyData.keyCode,
+                  modifiers: keyData.modifiers
+                }
+              );
+            }
+            
+            // Wait between repeat events
+            if (i < repeatCount - 1) {
+              await new Promise(r => setTimeout(r, repeatInterval));
+            }
+          }
+        } else if (keypressDelay > 0) {
+          // For delays <= 500ms, just wait the specified time
+          await new Promise(r => setTimeout(r, keypressDelay));
+        }
+
+        console.log(`Sending keyUp for key: ${keyData.key}, code: ${keyData.code}, modifiers: ${keyData.modifiers}`);
+        // Send keyup event
+        await chrome.debugger.sendCommand(
+          { tabId },
+          'Input.dispatchKeyEvent',
+          {
+            type: 'keyUp',
+            key: keyData.key,
+            code: keyData.code,
+            windowsVirtualKeyCode: keyData.keyCode,
+            nativeVirtualKeyCode: keyData.keyCode,
+            modifiers: keyData.modifiers
+          }
+        );
+
+        // Detach debugger
+        await chrome.debugger.detach({ tabId });
+        debuggerAttached = false;
+
+        // Wait a bit for the page to process the key events
+        await new Promise(r => setTimeout(r, 100));
+
+        // Get result including element info if selector was provided
+        const resultData = {
+          keyPressed: true,
+          key: key,
+          delay: keypressDelay
+        };
+
+        // If this was an auto-repeat key press, include that info
+        if (keypressDelay > 500) {
+          resultData.autoRepeat = true;
+          resultData.repeatCount = Math.floor((keypressDelay - 100) / 30);
+        }
+
+        if (selector || xpath) {
+          try {
+            const elementInfo = await window.MessagePassing.executeInPage('getElementInfo', { selector, xpath });
+            if (!elementInfo.error) {
+              resultData.selector = elementInfo.selector;
+              resultData.elementInfo = elementInfo;
+            }
+          } catch (e) {
+            // Ignore errors getting element info
+          }
+        }
+
+        try {
+          const result = await this.getTabInfoWithCommand(resultData);
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      } catch (error) {
+        // Make sure to detach debugger on error
+        if (debuggerAttached) {
+          try {
+            await chrome.debugger.detach({ tabId });
+          } catch (detachError) {
+            // Ignore detach errors
+          }
+        }
+
+        reject(new Error(`Keypress failed: ${error.message}`));
+      }
+    });
+  }
+
+  // Parse key combination and return CDP-compatible key data
+  parseKeyCombination(keyCombination) {
+    let modifiers = 0;
+    let key = '';
+
+    // CDP modifier flags
+    const CDP_MODIFIERS = {
+      alt: 1,
+      ctrl: 2,
+      meta: 4,
+      shift: 8
+    };
+
+    // Special key mappings
+    const KEY_MAPPINGS = {
+      'enter': { key: 'Enter', code: 'Enter', keyCode: 13 },
+      'return': { key: 'Enter', code: 'Enter', keyCode: 13 },
+      'tab': { key: 'Tab', code: 'Tab', keyCode: 9 },
+      'delete': { key: 'Delete', code: 'Delete', keyCode: 46 },
+      'backspace': { key: 'Backspace', code: 'Backspace', keyCode: 8 },
+      'escape': { key: 'Escape', code: 'Escape', keyCode: 27 },
+      'esc': { key: 'Escape', code: 'Escape', keyCode: 27 },
+      'space': { key: ' ', code: 'Space', keyCode: 32, text: ' ' },
+      ' ': { key: ' ', code: 'Space', keyCode: 32, text: ' ' },
+      'arrowup': { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38 },
+      'arrowdown': { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+      'arrowleft': { key: 'ArrowLeft', code: 'ArrowLeft', keyCode: 37 },
+      'arrowright': { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
+      'pageup': { key: 'PageUp', code: 'PageUp', keyCode: 33 },
+      'pagedown': { key: 'PageDown', code: 'PageDown', keyCode: 34 },
+      'home': { key: 'Home', code: 'Home', keyCode: 36 },
+      'end': { key: 'End', code: 'End', keyCode: 35 },
+      'insert': { key: 'Insert', code: 'Insert', keyCode: 45 },
+      'f1': { key: 'F1', code: 'F1', keyCode: 112 },
+      'f2': { key: 'F2', code: 'F2', keyCode: 113 },
+      'f3': { key: 'F3', code: 'F3', keyCode: 114 },
+      'f4': { key: 'F4', code: 'F4', keyCode: 115 },
+      'f5': { key: 'F5', code: 'F5', keyCode: 116 },
+      'f6': { key: 'F6', code: 'F6', keyCode: 117 },
+      'f7': { key: 'F7', code: 'F7', keyCode: 118 },
+      'f8': { key: 'F8', code: 'F8', keyCode: 119 },
+      'f9': { key: 'F9', code: 'F9', keyCode: 120 },
+      'f10': { key: 'F10', code: 'F10', keyCode: 121 },
+      'f11': { key: 'F11', code: 'F11', keyCode: 122 },
+      'f12': { key: 'F12', code: 'F12', keyCode: 123 }
+    };
+
+    // Parse modifiers from combination
+    let remaining = keyCombination;
+    const modifierPatterns = [
+      { pattern: /^(Control|Ctrl)\+/i, modifier: 'ctrl' },
+      { pattern: /^Shift\+/i, modifier: 'shift' },
+      { pattern: /^Alt\+/i, modifier: 'alt' },
+      { pattern: /^(Meta|Cmd|Command)\+/i, modifier: 'meta' }
+    ];
+
+    // Extract modifiers
+    let foundModifier = true;
+    while (foundModifier && remaining) {
+      foundModifier = false;
+      for (const { pattern, modifier } of modifierPatterns) {
+        if (pattern.test(remaining)) {
+          modifiers |= CDP_MODIFIERS[modifier];
+          remaining = remaining.replace(pattern, '');
+          foundModifier = true;
+          break;
+        }
+      }
+    }
+
+    // What's left is the key
+    key = remaining;
+
+    // Look up special key mapping
+    const lowerKey = key.toLowerCase();
+    if (KEY_MAPPINGS[lowerKey]) {
+      return {
+        ...KEY_MAPPINGS[lowerKey],
+        modifiers,
+        text: KEY_MAPPINGS[lowerKey].text || undefined
+      };
+    }
+
+    // For single character keys
+    if (key.length === 1) {
+      const keyCode = key.toUpperCase().charCodeAt(0);
+      return {
+        key: key,
+        code: 'Key' + key.toUpperCase(),
+        keyCode: keyCode,
+        modifiers,
+        text: modifiers === 0 ? key : undefined // Only send text for unmodified keys
+      };
+    }
+
+    // For other keys, try to generate a reasonable code
+    return {
+      key: key,
+      code: key,
+      keyCode: 0, // Unknown keycode
+      modifiers
+    };
+  }
+
   // Hover over element
   async hover(params) {
     const { selector, xpath } = this.validateSelectorOrXPath(params, 'hover');
@@ -495,12 +802,12 @@ class CommandExecutor {
                 message: coords.message || (coords.code === 'ELEMENT_NOT_FOUND' ? 'Element not found' : 'Element is not visible')
               }
             };
-            
+
             // Include element info if available (for visibility errors)
             if (coords.elementInfo) {
               responseData.elementInfo = coords.elementInfo;
             }
-            
+
             const result = await this.getTabInfoWithCommand(responseData);
             resolve(result);
           } catch (err) {

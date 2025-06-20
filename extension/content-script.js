@@ -828,6 +828,33 @@ if (!window.__kaptureConsoleListenerSetup) {
           visibilityState: document.visibilityState
         }
       };
+    },
+
+
+    // Focus an element
+    focusElement: function(selector, xpath) {
+      const element = this.findElement(selector, xpath);
+      if (!element) {
+        return {
+          error: true,
+          code: 'ELEMENT_NOT_FOUND',
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined
+        };
+      }
+
+      // Focus the element if it's focusable
+      if (typeof element.focus === 'function') {
+        element.focus();
+      }
+
+      // Get the unique selector (which may add an ID)
+      const uniqueSelector = this.getUniqueSelector(element);
+      
+      return {
+        focused: true,
+        selector: uniqueSelector
+      };
     }
   };
 
@@ -943,6 +970,12 @@ if (!window.__kaptureConsoleListenerSetup) {
           throw new Error('Selector/XPath and value parameters required');
         }
         return helpers.selectOption(params.selector, params.xpath, params.value);
+
+      case 'focusElement':
+        if (!params.selector && !params.xpath) {
+          throw new Error('Selector or XPath parameter required');
+        }
+        return helpers.focusElement(params.selector, params.xpath);
 
       // Mouse cursor operations
       case 'showCursor':

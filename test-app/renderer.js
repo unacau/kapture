@@ -479,12 +479,18 @@ function createToolCard(tool) {
         });
         inputHtml += `</div>`;
       } else {
-        // Add placeholder hints for selector and xpath fields
+        // Add placeholder hints for selector, xpath, and key fields
         let placeholder = '';
         if (name === 'selector') {
           placeholder = 'placeholder="CSS selector (e.g., button, .class, #id)"';
         } else if (name === 'xpath') {
           placeholder = 'placeholder="XPath (e.g., //button[contains(text(), \'Submit\')])"';
+        } else if (name === 'key') {
+          placeholder = 'placeholder="e.g., Enter, Control+a, Shift+Tab, Alt+F4"';
+        } else if (name === 'delay' && tool.name === 'keypress') {
+          placeholder = 'placeholder="50"';
+        } else if (name === 'timeout') {
+          placeholder = 'placeholder="Auto-calculated based on delay"';
         }
         inputHtml = `<input type="text" id="${inputId}" ${isRequired ? 'required' : ''} ${placeholder}>`;
       }
@@ -499,6 +505,24 @@ function createToolCard(tool) {
       `;
     }).join('');
 
+  // Add special help text for keypress tool
+  let additionalHelp = '';
+  if (tool.name === 'keypress') {
+    additionalHelp = `
+      <div style="background: #1e2832; padding: 0.75rem; border-radius: 4px; margin-top: 0.5rem; font-size: 0.85rem; color: #ecf0f1; border: 1px solid #34495e;">
+        <strong>💡 Tip:</strong> Set delay > 500ms to simulate holding down a key:
+        <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0; color: #bdc3c7;">
+          <li>1000ms = Hold for 1 second (~30 repeats)</li>
+          <li>3000ms = Hold for 3 seconds (~96 repeats)</li>
+          <li>Great for: PageDown, Backspace, Arrow keys</li>
+        </ul>
+        <div style="margin-top: 0.5rem; color: #f39c12;">
+          <strong>⚠️ Note:</strong> Long delays require a longer timeout. Leave timeout empty for auto-calculation.
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <div class="tool-card">
       <h3>${escapeHtml(tool.name)}</h3>
@@ -506,6 +530,7 @@ function createToolCard(tool) {
       <div class="tool-params">
         ${paramsHtml || '<p style="color: #999; font-size: 0.85rem;">No parameters needed</p>'}
         ${hasSelectorAndXpath ? '<p style="color: #f39c12; font-size: 0.85rem; margin-top: 0.5rem;"><strong>Note:</strong> Use either selector OR xpath, not both. If both are provided, selector takes precedence.</p>' : ''}
+        ${additionalHelp}
       </div>
       <button class="tool-execute" data-tool="${tool.name}">Execute</button>
       <details id="result-${tool.name}" class="tool-result" style="display: none;">
@@ -853,6 +878,12 @@ async function executeTool(toolName, button) {
           summaryEl.textContent = '✅ Evaluated successfully';
         } else if (toolName === 'dom') {
           summaryEl.textContent = '✅ DOM retrieved';
+        } else if (toolName === 'keypress') {
+          if (content.autoRepeat && content.repeatCount) {
+            summaryEl.textContent = `✅ Key pressed with ${content.repeatCount} repeats`;
+          } else {
+            summaryEl.textContent = '✅ Key pressed successfully';
+          }
         } else {
           summaryEl.textContent = '✅ Success';
         }

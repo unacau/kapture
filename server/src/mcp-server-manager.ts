@@ -374,7 +374,14 @@ export class MCPServerManager {
       }
 
       try {
-        const validatedArgs = tool.inputSchema.parse(args);
+        const validatedArgs = tool.inputSchema.parse(args) as any;
+        
+        // For keypress tool, automatically adjust timeout based on delay
+        if (name === 'keypress' && validatedArgs.delay && !validatedArgs.timeout) {
+          // Add 2 seconds to the delay for processing overhead
+          validatedArgs.timeout = Math.max(5000, validatedArgs.delay + 2000);
+        }
+        
         const result = await this.mcpHandler.executeCommand(name, validatedArgs);
         
         // Special handling for screenshot tool

@@ -293,10 +293,18 @@ ipcMain.handle('mcp-request', async (event, method, params) => {
   if (!mcpWebSocket || mcpWebSocket.readyState !== WebSocket.OPEN) {
     throw new Error('MCP WebSocket not connected');
   }
-  return await sendMCPRequest(method, params);
+  
+  // Calculate timeout based on the tool and its parameters
+  let timeout = 5000; // default 5 seconds
+  if (method === 'tools/call' && params?.name === 'keypress' && params?.arguments?.delay) {
+    // For keypress with delay, add 3 seconds to the delay for overhead
+    timeout = Math.max(5000, params.arguments.delay + 3000);
+  }
+  
+  return await sendMCPRequest(method, params, timeout);
 });
 
-function sendMCPRequest(method, params = {}) {
+function sendMCPRequest(method, params = {}, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     if (!mcpWebSocket || mcpWebSocket.readyState !== WebSocket.OPEN) {
       reject(new Error('MCP WebSocket not connected'));
@@ -315,7 +323,7 @@ function sendMCPRequest(method, params = {}) {
     const timeout = setTimeout(() => {
       pendingRequests.delete(id);
       reject(new Error(`Request timeout: ${method}`));
-    }, 5000);
+    }, timeoutMs);
 
     // Store pending request with timeout-aware handlers
     pendingRequests.set(id, {

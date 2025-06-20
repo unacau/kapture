@@ -49,3 +49,16 @@ export const selectTool = {
     message: 'Either selector or xpath must be provided'
   }),
 };
+
+export const keypressTool = {
+  name: 'keypress',
+  description: 'Send a keypress event to the current tab or a specific element. Uses Chrome DevTools Protocol for proper key simulation including navigation keys (Tab, PageDown, arrows) and function keys. When delay > 500ms, automatically simulates holding the key down with repeated events.',
+  inputSchema: z.object({
+    tabId: z.string().describe('Target tab ID'),
+    key: z.string().describe('The key combination to press. Can be a single key (e.g., "a", "Enter", "Tab", "PageDown", "F5") or a combination with modifiers (e.g., "Control+a", "Shift+Tab", "Alt+F4", "Meta+Shift+p"). Special keys: Enter, Tab, Delete, Backspace, Escape, Space, ArrowUp/Down/Left/Right, PageUp/Down, Home, End, Insert, F1-F12. Modifiers: Control (or Ctrl), Shift, Alt, Meta (or Cmd on Mac)'),
+    selector: z.string().optional().describe('CSS selector of element to send keypress to (uses first matching element). If not provided, sends to the active element or body'),
+    xpath: z.string().optional().describe('XPath expression to find element (alternative to selector)'),
+    delay: z.number().min(0).max(60000).default(50).optional().describe('Delay in milliseconds between keydown and keyup events. Default: 50ms. Range: 0-60000ms. When > 500ms, simulates holding the key down with auto-repeat'),
+    timeout: z.number().min(1000).max(70000).optional().describe('Command timeout in milliseconds. Default: 5000ms. Automatically extended for long delays')
+  })
+};

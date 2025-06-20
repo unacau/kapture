@@ -157,10 +157,11 @@ Then ask Claude to interact with web pages:
 - `hover` - Hover over elements (uses first matching element, returns unique selector)
 - `fill` - Fill input fields (uses first matching element, returns unique selector)
 - `select` - Select dropdown options (HTML `<select>` only, uses first matching element, returns unique selector)
+- `keypress` - Send keyboard events to the page or specific elements (supports modifier keys)
 - `evaluate` - Execute JavaScript
 - `querySelectorAll` - Query all elements matching a CSS selector
 
-**Note on Selectors**: Tools that accept a `selector` parameter (`click`, `hover`, `fill`, `select`, `screenshot`, `dom`) will only operate on the **first element** that matches the CSS selector. The tool response includes the unique selector of the actual element that was used, which may include an auto-generated ID if the element didn't have one.
+**Note on Selectors**: Tools that accept a `selector` parameter (`click`, `hover`, `fill`, `select`, `keypress`, `screenshot`, `dom`) will only operate on the **first element** that matches the CSS selector. The tool response includes the unique selector of the actual element that was used, which may include an auto-generated ID if the element didn't have one.
 
 **XPath Support**: All tools that accept a `selector` parameter also accept an `xpath` parameter as an alternative. This is particularly useful for:
 - Finding elements by text content: `xpath: "//button[contains(text(), 'Submit')]"`
@@ -168,6 +169,38 @@ Then ask Claude to interact with web pages:
 - When CSS selectors are insufficient
 
 Use either `selector` OR `xpath`, not both. If both are provided, `selector` takes precedence.
+
+### Keypress Tool
+
+The `keypress` tool simulates keyboard events. It accepts:
+- `key` (required): The key combination to press. Can be:
+  - Single key: `"a"`, `"Enter"`, `"Tab"`, `"Escape"`, `" "` (space), `"Shift"`, `"Control"`
+  - With modifiers: `"Control+a"`, `"Shift+Tab"`, `"Alt+F4"`, `"Meta+Shift+p"`
+  - Modifier names: `Control` (or `Ctrl`), `Shift`, `Alt`, `Meta` (or `Cmd`/`Command`)
+  - Note: When sending just a modifier key (e.g., `"Shift"`), it's treated as pressing that key alone
+  - Duplicate modifiers are ignored (e.g., `"Shift+Shift+a"` is same as `"Shift+a"`)
+- `selector` or `xpath` (optional): Target a specific element. If not provided, sends to document.body
+
+Examples:
+```json
+// Press Enter
+{ "key": "Enter", "selector": "#login-form" }
+
+// Select all text (Ctrl+A)
+{ "key": "Control+a", "selector": "#username" }
+
+// Zoom in (Ctrl+Plus)
+{ "key": "Control++", "selector": "body" }
+
+// Zoom out (Ctrl+Minus)
+{ "key": "Control+-", "selector": "body" }
+
+// New tab (Ctrl+T)
+{ "key": "Control+t" }
+
+// Close tab (Ctrl+W or Cmd+W on Mac)
+{ "key": "Meta+w" }
+```
 
 ### MCP Resources
 

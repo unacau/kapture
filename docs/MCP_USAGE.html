@@ -449,7 +449,7 @@ await client.connect(transport);</code></pre>
         
         <p><strong>Selector Behavior</strong>: All tools that accept a CSS <code>selector</code> parameter will only operate on the <strong>first element</strong> that matches the selector. This applies to:</p>
         <ul>
-            <li><code>click</code>, <code>hover</code>, <code>fill</code>, <code>select</code> - Interaction tools</li>
+            <li><code>click</code>, <code>hover</code>, <code>fill</code>, <code>select</code>, <code>keypress</code> - Interaction tools</li>
             <li><code>screenshot</code>, <code>dom</code> - Capture tools</li>
         </ul>
         
@@ -622,6 +622,56 @@ await client.callTool('kapturemcp_fill', {
             <li>If the element is not a <code>&lt;select&gt;</code>, the tool will return an error with details about what element type was found</li>
             <li>For custom dropdowns, use <code>kapturemcp_click</code> to open the dropdown and click the desired option</li>
         </ul>
+
+        <h3>keypress</h3>
+        <p>Send keyboard events to the current tab or a specific element.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>key</code> (string, required): The key combination to press. Can be:
+                <ul>
+                    <li>Single key: <code>"a"</code>, <code>"Enter"</code>, <code>"Tab"</code>, <code>"Escape"</code>, <code>" "</code> (space)</li>
+                    <li>With modifiers: <code>"Control+a"</code>, <code>"Shift+Tab"</code>, <code>"Alt+F4"</code>, <code>"Meta+Shift+p"</code></li>
+                    <li>Modifier names: <code>Control</code> (or <code>Ctrl</code>), <code>Shift</code>, <code>Alt</code>, <code>Meta</code> (or <code>Cmd</code>/<code>Command</code>)</li>
+                </ul>
+            </li>
+            <li><code>selector</code> (string, optional): CSS selector of element to send keypress to (uses first matching element). If not provided, sends to document.body</li>
+            <li><code>xpath</code> (string, optional): XPath expression to find element (alternative to selector)</li>
+        </ul>
+        <p><strong>Returns:</strong> Object with:</p>
+        <ul>
+            <li><code>success</code> (boolean): Whether the keypress was successful</li>
+            <li><code>keyCombination</code> (string): The key combination that was pressed</li>
+            <li><code>selector</code> (string): The unique selector of the element that received the keypress (may include auto-generated ID)</li>
+            <li><code>elementInfo</code> (object): Detailed information about the element that received the keypress</li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <pre><code>// Press Enter key on a form
+await client.callTool('keypress', {
+  tabId: 'tab-123',
+  selector: '#login-form',
+  key: 'Enter'
+});
+
+// Select all text in an input field (Ctrl+A)
+await client.callTool('keypress', {
+  tabId: 'tab-123',
+  selector: '#username',
+  key: 'Control+a'
+});
+
+// Open new tab (Ctrl+T)
+await client.callTool('keypress', {
+  tabId: 'tab-123',
+  key: 'Control+t'
+});
+
+// Navigate through dropdown options with arrow keys
+await client.callTool('keypress', {
+  tabId: 'tab-123',
+  selector: '.dropdown-menu',
+  key: 'ArrowDown'
+});</code></pre>
 
         <h3>kapturemcp_evaluate</h3>
         <p>Execute JavaScript in the browser context.</p>
