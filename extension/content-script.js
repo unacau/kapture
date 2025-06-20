@@ -51,6 +51,108 @@ if (!window.__kaptureConsoleListenerSetup) {
 
   // Helper functions
   const helpers = {
+    // Comprehensive element visibility check
+    isElementVisible: function(element, rect, computedStyle) {
+      // If rect and computedStyle not provided, calculate them
+      if (!rect) rect = element.getBoundingClientRect();
+      if (!computedStyle) computedStyle = window.getComputedStyle(element);
+
+      // Check if element has dimensions
+      if (rect.width <= 0 || rect.height <= 0) {
+        return false;
+      }
+
+      // Check CSS visibility properties
+      if (computedStyle.display === 'none' || 
+          computedStyle.visibility === 'hidden' || 
+          computedStyle.opacity === '0') {
+        return false;
+      }
+
+      // Check if element is in viewport
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      // Check if any part of the element is within the viewport
+      const inViewport = rect.bottom > 0 && 
+                        rect.right > 0 && 
+                        rect.top < viewportHeight && 
+                        rect.left < viewportWidth;
+
+      if (!inViewport) {
+        return false;
+      }
+
+      // Check if element is hidden by ancestor's properties
+      let parent = element.parentElement;
+      while (parent && parent !== document.body) {
+        const parentStyle = window.getComputedStyle(parent);
+        if (parentStyle.display === 'none' || 
+            parentStyle.visibility === 'hidden' || 
+            parentStyle.opacity === '0') {
+          return false;
+        }
+
+        // Check for overflow hidden that might hide the element
+        if (parentStyle.overflow === 'hidden' || 
+            parentStyle.overflowX === 'hidden' || 
+            parentStyle.overflowY === 'hidden') {
+          const parentRect = parent.getBoundingClientRect();
+          // Check if element is outside parent's visible area
+          if (rect.bottom < parentRect.top || 
+              rect.top > parentRect.bottom || 
+              rect.right < parentRect.left || 
+              rect.left > parentRect.right) {
+            return false;
+          }
+        }
+
+        parent = parent.parentElement;
+      }
+
+      // Check if element is covered by another element
+      // Get element's center point
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      // Check what element is at the center point
+      const elementAtPoint = document.elementFromPoint(centerX, centerY);
+
+      // If elementAtPoint is null, the point is outside viewport
+      if (!elementAtPoint) {
+        return false;
+      }
+
+      // Check if the element at point is our element or a descendant
+      if (elementAtPoint === element || element.contains(elementAtPoint)) {
+        return true;
+      }
+
+      // Check if the element at point is an ancestor (element might be transparent)
+      if (elementAtPoint.contains(element)) {
+        return true;
+      }
+
+      // Element might be partially covered, check multiple points
+      const points = [
+        { x: rect.left + rect.width * 0.1, y: rect.top + rect.height * 0.1 },
+        { x: rect.right - rect.width * 0.1, y: rect.top + rect.height * 0.1 },
+        { x: rect.left + rect.width * 0.1, y: rect.bottom - rect.height * 0.1 },
+        { x: rect.right - rect.width * 0.1, y: rect.bottom - rect.height * 0.1 }
+      ];
+
+      // Check if any of the points hit our element
+      for (const point of points) {
+        const el = document.elementFromPoint(point.x, point.y);
+        if (el === element || element.contains(el) || (el && el.contains(element))) {
+          return true;
+        }
+      }
+
+      // Element is completely covered
+      return false;
+    },
+
     // Find element by selector or XPath
     findElement: function(selector, xpath) {
       // Selector takes precedence if both are provided
@@ -95,6 +197,9 @@ if (!window.__kaptureConsoleListenerSetup) {
       // Get the selector (which may add an ID to the element)
       const selector = this.getUniqueSelector(element);
 
+      // Comprehensive visibility check
+      const visible = this.isElementVisible(element, rect, computedStyle);
+
       const data = {
         index: index,
         tagName: element.tagName.toLowerCase(),
@@ -128,10 +233,7 @@ if (!window.__kaptureConsoleListenerSetup) {
         //   position: computedStyle.position,
         //   pointerEvents: computedStyle.pointerEvents
         // },
-        isVisible: rect.width > 0 && rect.height > 0 &&
-                  computedStyle.display !== 'none' &&
-                  computedStyle.visibility !== 'hidden' &&
-                  computedStyle.opacity !== '0'
+        visible: visible
       };
       // Conditionally add attributes
       ["href", "src", "value", "name"].forEach(attr => {
@@ -229,21 +331,44 @@ if (!window.__kaptureConsoleListenerSetup) {
         };
       }
 
+      // Check if element is visible before scrolling
+      const computedStyle = window.getComputedStyle(element);
+      let rect = element.getBoundingClientRect();
+      const visibleBeforeScroll = this.isElementVisible(element, rect, computedStyle);
+
       // Scroll element into view if needed
       element.scrollIntoViewIfNeeded ? element.scrollIntoViewIfNeeded() : element.scrollIntoView({ block: 'center' });
 
-      // Get element position
-      const rect = element.getBoundingClientRect();
+      // Get element position after scrolling
+      rect = element.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;
+
+      // Check visibility again after scrolling
+      const visible = this.isElementVisible(element, rect, computedStyle);
 
       // Get the unique selector (which may add an ID)
       const uniqueSelector = this.getUniqueSelector(element);
       
+      // If element is not visible, return error with element info
+      if (!visible) {
+        // Get full element data
+        const elementData = this.getElementData(element);
+        
+        return {
+          error: true,
+          code: 'ELEMENT_NOT_VISIBLE',
+          selector: uniqueSelector,
+          message: 'Element is not visible and cannot be interacted with',
+          elementInfo: elementData
+        };
+      }
+      
       return {
         x: x,
         y: y,
-        selector: uniqueSelector
+        selector: uniqueSelector,
+        visible: visible
       };
     },
 

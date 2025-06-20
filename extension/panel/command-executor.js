@@ -263,19 +263,25 @@ class CommandExecutor {
           throw new Error(`Failed to get element position: ${error.message}`);
         }
 
-        // Check if element was not found
+        // Check if element was not found or not visible
         if (coords.error) {
-          // Return success with element not found status
-          // Return success with element not found status
+          // Return success with appropriate error status
           try {
-            const result = await this.getTabInfoWithCommand({
+            const responseData = {
               selector: coords.selector,
               clicked: false,
               error: {
                 code: coords.code,
-                message: 'Element not found'
+                message: coords.message || (coords.code === 'ELEMENT_NOT_FOUND' ? 'Element not found' : 'Element is not visible')
               }
-            });
+            };
+            
+            // Include element info if available (for visibility errors)
+            if (coords.elementInfo) {
+              responseData.elementInfo = coords.elementInfo;
+            }
+            
+            const result = await this.getTabInfoWithCommand(responseData);
             resolve(result);
           } catch (err) {
             reject(err);
@@ -477,18 +483,25 @@ class CommandExecutor {
           throw new Error(`Failed to get element position: ${error.message}`);
         }
 
-        // Check if element was not found
+        // Check if element was not found or not visible
         if (coords.error) {
-          // Return success with element not found status
+          // Return success with appropriate error status
           try {
-            const result = await this.getTabInfoWithCommand({
+            const responseData = {
               selector: coords.selector,
               hovered: false,
               error: {
                 code: coords.code,
-                message: 'Element not found'
+                message: coords.message || (coords.code === 'ELEMENT_NOT_FOUND' ? 'Element not found' : 'Element is not visible')
               }
-            });
+            };
+            
+            // Include element info if available (for visibility errors)
+            if (coords.elementInfo) {
+              responseData.elementInfo = coords.elementInfo;
+            }
+            
+            const result = await this.getTabInfoWithCommand(responseData);
             resolve(result);
           } catch (err) {
             reject(err);
