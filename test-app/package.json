@@ -7,10 +7,17 @@
     "start": "electron .",
     "dev": "electron . --dev"
   },
-  "keywords": ["mcp", "electron", "kapture"],
+  "keywords": [
+    "mcp",
+    "electron",
+    "kapture"
+  ],
   "author": "Kapture Team",
   "license": "MIT",
   "devDependencies": {
     "electron": "^27.0.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.2"
   }
 }

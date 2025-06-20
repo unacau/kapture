@@ -22,5 +22,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Listen for errors
   onMCPError: (callback) => {
     ipcRenderer.on('mcp-error', (event, data) => callback(data));
+  },
+  
+  // Listen for reconnection
+  onMCPReconnected: (callback) => {
+    ipcRenderer.on('mcp-reconnected', (event) => callback());
   }
 });

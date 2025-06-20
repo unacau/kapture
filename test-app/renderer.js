@@ -54,10 +54,10 @@ async function connectToServer() {
       
       // Get the port number
       const port = await window.electronAPI.getPort();
-      statusTextEl.textContent = `Server Running (Port ${port})`;
+      statusTextEl.textContent = `Connected to MCP (ws://localhost:${port}/mcp)`;
       refreshTabsBtn.disabled = false;
 
-      log(`MCP server connected successfully on port ${port}`, 'info');
+      log(`Connected to MCP WebSocket server at ws://localhost:${port}/mcp`, 'info');
       log(`Server capabilities: ${JSON.stringify(result.capabilities)}`, 'info');
 
       // Auto-discover tools and resources
@@ -76,14 +76,7 @@ async function connectToServer() {
     statusTextEl.textContent = 'Connection Failed';
     refreshTabsBtn.disabled = true;
 
-    // Don't retry if user cancelled killing existing process
-    if (!error.message.includes('still in use')) {
-      // Retry connection after delay
-      setTimeout(() => {
-        log('Retrying connection...');
-        connectToServer();
-      }, 3000);
-    }
+    // The WebSocket connection will handle reconnection automatically
   }
 }
 
@@ -1237,32 +1230,19 @@ window.electronAPI.onMCPNotification((message) => {
 });
 
 window.electronAPI.onMCPDisconnected((data) => {
-  log(`MCP server disconnected (code: ${data.code})`, 'error');
+  log(`MCP WebSocket disconnected (code: ${data.code})`, 'warning');
   connected = false;
   statusEl.classList.remove('connected');
-  statusTextEl.textContent = 'Disconnected';
+  statusTextEl.textContent = 'Reconnecting...';
   refreshTabsBtn.disabled = true;
 
-  // Clear tabs and content
-  currentTabs = [];
-  selectedTabId = null;
-  selectedItem = null;
-  displayTabs();
-  displayToolsList();
-  displayResourcesList();
-  updateTabInfo();
+  // Don't clear data during reconnection - we'll restore state when reconnected
   contentContainerEl.innerHTML = `
     <div class="empty-state">
-      <h2>Disconnected</h2>
-      <p>Waiting for server connection...</p>
+      <h2>Reconnecting...</h2>
+      <p>Connection lost. Attempting to reconnect to server...</p>
     </div>
   `;
-
-  // Attempt to reconnect
-  setTimeout(() => {
-    log('Attempting to reconnect...');
-    connectToServer();
-  }, 2000);
 });
 
 window.electronAPI.onMCPError((data) => {
@@ -1273,9 +1253,44 @@ window.electronAPI.onMCPError((data) => {
     statusEl.classList.remove('connected');
     statusTextEl.textContent = 'Port In Use';
     refreshTabsBtn.disabled = true;
+  } else if (data.type === 'WEBSOCKET_ERROR') {
+    log(`WebSocket error: ${data.message}`, 'error');
   } else {
     log(`Server error: ${data.message}`, 'error');
   }
+});
+
+// Handle successful reconnection
+window.electronAPI.onMCPReconnected(() => {
+  log('Successfully reconnected to MCP server!', 'info');
+  connected = true;
+  statusEl.classList.add('connected');
+  
+  const port = window.electronAPI.getPort().then(port => {
+    statusTextEl.textContent = `Connected to MCP (ws://localhost:${port}/mcp)`;
+  });
+  
+  refreshTabsBtn.disabled = false;
+  
+  // Re-discover tools and resources
+  Promise.all([
+    discoverTools(),
+    discoverResources()
+  ]).then(() => {
+    log('Re-discovered tools and resources', 'info');
+    
+    // Restore UI state if we had a selected tab
+    if (selectedTabId && currentTabs.find(t => t.tabId === selectedTabId)) {
+      displayTabContent();
+    } else {
+      contentContainerEl.innerHTML = `
+        <div class="empty-state">
+          <h2>Select a Tab</h2>
+          <p>Choose a browser tab from above to see available tools</p>
+        </div>
+      `;
+    }
+  });
 });
 
 // Draggable console setup

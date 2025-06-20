@@ -1,9 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { spawn, exec } = require('child_process');
+const WebSocket = require('ws');
 
 let mainWindow;
-let mcpProcess;
+let mcpWebSocket;
 let messageId = 1;
 const pendingRequests = new Map();
 
@@ -26,11 +26,11 @@ function parseArgs() {
     } else if (args[i] === '--dev') {
       dev = true;
     } else if (args[i] === '--help' || args[i] === '-h') {
-      console.log('Kapture Test App');
+      console.log('Kapture Test App (WebSocket Mode)');
       console.log('Usage: npm start -- [options]');
       console.log('');
       console.log('Options:');
-      console.log('  -p, --port <number>  WebSocket port (default: 61822)');
+      console.log('  -p, --port <number>  MCP WebSocket port (default: 61822)');
       console.log('  --dev               Open DevTools on startup');
       console.log('  -h, --help          Show this help message');
       process.exit(0);
@@ -58,116 +58,22 @@ function createWindow() {
   if (isDev) {
     mainWindow.webContents.openDevTools();
   }
-
-  // Kill MCP process before reload
-  mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (input.type === 'keyDown' && input.key === 'r' && (input.meta || input.control)) {
-      if (mcpProcess) {
-        console.log('Killing MCP process before reload');
-        mcpProcess.kill();
-        mcpProcess = null;
-      }
-    }
-  });
 }
 
 app.whenReady().then(async () => {
-  // Note: We don't kill existing servers on app startup anymore
-  // The prompt will appear when connecting to MCP
   createWindow();
 });
 
 app.on('window-all-closed', () => {
-  killMCPProcess();
+  disconnectMCPWebSocket();
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('before-quit', () => {
-  killMCPProcess();
+  disconnectMCPWebSocket();
 });
-
-// Helper to ensure MCP process is killed
-function killMCPProcess() {
-  if (mcpProcess) {
-    console.log('Killing MCP process...');
-    mcpProcess.kill('SIGTERM');
-
-    // Force kill after a moment if still alive
-    setTimeout(() => {
-      if (mcpProcess && !mcpProcess.killed) {
-        console.log('Force killing MCP process...');
-        mcpProcess.kill('SIGKILL');
-      }
-    }, 100);
-
-    mcpProcess = null;
-  }
-}
-
-// Kill any process using port 61822
-function killProcessOnPort(port, skipPrompt = false) {
-  return new Promise((resolve) => {
-    // On macOS/Linux, use lsof to find process using the port
-    exec(`lsof -ti tcp:${port}`, async (error, stdout) => {
-      if (error || !stdout.trim()) {
-        // No process found or error
-        resolve();
-        return;
-      }
-
-      const pid = stdout.trim();
-      console.log(`Found existing process on port ${port} with PID: ${pid}`);
-
-      // Get process info
-      exec(`ps -p ${pid} -o comm=`, async (psError, psStdout) => {
-        const processName = psError ? 'Unknown' : psStdout.trim();
-
-        let shouldKill = skipPrompt;
-
-        if (!skipPrompt && mainWindow) {
-          // Show dialog to confirm
-          const result = await dialog.showMessageBox(mainWindow, {
-            type: 'question',
-            buttons: ['Kill Process', 'Cancel'],
-            defaultId: 0,
-            title: 'Existing Server Found',
-            message: `A process is already using port ${port}`,
-            detail: `Process: ${processName} (PID: ${pid})\n\nThis might be a Kapture server from Claude Desktop or another instance.\n\nDo you want to kill it and start a new server?`
-          });
-
-          shouldKill = result.response === 0;
-        }
-
-        if (shouldKill) {
-          // Kill the process
-          exec(`kill -9 ${pid}`, (killError) => {
-            if (killError) {
-              console.error(`Failed to kill process ${pid}:`, killError);
-              if (mainWindow) {
-                dialog.showErrorBox('Failed to Kill Process', `Could not kill process ${pid}: ${killError.message}`);
-              }
-            } else {
-              console.log(`Killed process ${pid} on port ${port}`);
-              if (mainWindow) {
-                mainWindow.webContents.send('mcp-notification', {
-                  method: 'log',
-                  params: { message: `Killed existing server process (${processName} PID: ${pid})`, type: 'info' }
-                });
-              }
-            }
-            // Give it a moment to release the port
-            setTimeout(resolve, 500);
-          });
-        } else {
-          // User cancelled, don't kill the process
-          resolve();
-        }
-      });
-    });
-  });
-}
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -175,10 +81,159 @@ app.on('activate', () => {
   }
 });
 
-// MCP Communication
-let buffer = '';
+// MCP WebSocket Communication
+let reconnectInterval = null;
+let reconnectAttempts = 0;
+let isReconnecting = false;
+let shouldReconnect = true;
+let isInitialized = false;
+
+function connectMCPWebSocket() {
+  return new Promise((resolve, reject) => {
+    try {
+      const wsUrl = `ws://localhost:${wsPort}/mcp`;
+      console.log(`Connecting to MCP WebSocket at ${wsUrl}`);
+      
+      mcpWebSocket = new WebSocket(wsUrl);
+      
+      mcpWebSocket.on('open', async () => {
+        console.log('MCP WebSocket connected');
+        reconnectAttempts = 0;
+        isReconnecting = false;
+        
+        mainWindow.webContents.send('mcp-notification', {
+          method: 'log',
+          params: { message: `Connected to MCP WebSocket at ws://localhost:${wsPort}/mcp`, type: 'info' }
+        });
+        
+        // If we were previously initialized, re-initialize
+        if (isInitialized) {
+          try {
+            await initializeMCPConnection();
+            mainWindow.webContents.send('mcp-reconnected');
+          } catch (error) {
+            console.error('Failed to re-initialize after reconnection:', error);
+          }
+        }
+        
+        resolve();
+      });
+      
+      mcpWebSocket.on('message', (data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          handleMCPMessage(message);
+        } catch (error) {
+          console.error('Failed to parse MCP message:', error);
+          mainWindow.webContents.send('mcp-notification', {
+            method: 'log',
+            params: { message: `[PARSE ERROR] ${error.message}: ${data}`, type: 'error' }
+          });
+        }
+      });
+      
+      mcpWebSocket.on('close', (code, reason) => {
+        console.log(`MCP WebSocket closed: ${code} ${reason}`);
+        mainWindow.webContents.send('mcp-disconnected', { code });
+        mcpWebSocket = null;
+        
+        // Clear any pending requests
+        for (const [id, request] of pendingRequests) {
+          request.reject(new Error('WebSocket connection closed'));
+        }
+        pendingRequests.clear();
+        
+        // Attempt reconnection if enabled
+        if (shouldReconnect && !isReconnecting) {
+          isReconnecting = true;
+          scheduleReconnect();
+        }
+      });
+      
+      mcpWebSocket.on('error', (error) => {
+        console.error('MCP WebSocket error:', error);
+        mainWindow.webContents.send('mcp-error', {
+          type: 'WEBSOCKET_ERROR',
+          message: error.message
+        });
+        
+        // Don't reject on error if we're going to reconnect
+        if (!shouldReconnect) {
+          reject(error);
+        }
+      });
+      
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function scheduleReconnect() {
+  if (reconnectInterval) {
+    clearTimeout(reconnectInterval);
+  }
+  
+  reconnectAttempts++;
+  const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000); // Exponential backoff, max 30s
+  
+  console.log(`Scheduling reconnection attempt ${reconnectAttempts} in ${delay}ms`);
+  mainWindow.webContents.send('mcp-notification', {
+    method: 'log',
+    params: { message: `Reconnecting in ${Math.round(delay/1000)}s... (attempt ${reconnectAttempts})`, type: 'warning' }
+  });
+  
+  reconnectInterval = setTimeout(() => {
+    if (shouldReconnect) {
+      connectMCPWebSocket().catch(error => {
+        console.error('Reconnection failed:', error);
+        // Will trigger another reconnection attempt via the close handler
+      });
+    }
+  }, delay);
+}
+
+async function initializeMCPConnection() {
+  // Send initialize request
+  const response = await sendMCPRequest('initialize', {
+    protocolVersion: '2024-11-05',
+    capabilities: {},
+    clientInfo: {
+      name: 'kapture-test-app-websocket',
+      version: '1.0.0'
+    }
+  });
+
+  // Send initialized notification
+  sendMCPNotification('notifications/initialized', {});
+  
+  isInitialized = true;
+  return response;
+}
+
+function disconnectMCPWebSocket() {
+  shouldReconnect = false;
+  isInitialized = false;
+  
+  if (reconnectInterval) {
+    clearTimeout(reconnectInterval);
+    reconnectInterval = null;
+  }
+  
+  if (mcpWebSocket) {
+    console.log('Disconnecting MCP WebSocket...');
+    mcpWebSocket.close();
+    mcpWebSocket = null;
+  }
+}
 
 function handleMCPMessage(message) {
+  // Log incoming messages
+  mainWindow.webContents.send('mcp-notification', {
+    method: 'log',
+    params: { message: `[WS RECV] ${JSON.stringify(message)}`, type: 'debug' }
+  });
+  
   // Handle JSON-RPC response
   if (message.id !== undefined && pendingRequests.has(message.id)) {
     const { resolve, reject } = pendingRequests.get(message.id);
@@ -201,159 +256,18 @@ function handleMCPMessage(message) {
 // IPC handlers for renderer process
 ipcMain.handle('mcp-connect', async () => {
   try {
-    // Kill any existing process first (handles refreshes)
-    killMCPProcess();
-
-    // Check if port is in use and prompt to kill
-    const portInUse = await new Promise((resolve) => {
-      exec(`lsof -ti tcp:${wsPort}`, (error, stdout) => {
-        resolve(!error && stdout.trim());
-      });
-    });
-
-    if (portInUse) {
-      // Kill any process using the specified port
-      await killProcessOnPort(wsPort);
-
-      // Check again if port is still in use (user might have cancelled)
-      const stillInUse = await new Promise((resolve) => {
-        exec(`lsof -ti tcp:${wsPort}`, (error, stdout) => {
-          resolve(!error && stdout.trim());
-        });
-      });
-
-      if (stillInUse) {
-        // User cancelled the kill dialog
-        return {
-          success: false,
-          error: `Port ${wsPort} is still in use. Please close the existing server or choose to kill it.`
-        };
-      }
-    }
-
-    if (mcpProcess) {
-      // Wait a moment for the process to fully terminate
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-
-    // Spawn the MCP server
-    const serverPath = path.join(__dirname, '..', 'server', 'dist', 'index.js');
-
-    const inspector = require('inspector');
-
-    // Check if the current process is running in debug mode
-    const isDebugging = inspector.url();
-
-    // Build node arguments
-    const nodeArgs = isDebugging ? ['--inspect=localhost:9030'] : [];
-    nodeArgs.push(serverPath);
-    nodeArgs.push('--port', wsPort.toString());
-
-    mcpProcess = spawn('node', nodeArgs, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        KAPTURE_DEBUG: '1'  // Enable debug logging to stderr
-      }
-    });
-
-    if (isDebugging) {
-      console.log('MCP Server starting in debug mode...');
-      console.log('Watch for "Debugger listening on ws://..." message in stderr to find the port');
-    }
-
-    // Handle stdout
-    mcpProcess.stdout.on('data', (data) => {
-      const dataStr = data.toString();
-      mainWindow.webContents.send('mcp-notification', {
-        method: 'log',
-        params: { message: `[STDIO RECV] ${dataStr}`, type: 'debug' }
-      });
-
-      buffer += dataStr;
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.trim()) {
-          try {
-            const message = JSON.parse(line);
-            handleMCPMessage(message);
-          } catch (error) {
-            console.error('Failed to parse MCP message:', error);
-            mainWindow.webContents.send('mcp-notification', {
-              method: 'log',
-              params: { message: `[PARSE ERROR] ${error.message}: ${line}`, type: 'error' }
-            });
-          }
-        }
-      }
-    });
-
-    // Handle stderr
-    mcpProcess.stderr.on('data', (data) => {
-      const errorMsg = data.toString();
-      console.error('MCP stderr:', errorMsg);
-
-      // Send all stderr as debug logs to see server logging
-      mainWindow.webContents.send('mcp-notification', {
-        method: 'log',
-        params: { message: `[SERVER LOG] ${errorMsg.trim()}`, type: 'debug' }
-      });
-
-      // Check for common errors
-      if (errorMsg.includes('EADDRINUSE')) {
-        mainWindow.webContents.send('mcp-error', {
-          type: 'PORT_IN_USE',
-          message: 'Port 61822 is already in use. Another instance of the server may be running.'
-        });
-      } else if (errorMsg.includes('Error:')) {
-        mainWindow.webContents.send('mcp-error', {
-          type: 'STDERR',
-          message: errorMsg
-        });
-      }
-    });
-
-    // Handle exit
-    mcpProcess.on('exit', (code) => {
-      mainWindow.webContents.send('mcp-disconnected', { code });
-      mcpProcess = null;
-
-      // If we haven't initialized yet and the process exits, it's likely a startup error
-      if (pendingRequests.size > 0) {
-        const initRequest = Array.from(pendingRequests.values()).find(
-          req => req.method === 'initialize'
-        );
-        if (initRequest) {
-          initRequest.reject(new Error('Server failed to start - check console for errors'));
-        }
-      }
-    });
-
-    // Handle error event (for spawn errors)
-    mcpProcess.on('error', (error) => {
-      console.error('Failed to spawn MCP process:', error);
-      mainWindow.webContents.send('mcp-error', {
-        type: 'SPAWN_ERROR',
-        message: `Failed to start server: ${error.message}`
-      });
-    });
-
-    // Send initialize request
-    const response = await sendMCPRequest('initialize', {
-      protocolVersion: '2024-11-05',
-      capabilities: {
-        roots: {}
-      },
-      clientInfo: {
-        name: 'kapture-test-app',
-        version: '1.0.0'
-      }
-    });
-
-    // Send initialized notification
-    sendMCPNotification('notifications/initialized', {});
+    // Disconnect any existing connection
+    disconnectMCPWebSocket();
+    
+    // Reset state for fresh connection
+    shouldReconnect = true;
+    isInitialized = false;
+    
+    // Connect to MCP WebSocket
+    await connectMCPWebSocket();
+    
+    // Initialize the connection
+    const response = await initializeMCPConnection();
 
     return { success: true, capabilities: response.capabilities };
   } catch (error) {
@@ -361,10 +275,8 @@ ipcMain.handle('mcp-connect', async () => {
   }
 });
 
-// Note: mcp-disconnect is no longer used since the server runs continuously
-// The handler is kept for compatibility but could be removed in the future
 ipcMain.handle('mcp-disconnect', async () => {
-  // Do nothing - server stays running with the app
+  disconnectMCPWebSocket();
   return { success: true };
 });
 
@@ -373,14 +285,19 @@ ipcMain.handle('get-port', () => {
 });
 
 ipcMain.handle('mcp-request', async (event, method, params) => {
-  if (!mcpProcess) {
-    throw new Error('MCP server not connected');
+  if (!mcpWebSocket || mcpWebSocket.readyState !== WebSocket.OPEN) {
+    throw new Error('MCP WebSocket not connected');
   }
   return await sendMCPRequest(method, params);
 });
 
 function sendMCPRequest(method, params = {}) {
   return new Promise((resolve, reject) => {
+    if (!mcpWebSocket || mcpWebSocket.readyState !== WebSocket.OPEN) {
+      reject(new Error('MCP WebSocket not connected'));
+      return;
+    }
+    
     const id = messageId++;
     const request = {
       jsonrpc: '2.0',
@@ -413,20 +330,15 @@ function sendMCPRequest(method, params = {}) {
     const requestStr = JSON.stringify(request);
     mainWindow.webContents.send('mcp-notification', {
       method: 'log',
-      params: { message: `[STDIO SEND] ${requestStr}`, type: 'debug' }
+      params: { message: `[WS SEND] ${requestStr}`, type: 'debug' }
     });
     
-    if (!mcpProcess || !mcpProcess.stdin) {
-      reject(new Error('MCP process not available'));
-      return;
-    }
-    
-    mcpProcess.stdin.write(requestStr + '\n');
+    mcpWebSocket.send(requestStr);
   });
 }
 
 function sendMCPNotification(method, params = {}) {
-  if (!mcpProcess) return;
+  if (!mcpWebSocket || mcpWebSocket.readyState !== WebSocket.OPEN) return;
 
   const notification = {
     jsonrpc: '2.0',
@@ -434,5 +346,11 @@ function sendMCPNotification(method, params = {}) {
     params
   };
 
-  mcpProcess.stdin.write(JSON.stringify(notification) + '\n');
+  const notificationStr = JSON.stringify(notification);
+  mainWindow.webContents.send('mcp-notification', {
+    method: 'log',
+    params: { message: `[WS SEND] ${notificationStr}`, type: 'debug' }
+  });
+  
+  mcpWebSocket.send(notificationStr);
 }

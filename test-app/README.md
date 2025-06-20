@@ -1,6 +1,6 @@
 # Kapture MCP Test Client
 
-A robust Electron-based test application for the Kapture MCP server that implements the full MCP protocol via stdio communication, exactly matching Claude Desktop's implementation.
+A robust Electron-based test application for the Kapture MCP server that connects via WebSocket to test the multi-connection capability.
 
 ## Overview
 
@@ -11,9 +11,9 @@ This test client provides a comprehensive development and testing environment fo
 ## Key Features
 
 ### 🔌 MCP Protocol Implementation
-- **Native stdio communication** - Exact same protocol as Claude Desktop
+- **WebSocket communication** - Connects to MCP server via ws://localhost:61822/mcp
 - **JSON-RPC message handling** - Full bidirectional communication
-- **Automatic server lifecycle management** - Server starts/stops with the app
+- **External server connection** - Connects to already-running MCP server
 - **Real-time connection status** - Visual indicators for server and tab states
 
 ### 📑 Tab Management
@@ -63,11 +63,12 @@ npm start
 ## Usage Guide
 
 ### Basic Workflow
-1. Launch the app - MCP server starts automatically
-2. Open Chrome with the Kapture extension installed
-3. Navigate to any webpage and open DevTools
-4. Go to the Kapture panel and select the server to connect
-5. The connection to the tab appears instantly in test-app's
+1. Start the MCP server separately (e.g., via Claude Desktop or `npm start`)
+2. Launch the test app - it will connect via WebSocket
+3. Open Chrome with the Kapture extension installed
+4. Navigate to any webpage and open DevTools
+5. Go to the Kapture panel and select the server to connect
+6. The connection to the tab appears instantly in test app
 
 ### Tool Execution
 1. Select a tab from the tab bar (if multiple tabs are connected)
@@ -86,27 +87,41 @@ npm start
 ### Process Communication
 ```mermaid
 graph LR
-    subgraph "Test App"
-        A[Electron<br/>Main Process] <-->|stdio<br/>JSON-RPC| B[MCP Server<br/>Node.js]
-    end
+    A[Test App<br/>Electron] <-->|WebSocket<br/>JSON-RPC| B[MCP Server<br/>Node.js]
+    D[Claude Desktop] <-->|stdio<br/>JSON-RPC| B
     B <-->|Chrome<br/>DevTools| C[Browser<br/>Extension]
     
     style A fill:#4a90e2,stroke:#2e6bb5,color:#fff
     style B fill:#50c878,stroke:#3da660,color:#fff
     style C fill:#ff9500,stroke:#cc7700,color:#fff
+    style D fill:#9b59b6,stroke:#8e44ad,color:#fff
 ```
 
 ### Key Components
-- **main.js**: Electron main process, spawns MCP server, handles stdio
+- **main.js**: Electron main process, handles WebSocket connection to MCP server
 - **preload.js**: Secure bridge between main and renderer processes
 - **renderer.js**: UI logic, user interactions, display formatting
 - **styles.css**: Modern, responsive styling with animations
 
 ## Development
 
+### Starting the MCP Server
+First, start the MCP server in a separate terminal:
+```bash
+cd ../server
+npm start  # Or use Claude Desktop to start it
+```
+
 ### Development Mode
 ```bash
 npm run dev  # Opens with DevTools enabled
+```
+
+### Command Line Options
+```bash
+npm start -- --port 61823  # Connect to server on custom port
+npm start -- --dev         # Open DevTools on startup
+npm start -- --help        # Show all options
 ```
 
 ### Debugging Tips
@@ -116,8 +131,10 @@ npm run dev  # Opens with DevTools enabled
 - All stdio messages and server stderr output are displayed with prefixes like [STDIO], [SERVER LOG]
 
 ### Common Issues
-- **Tabs not appearing**: Ensure Chrome extension is connected
+- **Connection failed**: Ensure MCP server is running on the specified port
+- **Tabs not appearing**: Ensure Chrome extension is connected to the same server
 - **Tools not loading**: Verify server build is up to date
+- **Port conflicts**: Use `--port` flag to connect to server on different port
 
 ## Testing Scenarios
 
