@@ -189,6 +189,36 @@ if (!window.__kaptureConsoleListenerSetup) {
       }
       return [];
     },
+    
+    // Find the nearest scrollable parent element
+    findScrollableParent: function(element) {
+      function isScrollable(element) {
+        const hasScrollableContent = element.scrollHeight > element.clientHeight ||
+                                    element.scrollWidth > element.clientWidth;
+        
+        if (!hasScrollableContent) return false;
+        
+        const style = getComputedStyle(element);
+        return /(auto|scroll)/.test(style.overflow + style.overflowY + style.overflowX);
+      }
+
+      let parent = element.parentElement;
+      
+      while (parent && parent !== document.body) {
+        if (isScrollable(parent)) {
+          return parent;
+        }
+        parent = parent.parentElement;
+      }
+      
+      // Check if body is scrollable
+      if (isScrollable(document.body)) {
+        return document.body;
+      }
+      
+      return window;
+    },
+    
     // Standardized element data extraction
     getElementData: function(element, index = 0) {
       const rect = element.getBoundingClientRect();
@@ -252,6 +282,16 @@ if (!window.__kaptureConsoleListenerSetup) {
           selected: option.selected,
           disabled: option.disabled
         }));
+      }
+      
+      // Add scrollable parent if exists
+      const scrollParent = this.findScrollableParent(element);
+      if (scrollParent) {
+        if (scrollParent === window) {
+          data.scrollParent = 'window';
+        } else {
+          data.scrollParent = this.getUniqueSelector(scrollParent);
+        }
       }
 
       return data;

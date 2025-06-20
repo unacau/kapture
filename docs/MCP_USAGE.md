@@ -471,6 +471,7 @@ Get information about all elements at a specific coordinate in the viewport.
   - `bounds` (object): Element position and dimensions
   - `style` (object): Key computed styles (display, visibility, opacity, etc.)
   - `isVisible` (boolean): Whether the element is visible
+  - `scrollParent` (string|null): Unique selector of the nearest scrollable parent element, if any
 
 **Examples:**
 - `kapturemcp://tab/abc123/elementsFromPoint?x=100&y=200` - Get all elements at viewport coordinates (100, 200)
