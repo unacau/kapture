@@ -6,6 +6,9 @@ import { MCPHandler } from './mcp-handler.js';
 import { MCPServerManager } from './mcp-server-manager.js';
 import { logger } from './logger.js';
 
+// Set process title for better identification
+process.title = 'Kapture MCP Server';
+
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);

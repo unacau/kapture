@@ -1,4 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+
+// Set app name before anything else
+app.setName('Kapture Test Client');
+
 const path = require('path');
 const WebSocket = require('ws');
 
@@ -12,7 +16,7 @@ function parseArgs() {
   const args = process.argv.slice(2);
   let port = 61822;
   let dev = false;
-  
+
   for (let i = 0; i < args.length; i++) {
     if ((args[i] === '--port' || args[i] === '-p') && args[i + 1]) {
       const parsedPort = parseInt(args[i + 1], 10);
@@ -36,7 +40,7 @@ function parseArgs() {
       process.exit(0);
     }
   }
-  
+
   return { port, dev };
 }
 
@@ -46,6 +50,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    title: 'Kapture Test Client',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -93,19 +98,19 @@ function connectMCPWebSocket() {
     try {
       const wsUrl = `ws://localhost:${wsPort}/mcp`;
       console.log(`Connecting to MCP WebSocket at ${wsUrl}`);
-      
+
       mcpWebSocket = new WebSocket(wsUrl);
-      
+
       mcpWebSocket.on('open', async () => {
         console.log('MCP WebSocket connected');
         reconnectAttempts = 0;
         isReconnecting = false;
-        
+
         mainWindow.webContents.send('mcp-notification', {
           method: 'log',
           params: { message: `Connected to MCP WebSocket at ws://localhost:${wsPort}/mcp`, type: 'info' }
         });
-        
+
         // If we were previously initialized, re-initialize
         if (isInitialized) {
           try {
@@ -115,10 +120,10 @@ function connectMCPWebSocket() {
             console.error('Failed to re-initialize after reconnection:', error);
           }
         }
-        
+
         resolve();
       });
-      
+
       mcpWebSocket.on('message', (data) => {
         try {
           const message = JSON.parse(data.toString());
@@ -131,38 +136,38 @@ function connectMCPWebSocket() {
           });
         }
       });
-      
+
       mcpWebSocket.on('close', (code, reason) => {
         console.log(`MCP WebSocket closed: ${code} ${reason}`);
         mainWindow.webContents.send('mcp-disconnected', { code });
         mcpWebSocket = null;
-        
+
         // Clear any pending requests
         for (const [id, request] of pendingRequests) {
           request.reject(new Error('WebSocket connection closed'));
         }
         pendingRequests.clear();
-        
+
         // Attempt reconnection if enabled
         if (shouldReconnect && !isReconnecting) {
           isReconnecting = true;
           scheduleReconnect();
         }
       });
-      
+
       mcpWebSocket.on('error', (error) => {
         console.error('MCP WebSocket error:', error);
         mainWindow.webContents.send('mcp-error', {
           type: 'WEBSOCKET_ERROR',
           message: error.message
         });
-        
+
         // Don't reject on error if we're going to reconnect
         if (!shouldReconnect) {
           reject(error);
         }
       });
-      
+
     } catch (error) {
       reject(error);
     }
@@ -173,16 +178,16 @@ function scheduleReconnect() {
   if (reconnectInterval) {
     clearTimeout(reconnectInterval);
   }
-  
+
   reconnectAttempts++;
   const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000); // Exponential backoff, max 30s
-  
+
   console.log(`Scheduling reconnection attempt ${reconnectAttempts} in ${delay}ms`);
   mainWindow.webContents.send('mcp-notification', {
     method: 'log',
     params: { message: `Reconnecting in ${Math.round(delay/1000)}s... (attempt ${reconnectAttempts})`, type: 'warning' }
   });
-  
+
   reconnectInterval = setTimeout(() => {
     if (shouldReconnect) {
       connectMCPWebSocket().catch(error => {
@@ -206,7 +211,7 @@ async function initializeMCPConnection() {
 
   // Send initialized notification
   sendMCPNotification('notifications/initialized', {});
-  
+
   isInitialized = true;
   return response;
 }
@@ -214,12 +219,12 @@ async function initializeMCPConnection() {
 function disconnectMCPWebSocket() {
   shouldReconnect = false;
   isInitialized = false;
-  
+
   if (reconnectInterval) {
     clearTimeout(reconnectInterval);
     reconnectInterval = null;
   }
-  
+
   if (mcpWebSocket) {
     console.log('Disconnecting MCP WebSocket...');
     mcpWebSocket.close();
@@ -233,7 +238,7 @@ function handleMCPMessage(message) {
     method: 'log',
     params: { message: `[WS RECV] ${JSON.stringify(message)}`, type: 'debug' }
   });
-  
+
   // Handle JSON-RPC response
   if (message.id !== undefined && pendingRequests.has(message.id)) {
     const { resolve, reject } = pendingRequests.get(message.id);
@@ -258,14 +263,14 @@ ipcMain.handle('mcp-connect', async () => {
   try {
     // Disconnect any existing connection
     disconnectMCPWebSocket();
-    
+
     // Reset state for fresh connection
     shouldReconnect = true;
     isInitialized = false;
-    
+
     // Connect to MCP WebSocket
     await connectMCPWebSocket();
-    
+
     // Initialize the connection
     const response = await initializeMCPConnection();
 
@@ -297,7 +302,7 @@ function sendMCPRequest(method, params = {}) {
       reject(new Error('MCP WebSocket not connected'));
       return;
     }
-    
+
     const id = messageId++;
     const request = {
       jsonrpc: '2.0',
@@ -332,7 +337,7 @@ function sendMCPRequest(method, params = {}) {
       method: 'log',
       params: { message: `[WS SEND] ${requestStr}`, type: 'debug' }
     });
-    
+
     mcpWebSocket.send(requestStr);
   });
 }
@@ -351,6 +356,6 @@ function sendMCPNotification(method, params = {}) {
     method: 'log',
     params: { message: `[WS SEND] ${notificationStr}`, type: 'debug' }
   });
-  
+
   mcpWebSocket.send(notificationStr);
 }

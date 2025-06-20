@@ -1,5 +1,6 @@
 {
   "name": "kapture-test-app",
+  "productName": "Kapture Test Client",
   "version": "1.0.0",
   "description": "Electron test app for Kapture MCP server",
   "main": "main.js",
