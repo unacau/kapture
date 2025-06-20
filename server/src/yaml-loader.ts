@@ -97,7 +97,29 @@ const resourcesConfig = {
   baseResources: processResources(rawResourcesConfig.baseResources),
   dynamicTabResources: processResources(rawResourcesConfig.dynamicTabResources, true)
 };
-const promptsConfig = yaml.load(promptsYaml) as { prompts: any[] };
+const rawPromptsConfig = yaml.load(promptsYaml) as { prompts: Record<string, any> | any[] };
+
+// Process prompts to handle both array and object formats
+function processPrompts(prompts: Record<string, any> | any[]) {
+  if (Array.isArray(prompts)) {
+    // Legacy array format
+    return prompts;
+  }
+  
+  // New object format - convert to array
+  const promptsArray: any[] = [];
+  for (const [name, prompt] of Object.entries(prompts)) {
+    promptsArray.push({
+      name,
+      ...prompt
+    });
+  }
+  return promptsArray;
+}
+
+const promptsConfig = {
+  prompts: processPrompts(rawPromptsConfig.prompts)
+};
 
 interface ToolDefinition {
   name: string;
