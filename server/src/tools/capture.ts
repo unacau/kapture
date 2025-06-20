@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 export const screenshotTool = {
   name: 'screenshot',
-  description: 'Capture a screenshot of the page or specific element',
+  description: 'Capture a screenshot of the page or specific element. When a selector is provided, only the first matching element will be captured. Returns the unique selector of the captured element if applicable.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
-    selector: z.string().optional().describe('CSS selector of element to capture (optional)'),
+    selector: z.string().optional().describe('CSS selector of element to capture (optional, uses first matching element)'),
     scale: z.number().min(0.1).max(1).default(0.3).describe('Scale factor (0.1-1.0) to reduce screenshot size (default: 0.3)'),
     format: z.enum(['webp', 'jpeg', 'png']).default('webp').describe('Image format (default: webp for best compression)'),
     quality: z.number().min(0.1).max(1).default(0.85).describe('Compression quality for webp/jpeg (0.1-1.0, default: 0.85)')
@@ -23,10 +23,10 @@ export const evaluateTool = {
 
 export const domTool = {
   name: 'dom',
-  description: 'Get outerHTML of the body or a specific element',
+  description: 'Get outerHTML of the body or a specific element. When a selector is provided, only the first matching element will be used. Returns the unique selector of the element if applicable.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
-    selector: z.string().optional().describe('CSS selector of element (optional, defaults to body)')
+    selector: z.string().optional().describe('CSS selector of element (optional, defaults to body, uses first matching element)')
   }),
 };
 

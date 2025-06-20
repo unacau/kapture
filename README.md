@@ -145,12 +145,14 @@ Then ask Claude to interact with web pages:
 - `navigate` - Navigate to URL
 - `back` - Browser back button
 - `forward` - Browser forward button
-- `click` - Click elements
-- `hover` - Hover over elements
-- `fill` - Fill input fields
-- `select` - Select dropdown options (HTML `<select>` only)
+- `click` - Click elements (uses first matching element, returns unique selector)
+- `hover` - Hover over elements (uses first matching element, returns unique selector)
+- `fill` - Fill input fields (uses first matching element, returns unique selector)
+- `select` - Select dropdown options (HTML `<select>` only, uses first matching element, returns unique selector)
 - `evaluate` - Execute JavaScript
 - `querySelectorAll` - Query all elements matching a CSS selector
+
+**Note on Selectors**: Tools that accept a `selector` parameter (`click`, `hover`, `fill`, `select`, `screenshot`, `dom`) will only operate on the **first element** that matches the CSS selector. The tool response includes the unique selector of the actual element that was used, which may include an auto-generated ID if the element didn't have one.
 
 ### MCP Resources
 

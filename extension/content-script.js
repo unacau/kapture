@@ -199,11 +199,13 @@ if (!window.__kaptureConsoleListenerSetup) {
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;
 
+      // Get the unique selector (which may add an ID)
+      const uniqueSelector = this.getUniqueSelector(element);
+      
       return {
         x: x,
         y: y,
-        selector: selector,
-        tagName: element.tagName
+        selector: uniqueSelector
       };
     },
 
@@ -219,12 +221,15 @@ if (!window.__kaptureConsoleListenerSetup) {
       const rect = element.getBoundingClientRect();
       const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
       const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      // Get the unique selector (which may add an ID)
+      const uniqueSelector = this.getUniqueSelector(element);
       return {
         x: Math.round(rect.left + scrollX),
         y: Math.round(rect.top + scrollY),
         width: Math.round(rect.width),
         height: Math.round(rect.height),
-        devicePixelRatio: window.devicePixelRatio || 1
+        devicePixelRatio: window.devicePixelRatio || 1,
+        selector: uniqueSelector
       };
     },
 
@@ -276,9 +281,11 @@ if (!window.__kaptureConsoleListenerSetup) {
       // Blur to trigger any blur handlers
       element.blur();
 
+      // Get the unique selector (which may add an ID)
+      const uniqueSelector = this.getUniqueSelector(element);
+      
       return {
-        selector: selector,
-        tagName: element.tagName,
+        selector: uniqueSelector,
         value: element.value || element.textContent,
         filled: true
       };
@@ -331,8 +338,11 @@ if (!window.__kaptureConsoleListenerSetup) {
       // Trigger change event
       element.dispatchEvent(new Event('change', { bubbles: true }));
 
+      // Get the unique selector (which may add an ID)
+      const uniqueSelector = this.getUniqueSelector(element);
+      
       return {
-        selector: selector,
+        selector: uniqueSelector,
         value: value,
         selectedText: option.text,
         selected: true,
@@ -720,11 +730,12 @@ if (!window.__kaptureConsoleListenerSetup) {
             selector: params.selector
           };
         }
+        // Get the unique selector (which may add an ID)
+        const clickSelector = helpers.getUniqueSelector(clickElement);
         clickElement.click();
         return {
           clicked: true,
-          selector: params.selector,
-          tagName: clickElement.tagName
+          selector: clickSelector
         };
 
       case 'hover':
@@ -737,12 +748,13 @@ if (!window.__kaptureConsoleListenerSetup) {
             selector: params.selector
           };
         }
+        // Get the unique selector (which may add an ID)
+        const hoverSelector = helpers.getUniqueSelector(hoverElement);
         hoverElement.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
         hoverElement.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
         return {
           hovered: true,
-          selector: params.selector,
-          tagName: hoverElement.tagName
+          selector: hoverSelector
         };
 
       case 'fill':
@@ -805,13 +817,16 @@ if (!window.__kaptureConsoleListenerSetup) {
               selector: params.selector
             };
           }
+          // Get the unique selector (which may add an ID)
+          const scrollSelector = helpers.getUniqueSelector(element);
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return { scrolled: true, selector: scrollSelector };
         } else if (params.x !== undefined && params.y !== undefined) {
           window.scrollTo(params.x, params.y);
+          return { scrolled: true };
         } else {
           throw new Error('Either selector or x/y coordinates required');
         }
-        return { scrolled: true };
 
       default:
         throw new Error(`Unknown command: ${command}`);

@@ -360,8 +360,6 @@ class CommandExecutor {
         try {
           const result = await this.getTabInfoWithCommand({
             selector: coords.selector,
-            tagName: coords.tagName,
-            text: coords.text,
             clicked: true
           });
           resolve(result);
@@ -571,7 +569,6 @@ class CommandExecutor {
         try {
           const result = await this.getTabInfoWithCommand({
             selector: coords.selector,
-            tagName: coords.tagName,
             position: { x: coords.x, y: coords.y },
             hovered: true
           });

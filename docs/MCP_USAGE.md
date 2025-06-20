@@ -186,6 +186,24 @@ await client.connect(transport);
 
 ## Available Tools
 
+### Important Note on CSS Selectors
+
+**Selector Behavior**: All tools that accept a CSS `selector` parameter will only operate on the **first element** that matches the selector. This applies to:
+- `click`, `hover`, `fill`, `select` - Interaction tools
+- `screenshot`, `dom` - Capture tools
+
+**Unique Selectors**: To ensure consistent targeting, these tools automatically:
+1. Find the first matching element
+2. Generate a unique ID for the element if it doesn't already have one (in the format `kapture-{number}`)
+3. Return the unique selector in the response, which includes this ID
+
+This means:
+- If you use `.button` and there are multiple buttons, only the first one will be clicked
+- The response will include a selector like `#kapture-123` that uniquely identifies the exact element that was used
+- Subsequent operations can use this unique selector to target the same element precisely
+
+**For Multiple Elements**: Use the `querySelectorAll` tool to get information about all matching elements first, then use their unique selectors for individual operations.
+
 ### kapturemcp_list_tabs
 List all connected browser tabs.
 
@@ -232,18 +250,22 @@ Capture a screenshot of the page.
 **Parameters:**
 - `tabId` (string, required): Target tab ID
 - `name` (string, required): Screenshot name
-- `selector` (string, optional): CSS selector to capture
+- `selector` (string, optional): CSS selector to capture (only the first matching element will be captured)
 - `width` (number, optional): Viewport width
 - `height` (number, optional): Viewport height
 
-**Returns:** Base64 encoded image data
+**Returns:** Base64 encoded image data. When a selector is used, the response includes the unique selector of the captured element (may include auto-generated ID).
 
 ### kapturemcp_click
 Click on a page element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
-- `selector` (string, required): CSS selector of element to click
+- `selector` (string, required): CSS selector of element to click (only the first matching element will be clicked)
+
+**Returns:** Object with:
+- `clicked` (boolean): Whether the click was successful
+- `selector` (string): The unique selector of the element that was clicked (may include auto-generated ID)
 
 **Performance Note:** This tool may experience delays when the Kapture DevTools panel is not the active tab. For best performance, keep the Kapture panel selected in Chrome DevTools.
 
@@ -252,7 +274,11 @@ Hover over a page element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
-- `selector` (string, required): CSS selector of element to hover
+- `selector` (string, required): CSS selector of element to hover (only the first matching element will be hovered)
+
+**Returns:** Object with:
+- `hovered` (boolean): Whether the hover was successful
+- `selector` (string): The unique selector of the element that was hovered (may include auto-generated ID)
 
 **Performance Note:** This tool may experience delays when the Kapture DevTools panel is not the active tab. For best performance, keep the Kapture panel selected in Chrome DevTools.
 
@@ -261,16 +287,28 @@ Fill an input field with text.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
-- `selector` (string, required): CSS selector of input field
+- `selector` (string, required): CSS selector of input field (only the first matching element will be filled)
 - `value` (string, required): Text to fill
+
+**Returns:** Object with:
+- `filled` (boolean): Whether the fill was successful
+- `selector` (string): The unique selector of the element that was filled (may include auto-generated ID)
+- `value` (string): The value that was filled
 
 ### kapturemcp_select
 Select an option from an HTML `<select>` dropdown element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
-- `selector` (string, required): CSS selector of HTML `<select>` element
+- `selector` (string, required): CSS selector of HTML `<select>` element (only the first matching element will be used)
 - `value` (string, required): Value attribute of the option to select
+
+**Returns:** Object with:
+- `selected` (boolean): Whether the selection was successful
+- `selector` (string): The unique selector of the select element that was used (may include auto-generated ID)
+- `value` (string): The value that was selected
+- `selectedText` (string): The text of the selected option
+- `options` (array): All available options in the select element
 
 **Important Notes:**
 - This tool only works with native HTML `<select>` elements
@@ -292,12 +330,12 @@ Get outerHTML of the body or a specific element.
 
 **Parameters:**
 - `tabId` (string, required): Target tab ID
-- `selector` (string, optional): CSS selector of element (defaults to body)
+- `selector` (string, optional): CSS selector of element (defaults to body, only the first matching element will be used)
 
 **Returns:** Object with:
 - `found` (boolean): Whether element was found
 - `html` (string): The outerHTML content (if found)
-- `selector` (string): The selector used
+- `selector` (string): The unique selector of the element (may include auto-generated ID when a selector was provided)
 - `error` (object): Error details if element not found
 
 ## MCP Resources
@@ -343,7 +381,7 @@ Capture a screenshot of a specific tab or element.
 
 **Parameters:**
 - `tabId` (in URL path): The tab ID
-- `selector` (query param, optional): CSS selector of element to capture
+- `selector` (query param, optional): CSS selector of element to capture (only the first matching element will be captured)
 - `scale` (query param, optional): Scale factor (0.1-1.0) to reduce screenshot size (default: 0.3)
 - `format` (query param, optional): Image format - webp, jpeg, or png (default: webp)
 - `quality` (query param, optional): Compression quality for webp/jpeg (0.1-1.0, default: 0.85)
@@ -413,7 +451,7 @@ Get the DOM HTML of a specific tab or element.
 
 **Parameters:**
 - `tabId` (in URL path): The tab ID
-- `selector` (query param, optional): CSS selector of element to get HTML from (defaults to body)
+- `selector` (query param, optional): CSS selector of element to get HTML from (defaults to body, only the first matching element will be used)
 
 **Returns:** JSON object with:
 - `tabId` (string): The tab ID
