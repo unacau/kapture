@@ -522,6 +522,12 @@ if (!window.__kaptureConsoleListenerSetup) {
     getUniqueSelector: function(element) {
       if (!element || !(element instanceof Element)) return null;
 
+      // Special handling for html, head, and body elements - their tagName is unique
+      const tagName = element.tagName.toLowerCase();
+      if (tagName === 'html' || tagName === 'head' || tagName === 'body') {
+        return tagName;
+      }
+
       // If element has an ID, use it (unless it's empty or contains special chars)
       if (element.id && /^[a-zA-Z][\w-]*$/.test(element.id)) {
         // Check if ID is truly unique

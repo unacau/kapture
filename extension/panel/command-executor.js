@@ -904,6 +904,13 @@ class CommandExecutor {
           // Inline helper functions
           const getUniqueSelector = function(element) {
             if (!element || !(element instanceof Element)) return null;
+            
+            // Special handling for html, head, and body elements - their tagName is unique
+            const tagName = element.tagName.toLowerCase();
+            if (tagName === 'html' || tagName === 'head' || tagName === 'body') {
+              return tagName;
+            }
+            
             if (element.id && /^[a-zA-Z][\\w-]*$/.test(element.id)) {
               if (document.querySelectorAll('#' + CSS.escape(element.id)).length === 1) {
                 return '#' + CSS.escape(element.id);
