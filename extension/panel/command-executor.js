@@ -7,6 +7,25 @@ class CommandExecutor {
     // Note: Console log capture is now handled by the content script
   }
 
+  // Shared validation for selector/xpath parameters
+  validateSelectorOrXPath(params, commandName) {
+    const { selector, xpath } = params;
+    
+    if (!selector && !xpath) {
+      throw new Error(`Either selector or xpath is required for ${commandName}`);
+    }
+    
+    // Validate selector if provided
+    if (selector) {
+      const validation = this.validateSelector(selector);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+    }
+    
+    return { selector, xpath };
+  }
+
   // Helper function to get tab info with consistent error handling
   async getTabInfoWithCommand(commandResult) {
     try {
@@ -26,7 +45,7 @@ class CommandExecutor {
     if (selector && selector.includes(':contains(')) {
       return {
         valid: false,
-        error: 'The :contains() pseudo-selector is not valid CSS and is not supported by browsers. Use XPath with contains() or use evaluate to find elements with specific text content.'
+        error: 'The :contains() pseudo-selector is not valid CSS and is not supported by browsers. Use the xpath parameter instead, e.g., xpath: "//button[contains(text(), \'Submit\')]"'
       };
     }
 
@@ -132,20 +151,17 @@ class CommandExecutor {
 
   // Take screenshot
   async screenshot(params) {
-    const { selector, scale, format, quality } = params;
+    const { scale, format, quality } = params;
+    let selector, xpath;
 
-    // If selector is provided, get element bounds first
-    if (selector) {
-      // Validate selector
-      const validation = this.validateSelector(selector);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
+    // If selector or xpath is provided, validate and get element bounds
+    if (params.selector || params.xpath) {
+      ({ selector, xpath } = this.validateSelectorOrXPath(params, 'screenshot'));
       return new Promise(async (resolve, reject) => {
         // Get element bounds
         let bounds;
         try {
-          bounds = await window.MessagePassing.executeInPage('getElementBounds', { selector });
+          bounds = await window.MessagePassing.executeInPage('getElementBounds', { selector, xpath });
         } catch (error) {
           reject(new Error(`Failed to get element bounds: ${error.message}`));
           return;
@@ -231,17 +247,7 @@ class CommandExecutor {
 
   // Click element
   async click(params) {
-    const { selector } = params;
-
-    if (!selector) {
-      throw new Error('Selector is required for click');
-    }
-
-    // Validate selector
-    const validation = this.validateSelector(selector);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
+    const { selector, xpath } = this.validateSelectorOrXPath(params, 'click');
 
     const tabId = chrome.devtools.inspectedWindow.tabId;
 
@@ -252,7 +258,7 @@ class CommandExecutor {
         // First, get element coordinates and info
         let coords;
         try {
-          coords = await window.MessagePassing.executeInPage('scrollAndGetElementPosition', { selector });
+          coords = await window.MessagePassing.executeInPage('scrollAndGetElementPosition', { selector, xpath });
         } catch (error) {
           throw new Error(`Failed to get element position: ${error.message}`);
         }
@@ -384,24 +390,15 @@ class CommandExecutor {
 
   // Fill input element
   async fill(params) {
-    const { selector, value } = params;
-
-    if (!selector) {
-      throw new Error('Selector is required for fill');
-    }
+    const { selector, xpath } = this.validateSelectorOrXPath(params, 'fill');
+    const { value } = params;
 
     if (value === undefined) {
       throw new Error('Value is required for fill');
     }
 
-    // Validate selector
-    const validation = this.validateSelector(selector);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
-
     try {
-      const result = await window.MessagePassing.executeInPage('fill', { selector, value });
+      const result = await window.MessagePassing.executeInPage('fill', { selector, xpath, value });
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Fill failed: ${error.message}`);
@@ -410,25 +407,16 @@ class CommandExecutor {
 
   // Select option from dropdown
   async select(params) {
-    const { selector, value } = params;
-
-    if (!selector) {
-      throw new Error('Selector is required for select');
-    }
+    const { selector, xpath } = this.validateSelectorOrXPath(params, 'select');
+    const { value } = params;
 
     if (value === undefined) {
       throw new Error('Value is required for select');
     }
 
-    // Validate selector
-    const validation = this.validateSelector(selector);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
-
     try {
-      const result = await window.MessagePassing.executeInPage('select', { selector, value });
-      
+      const result = await window.MessagePassing.executeInPage('select', { selector, xpath, value });
+
       // Check if the command returned an error (element not found or wrong type)
       if (result && result.error) {
         if (result.code === 'INVALID_ELEMENT') {
@@ -464,7 +452,7 @@ class CommandExecutor {
           };
         }
       }
-      
+
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Select failed: ${error.message}`);
@@ -473,17 +461,7 @@ class CommandExecutor {
 
   // Hover over element
   async hover(params) {
-    const { selector } = params;
-
-    if (!selector) {
-      throw new Error('Selector is required for hover');
-    }
-
-    // Validate selector
-    const validation = this.validateSelector(selector);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
+    const { selector, xpath } = this.validateSelectorOrXPath(params, 'hover');
 
     const tabId = chrome.devtools.inspectedWindow.tabId;
 
@@ -494,7 +472,7 @@ class CommandExecutor {
         // First, get element coordinates
         let coords;
         try {
-          coords = await window.MessagePassing.executeInPage('scrollAndGetElementPosition', { selector });
+          coords = await window.MessagePassing.executeInPage('scrollAndGetElementPosition', { selector, xpath });
         } catch (error) {
           throw new Error(`Failed to get element position: ${error.message}`);
         }
@@ -786,18 +764,15 @@ class CommandExecutor {
 
   // Get DOM outerHTML
   async getDom(params) {
-    const { selector } = params;
-
-    // Validate selector if provided
-    if (selector) {
-      const validation = this.validateSelector(selector);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
+    // Validate selector/xpath if provided
+    let selector = params.selector;
+    let xpath = params.xpath;
+    if (selector || xpath) {
+      ({ selector, xpath } = this.validateSelectorOrXPath(params, 'dom'));
     }
 
     try {
-      const result = await window.MessagePassing.executeInPage('getOuterHTML', { selector: selector || '' });
+      const result = await window.MessagePassing.executeInPage('getOuterHTML', { selector: selector || '', xpath: xpath || '' });
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Get DOM failed: ${error.message}`);
@@ -821,23 +796,13 @@ class CommandExecutor {
     }
   }
 
-  // Query all elements matching a CSS selector
+  // Query all elements matching a CSS selector or XPath
   async querySelectorAll(params) {
-    const { selector } = params;
-
-    if (!selector) {
-      throw new Error('Selector parameter is required');
-    }
-
-    // Validate selector
-    const validation = this.validateSelector(selector);
-    if (!validation.valid) {
-      throw new Error(validation.error);
-    }
+    const { selector, xpath } = this.validateSelectorOrXPath(params, 'querySelectorAll');
 
     try {
       // Execute querySelectorAll in the page context
-      const result = await window.MessagePassing.executeInPage('querySelectorAll', { selector });
+      const result = await window.MessagePassing.executeInPage('querySelectorAll', { selector, xpath });
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Query selector all failed: ${error.message}`);
@@ -856,7 +821,7 @@ class CommandExecutor {
     if (before) {
       filteredLogs = filteredLogs.filter(log => log.timestamp < before);
     }
-    
+
     // If level is provided, filter by log level
     if (level) {
       filteredLogs = filteredLogs.filter(log => log.level === level);

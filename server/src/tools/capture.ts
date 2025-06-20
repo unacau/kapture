@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 export const screenshotTool = {
   name: 'screenshot',
-  description: 'Capture a screenshot of the page or specific element. When a selector is provided, only the first matching element will be captured. Returns the unique selector of the captured element if applicable.',
+  description: 'Capture a screenshot of the page or specific element using CSS selector or XPath. When a selector/xpath is provided, only the first matching element will be captured. Returns the unique selector of the captured element if applicable.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
     selector: z.string().optional().describe('CSS selector of element to capture (optional, uses first matching element)'),
+    xpath: z.string().optional().describe('XPath expression to find element to capture (alternative to selector)'),
     scale: z.number().min(0.1).max(1).default(0.3).describe('Scale factor (0.1-1.0) to reduce screenshot size (default: 0.3)'),
     format: z.enum(['webp', 'jpeg', 'png']).default('webp').describe('Image format (default: webp for best compression)'),
     quality: z.number().min(0.1).max(1).default(0.85).describe('Compression quality for webp/jpeg (0.1-1.0, default: 0.85)')
@@ -23,10 +24,11 @@ export const evaluateTool = {
 
 export const domTool = {
   name: 'dom',
-  description: 'Get outerHTML of the body or a specific element. When a selector is provided, only the first matching element will be used. Returns the unique selector of the element if applicable.',
+  description: 'Get outerHTML of the body or a specific element using CSS selector or XPath. When a selector/xpath is provided, only the first matching element will be used. Returns the unique selector of the element if applicable.',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
-    selector: z.string().optional().describe('CSS selector of element (optional, defaults to body, uses first matching element)')
+    selector: z.string().optional().describe('CSS selector of element (optional, defaults to body, uses first matching element)'),
+    xpath: z.string().optional().describe('XPath expression to find element (alternative to selector)')
   }),
 };
 
@@ -42,9 +44,12 @@ export const elementsFromPointTool = {
 
 export const querySelectorAllTool = {
   name: 'querySelectorAll',
-  description: 'Query all elements matching a CSS selector and get detailed information about each element',
+  description: 'Query all elements matching a CSS selector or XPath and get detailed information about each element',
   inputSchema: z.object({
     tabId: z.string().describe('Target tab ID'),
-    selector: z.string().describe('CSS selector to query elements')
+    selector: z.string().optional().describe('CSS selector to query elements'),
+    xpath: z.string().optional().describe('XPath expression to find elements (alternative to selector)')
+  }).refine(data => data.selector || data.xpath, {
+    message: 'Either selector or xpath must be provided'
   }),
 };

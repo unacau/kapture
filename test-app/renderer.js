@@ -453,6 +453,9 @@ function setupNavigationListeners() {
 function createToolCard(tool) {
   const params = tool.inputSchema?.properties || {};
   const required = tool.inputSchema?.required || [];
+  
+  // Check if tool has both selector and xpath
+  const hasSelectorAndXpath = params.selector && params.xpath;
 
   const paramsHtml = Object.entries(params)
     .filter(([name]) => name !== 'tabId')
@@ -483,7 +486,14 @@ function createToolCard(tool) {
         });
         inputHtml += `</div>`;
       } else {
-        inputHtml = `<input type="text" id="${inputId}" ${isRequired ? 'required' : ''}>`;
+        // Add placeholder hints for selector and xpath fields
+        let placeholder = '';
+        if (name === 'selector') {
+          placeholder = 'placeholder="CSS selector (e.g., button, .class, #id)"';
+        } else if (name === 'xpath') {
+          placeholder = 'placeholder="XPath (e.g., //button[contains(text(), \'Submit\')])"';
+        }
+        inputHtml = `<input type="text" id="${inputId}" ${isRequired ? 'required' : ''} ${placeholder}>`;
       }
 
       return `
@@ -502,6 +512,7 @@ function createToolCard(tool) {
       <p class="description">${escapeHtml(tool.description)}</p>
       <div class="tool-params">
         ${paramsHtml || '<p style="color: #999; font-size: 0.85rem;">No parameters needed</p>'}
+        ${hasSelectorAndXpath ? '<p style="color: #f39c12; font-size: 0.85rem; margin-top: 0.5rem;"><strong>Note:</strong> Use either selector OR xpath, not both. If both are provided, selector takes precedence.</p>' : ''}
       </div>
       <button class="tool-execute" data-tool="${tool.name}">Execute</button>
       <details id="result-${tool.name}" class="tool-result" style="display: none;">
@@ -559,8 +570,15 @@ function createResourceCard(resource) {
           <label for="${resource.uri}-selector">
             selector <span style="color: #999; font-size: 0.85rem;">(optional)</span>
           </label>
-          <input type="text" id="${resource.uri}-selector">
+          <input type="text" id="${resource.uri}-selector" placeholder="CSS selector (e.g., button, .class, #id)">
         </div>
+        <div class="param-group">
+          <label for="${resource.uri}-xpath">
+            xpath <span style="color: #999; font-size: 0.85rem;">(optional, alternative to selector)</span>
+          </label>
+          <input type="text" id="${resource.uri}-xpath" placeholder="XPath (e.g., //button[contains(text(), 'Submit')])">
+        </div>
+        <p style="color: #f39c12; font-size: 0.85rem; margin-top: 0.5rem;"><strong>Note:</strong> Use either selector OR xpath, not both. If both are provided, selector takes precedence.</p>
         <div class="param-group">
           <label for="${resource.uri}-scale">
             scale
@@ -618,10 +636,17 @@ function createResourceCard(resource) {
       <div class="tool-params">
         <div class="param-group">
           <label for="${resource.uri}-selector">
-            selector <span style="color: #f56565;">*</span>
+            selector <span style="color: #999; font-size: 0.85rem;">(optional)</span>
           </label>
-          <input type="text" id="${resource.uri}-selector" placeholder="CSS selector (e.g., button, .class, #id)" required>
+          <input type="text" id="${resource.uri}-selector" placeholder="CSS selector (e.g., button, .class, #id)">
         </div>
+        <div class="param-group">
+          <label for="${resource.uri}-xpath">
+            xpath <span style="color: #999; font-size: 0.85rem;">(optional, alternative to selector)</span>
+          </label>
+          <input type="text" id="${resource.uri}-xpath" placeholder="XPath (e.g., //button[contains(text(), 'Submit')])">
+        </div>
+        <p style="color: #f39c12; font-size: 0.85rem; margin-top: 0.5rem;"><strong>Note:</strong> Use either selector OR xpath, not both. If both are provided, selector takes precedence.</p>
       </div>
     `;
   } else if (isDomResource) {
@@ -634,6 +659,13 @@ function createResourceCard(resource) {
           </label>
           <input type="text" id="${resource.uri}-selector" placeholder="CSS selector (e.g., body, .content, #main)">
         </div>
+        <div class="param-group">
+          <label for="${resource.uri}-xpath">
+            xpath <span style="color: #999; font-size: 0.85rem;">(optional, alternative to selector)</span>
+          </label>
+          <input type="text" id="${resource.uri}-xpath" placeholder="XPath (e.g., //div[@class='content'])">
+        </div>
+        <p style="color: #f39c12; font-size: 0.85rem; margin-top: 0.5rem;"><strong>Note:</strong> Use either selector OR xpath, not both. If both are provided, selector takes precedence.</p>
       </div>
     `;
   }
@@ -950,12 +982,16 @@ async function queryResource(resourceUri, button) {
       }
     } else if (resourceUri.includes('/screenshot')) {
       const selectorInput = document.getElementById(`${resourceUri}-selector`);
+      const xpathInput = document.getElementById(`${resourceUri}-xpath`);
       const scaleInput = document.getElementById(`${resourceUri}-scale`);
       const formatRadio = document.querySelector(`input[name="${resourceUri}-format"]:checked`);
       const qualityInput = document.getElementById(`${resourceUri}-quality`);
       
       if (selectorInput && selectorInput.value) {
         params.append('selector', selectorInput.value);
+      }
+      if (xpathInput && xpathInput.value && !(selectorInput && selectorInput.value)) {
+        params.append('xpath', xpathInput.value);
       }
       if (scaleInput && scaleInput.value) {
         params.append('scale', scaleInput.value);
@@ -978,15 +1014,23 @@ async function queryResource(resourceUri, button) {
       }
     } else if (resourceUri.includes('/querySelectorAll')) {
       const selectorInput = document.getElementById(`${resourceUri}-selector`);
+      const xpathInput = document.getElementById(`${resourceUri}-xpath`);
       
       if (selectorInput && selectorInput.value) {
         params.append('selector', selectorInput.value);
       }
+      if (xpathInput && xpathInput.value && !(selectorInput && selectorInput.value)) {
+        params.append('xpath', xpathInput.value);
+      }
     } else if (resourceUri.includes('/dom')) {
       const selectorInput = document.getElementById(`${resourceUri}-selector`);
+      const xpathInput = document.getElementById(`${resourceUri}-xpath`);
       
       if (selectorInput && selectorInput.value) {
         params.append('selector', selectorInput.value);
+      }
+      if (xpathInput && xpathInput.value && !(selectorInput && selectorInput.value)) {
+        params.append('xpath', xpathInput.value);
       }
     }
     

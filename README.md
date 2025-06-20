@@ -154,6 +154,13 @@ Then ask Claude to interact with web pages:
 
 **Note on Selectors**: Tools that accept a `selector` parameter (`click`, `hover`, `fill`, `select`, `screenshot`, `dom`) will only operate on the **first element** that matches the CSS selector. The tool response includes the unique selector of the actual element that was used, which may include an auto-generated ID if the element didn't have one.
 
+**XPath Support**: All tools that accept a `selector` parameter also accept an `xpath` parameter as an alternative. This is particularly useful for:
+- Finding elements by text content: `xpath: "//button[contains(text(), 'Submit')]"`
+- Complex element relationships: `xpath: "//div[@class='container']//span[2]"`
+- When CSS selectors are insufficient
+
+Use either `selector` OR `xpath`, not both. If both are provided, `selector` takes precedence.
+
 ### MCP Resources
 
 - `kapture://tabs` - List all connected browser tabs

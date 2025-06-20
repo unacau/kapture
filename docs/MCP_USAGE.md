@@ -204,6 +204,38 @@ This means:
 
 **For Multiple Elements**: Use the `querySelectorAll` tool to get information about all matching elements first, then use their unique selectors for individual operations.
 
+### XPath Support
+
+All tools that accept a CSS `selector` parameter also support XPath expressions through the `xpath` parameter. This provides more powerful element selection capabilities:
+
+**When to Use XPath:**
+- Finding elements by text content: `//button[contains(text(), 'Submit')]`
+- Complex parent-child relationships: `//form[@id='login']//input[@type='password']`
+- Following/preceding siblings: `//label[text()='Email']/following-sibling::input`
+- When CSS selectors can't express the relationship you need
+
+**Important Notes:**
+- Use either `selector` OR `xpath`, not both
+- If both are provided, `selector` takes precedence
+- XPath expressions must be valid - invalid expressions will return an error
+- The :contains() pseudo-selector is NOT valid CSS - use XPath instead
+
+**Example - Click button with specific text:**
+```javascript
+// Using XPath to click a button containing specific text
+await client.callTool('kapturemcp_click', {
+  tabId: 'tab-123',
+  xpath: "//button[contains(text(), 'Submit Form')]"
+});
+
+// Fill input field that follows a specific label
+await client.callTool('kapturemcp_fill', {
+  tabId: 'tab-123',
+  xpath: "//label[text()='Email Address']/following-sibling::input",
+  value: 'user@example.com'
+});
+```
+
 ### kapturemcp_list_tabs
 List all connected browser tabs.
 

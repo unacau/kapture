@@ -260,16 +260,30 @@
         
         <p>This guide explains how to use Kapture with Model Context Protocol (MCP) clients like Claude Desktop, Cline, or custom MCP implementations.</p>
 
+        <div class="highlight">
+            <h2>🚀 Multiple AI Assistants Support</h2>
+            <p><strong>Kapture's standout feature</strong>: Run multiple AI assistants simultaneously! Each AI client can control different browser tabs independently by using separate ports. This enables powerful workflows like:</p>
+            <ul>
+                <li>Having Claude Desktop perform web research while Cline writes code</li>
+                <li>Running multiple automation tasks in parallel</li>
+                <li>Team collaboration with different AI tools</li>
+                <li>Testing automation scripts while developing new features</li>
+            </ul>
+        </div>
+
         <div class="toc">
             <h2>Table of Contents</h2>
             <ul>
                 <li><a href="#prerequisites">Prerequisites</a></li>
                 <li><a href="#setup">Setup</a></li>
+                <li><a href="#multiple-assistants">Running Multiple AI Assistants</a></li>
                 <li><a href="#available-tools">Available Tools</a></li>
                 <li><a href="#mcp-resources">MCP Resources</a></li>
+                <li><a href="#mcp-notifications">MCP Notifications</a></li>
                 <li><a href="#usage-examples">Usage Examples</a></li>
                 <li><a href="#error-handling">Error Handling</a></li>
                 <li><a href="#best-practices">Best Practices</a></li>
+                <li><a href="#http-endpoints">HTTP Endpoints</a></li>
                 <li><a href="#troubleshooting">Troubleshooting</a></li>
             </ul>
         </div>
@@ -284,6 +298,15 @@
         <h2 id="setup">Setup</h2>
 
         <h3>1. Start the Kapture MCP Server</h3>
+        
+        <p>The server is typically started automatically by your MCP client (Claude Desktop, Cline, etc.) when configured properly.</p>
+        
+        <p>If you need to run it manually:</p>
+        
+        <p><strong>Option 1: Using npx (no installation required)</strong></p>
+        <pre><code>npx kapture-mcp-server</code></pre>
+        
+        <p><strong>Option 2: From source</strong></p>
         <pre><code>cd kapture/server
 npm install
 npm run build
@@ -300,27 +323,91 @@ Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...</code></pre>
             <li>Open Chrome and navigate to any website</li>
             <li>Open Chrome DevTools (F12)</li>
             <li>Navigate to the "Kapture" panel</li>
-            <li>Click "Connect"</li>
+            <li>Select a server from the dropdown (it will connect automatically)</li>
         </ol>
 
         <p>The tab is now ready to receive commands.</p>
+
+        <h2 id="multiple-assistants">Running Multiple AI Assistants Simultaneously</h2>
+        
+        <p>Kapture excels at supporting multiple AI clients at the same time. Each client uses a different port to avoid conflicts:</p>
+        
+        <h3>Example Setup: Claude Desktop + Cline</h3>
+        
+        <p><strong>1. Claude Desktop</strong> (uses default port 61822):</p>
+        <pre><code>{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}</code></pre>
+        
+        <p><strong>2. Cline/VS Code</strong> (uses port 61823):</p>
+        <pre><code>{
+  "cline.mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server", "--port", "61823"]
+    }
+  }
+}</code></pre>
+        
+        <p><strong>3. Additional Clients</strong> (increment ports as needed):</p>
+        <ul>
+            <li>Third client: port 61824</li>
+            <li>Fourth client: port 61825</li>
+            <li>And so on...</li>
+        </ul>
+        
+        <p>Each AI assistant will:</p>
+        <ul>
+            <li>Start its own MCP server instance</li>
+            <li>Connect to different browser tabs</li>
+            <li>Operate independently without interference</li>
+            <li>Show up as separate servers in the Kapture DevTools dropdown</li>
+        </ul>
 
         <h3>3. Configure Your MCP Client</h3>
 
         <h4>Claude Desktop</h4>
         <p>Add to your Claude Desktop config (<code>~/Library/Application Support/Claude/claude_desktop_config.json</code> on macOS):</p>
+        
+        <p><strong>Using npx (Recommended)</strong></p>
+        <pre><code>{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}</code></pre>
+        
+        <p><strong>Using local installation</strong></p>
         <pre><code>{
   "mcpServers": {
     "kapture": {
       "command": "node",
-      "args": ["/path/to/kapture/server/dist/index.js"],
-      "env": {}
+      "args": ["/path/to/kapture/server/dist/index.js"]
     }
   }
 }</code></pre>
 
         <h4>Cline</h4>
         <p>Add to your VS Code settings:</p>
+        
+        <p><strong>Using npx (Recommended)</strong></p>
+        <pre><code>{
+  "cline.mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["kapture-mcp-server"]
+    }
+  }
+}</code></pre>
+        
+        <p><strong>Using local installation</strong></p>
         <pre><code>{
   "cline.mcpServers": {
     "kapture": {
@@ -334,8 +421,14 @@ Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...</code></pre>
         <p>Connect to the Kapture server via stdio:</p>
         <pre><code>import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { spawn } from 'child_process';
 
+// Using npx
+const transport = new StdioClientTransport({
+  command: 'npx',
+  args: ['kapture-mcp-server']
+});
+
+// Or using local installation
 const transport = new StdioClientTransport({
   command: 'node',
   args: ['/path/to/kapture/server/dist/index.js']
@@ -351,6 +444,64 @@ const client = new Client({
 await client.connect(transport);</code></pre>
 
         <h2 id="available-tools">Available Tools</h2>
+        
+        <h3>Important Note on CSS Selectors</h3>
+        
+        <p><strong>Selector Behavior</strong>: All tools that accept a CSS <code>selector</code> parameter will only operate on the <strong>first element</strong> that matches the selector. This applies to:</p>
+        <ul>
+            <li><code>click</code>, <code>hover</code>, <code>fill</code>, <code>select</code> - Interaction tools</li>
+            <li><code>screenshot</code>, <code>dom</code> - Capture tools</li>
+        </ul>
+        
+        <p><strong>Unique Selectors</strong>: To ensure consistent targeting, these tools automatically:</p>
+        <ol>
+            <li>Find the first matching element</li>
+            <li>Generate a unique ID for the element if it doesn't already have one (in the format <code>kapture-{number}</code>)</li>
+            <li>Return the unique selector in the response, which includes this ID</li>
+        </ol>
+        
+        <p>This means:</p>
+        <ul>
+            <li>If you use <code>.button</code> and there are multiple buttons, only the first one will be clicked</li>
+            <li>The response will include a selector like <code>#kapture-123</code> that uniquely identifies the exact element that was used</li>
+            <li>Subsequent operations can use this unique selector to target the same element precisely</li>
+        </ul>
+        
+        <p><strong>For Multiple Elements</strong>: Use the <code>querySelectorAll</code> tool to get information about all matching elements first, then use their unique selectors for individual operations.</p>
+        
+        <h3>XPath Support</h3>
+        
+        <p>All tools that accept a CSS <code>selector</code> parameter also support XPath expressions through the <code>xpath</code> parameter. This provides more powerful element selection capabilities:</p>
+        
+        <p><strong>When to Use XPath:</strong></p>
+        <ul>
+            <li>Finding elements by text content: <code>//button[contains(text(), 'Submit')]</code></li>
+            <li>Complex parent-child relationships: <code>//form[@id='login']//input[@type='password']</code></li>
+            <li>Following/preceding siblings: <code>//label[text()='Email']/following-sibling::input</code></li>
+            <li>When CSS selectors can't express the relationship you need</li>
+        </ul>
+        
+        <p><strong>Important Notes:</strong></p>
+        <ul>
+            <li>Use either <code>selector</code> OR <code>xpath</code>, not both</li>
+            <li>If both are provided, <code>selector</code> takes precedence</li>
+            <li>XPath expressions must be valid - invalid expressions will return an error</li>
+            <li>The :contains() pseudo-selector is NOT valid CSS - use XPath instead</li>
+        </ul>
+        
+        <p><strong>Example - Click button with specific text:</strong></p>
+        <pre><code>// Using XPath to click a button containing specific text
+await client.callTool('kapturemcp_click', {
+  tabId: 'tab-123',
+  xpath: "//button[contains(text(), 'Submit Form')]"
+});
+
+// Fill input field that follows a specific label
+await client.callTool('kapturemcp_fill', {
+  tabId: 'tab-123',
+  xpath: "//label[text()='Email Address']/following-sibling::input",
+  value: 'user@example.com'
+});</code></pre>
 
         <h3>kapturemcp_list_tabs</h3>
         <p>List all connected browser tabs.</p>
@@ -394,44 +545,82 @@ await client.connect(transport);</code></pre>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
             <li><code>name</code> (string, required): Screenshot name</li>
-            <li><code>selector</code> (string, optional): CSS selector to capture</li>
+            <li><code>selector</code> (string, optional): CSS selector to capture (only the first matching element will be captured)</li>
+            <li><code>xpath</code> (string, optional): XPath expression to find element to capture (alternative to selector)</li>
             <li><code>width</code> (number, optional): Viewport width</li>
             <li><code>height</code> (number, optional): Viewport height</li>
         </ul>
-        <p><strong>Returns:</strong> Base64 encoded image data</p>
+        <p><strong>Returns:</strong> Base64 encoded image data. When a selector is used, the response includes the unique selector of the captured element (may include auto-generated ID).</p>
 
         <h3>kapturemcp_click</h3>
         <p>Click on a page element.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
-            <li><code>selector</code> (string, required): CSS selector of element to click</li>
+            <li><code>selector</code> (string, conditionally required): CSS selector of element to click (only the first matching element will be clicked)</li>
+            <li><code>xpath</code> (string, conditionally required): XPath expression to find element to click (alternative to selector)</li>
         </ul>
+        <p><strong>Returns:</strong> Object with:</p>
+        <ul>
+            <li><code>clicked</code> (boolean): Whether the click was successful</li>
+            <li><code>selector</code> (string): The unique selector of the element that was clicked (may include auto-generated ID)</li>
+        </ul>
+        <p><strong>Performance Note:</strong> This tool may experience delays when the Kapture DevTools panel is not the active tab. For best performance, keep the Kapture panel selected in Chrome DevTools.</p>
 
         <h3>kapturemcp_hover</h3>
         <p>Hover over a page element.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
-            <li><code>selector</code> (string, required): CSS selector of element to hover</li>
+            <li><code>selector</code> (string, conditionally required): CSS selector of element to hover (only the first matching element will be hovered)</li>
+            <li><code>xpath</code> (string, conditionally required): XPath expression to find element to hover (alternative to selector)</li>
         </ul>
+        <p><strong>Returns:</strong> Object with:</p>
+        <ul>
+            <li><code>hovered</code> (boolean): Whether the hover was successful</li>
+            <li><code>selector</code> (string): The unique selector of the element that was hovered (may include auto-generated ID)</li>
+        </ul>
+        <p><strong>Performance Note:</strong> This tool may experience delays when the Kapture DevTools panel is not the active tab. For best performance, keep the Kapture panel selected in Chrome DevTools.</p>
 
         <h3>kapturemcp_fill</h3>
         <p>Fill an input field with text.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
-            <li><code>selector</code> (string, required): CSS selector of input field</li>
+            <li><code>selector</code> (string, conditionally required): CSS selector of input field (only the first matching element will be filled)</li>
+            <li><code>xpath</code> (string, conditionally required): XPath expression to find input field (alternative to selector)</li>
             <li><code>value</code> (string, required): Text to fill</li>
+        </ul>
+        <p><strong>Returns:</strong> Object with:</p>
+        <ul>
+            <li><code>filled</code> (boolean): Whether the fill was successful</li>
+            <li><code>selector</code> (string): The unique selector of the element that was filled (may include auto-generated ID)</li>
+            <li><code>value</code> (string): The value that was filled</li>
         </ul>
 
         <h3>kapturemcp_select</h3>
-        <p>Select an option from a dropdown.</p>
+        <p>Select an option from an HTML <code>&lt;select&gt;</code> dropdown element.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
-            <li><code>selector</code> (string, required): CSS selector of select element</li>
-            <li><code>value</code> (string, required): Value of option to select</li>
+            <li><code>selector</code> (string, conditionally required): CSS selector of HTML <code>&lt;select&gt;</code> element (only the first matching element will be used)</li>
+            <li><code>xpath</code> (string, conditionally required): XPath expression to find <code>&lt;select&gt;</code> element (alternative to selector)</li>
+            <li><code>value</code> (string, required): Value attribute of the option to select</li>
+        </ul>
+        <p><strong>Returns:</strong> Object with:</p>
+        <ul>
+            <li><code>selected</code> (boolean): Whether the selection was successful</li>
+            <li><code>selector</code> (string): The unique selector of the select element that was used (may include auto-generated ID)</li>
+            <li><code>value</code> (string): The value that was selected</li>
+            <li><code>selectedText</code> (string): The text of the selected option</li>
+            <li><code>options</code> (array): All available options in the select element</li>
+        </ul>
+        <p><strong>Important Notes:</strong></p>
+        <ul>
+            <li>This tool only works with native HTML <code>&lt;select&gt;</code> elements</li>
+            <li>It does NOT work with custom dropdown implementations (div-based dropdowns, React/Vue components, etc.)</li>
+            <li>If the element is not a <code>&lt;select&gt;</code>, the tool will return an error with details about what element type was found</li>
+            <li>For custom dropdowns, use <code>kapturemcp_click</code> to open the dropdown and click the desired option</li>
         </ul>
 
         <h3>kapturemcp_evaluate</h3>
@@ -439,24 +628,45 @@ await client.connect(transport);</code></pre>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
-            <li><code>code</code> (string, required): JavaScript code to execute</li>
+            <li><code>code</code> (string, required): JavaScript code to execute. The last expression is returned as the result.</li>
         </ul>
-        <p><strong>Returns:</strong> Serialized result of execution</p>
+        <p><strong>Returns:</strong> Serialized result of execution. Return values are automatically serialized to JSON-safe format: functions become "[Function: name]", DOM elements include unique CSS selectors, NodeLists/HTMLCollections are converted to arrays with selectors, circular references are handled, etc.</p>
 
         <h3>kapturemcp_dom</h3>
         <p>Get outerHTML of the body or a specific element.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
-            <li><code>selector</code> (string, optional): CSS selector of element (defaults to body)</li>
+            <li><code>selector</code> (string, optional): CSS selector of element (defaults to body, only the first matching element will be used)</li>
+            <li><code>xpath</code> (string, optional): XPath expression to find element (alternative to selector)</li>
         </ul>
         <p><strong>Returns:</strong> Object with:</p>
         <ul>
             <li><code>found</code> (boolean): Whether element was found</li>
             <li><code>html</code> (string): The outerHTML content (if found)</li>
-            <li><code>selector</code> (string): The selector used</li>
+            <li><code>selector</code> (string): The unique selector of the element (may include auto-generated ID when a selector was provided)</li>
             <li><code>error</code> (object): Error details if element not found</li>
         </ul>
+
+        <h3>kapturemcp_elementsFromPoint</h3>
+        <p>Get information about all elements at a specific coordinate in the viewport.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>x</code> (number, required): X coordinate relative to the viewport</li>
+            <li><code>y</code> (number, required): Y coordinate relative to the viewport</li>
+        </ul>
+        <p><strong>Returns:</strong> Array of elements at the specified point, ordered from top to bottom.</p>
+
+        <h3>kapturemcp_querySelectorAll</h3>
+        <p>Query all elements matching a CSS selector or XPath and get detailed information about each element.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (string, required): Target tab ID</li>
+            <li><code>selector</code> (string, conditionally required): CSS selector to query elements</li>
+            <li><code>xpath</code> (string, conditionally required): XPath expression to find elements (alternative to selector)</li>
+        </ul>
+        <p><strong>Returns:</strong> Array of element information for all matching elements.</p>
 
         <h2 id="mcp-resources">MCP Resources</h2>
 
@@ -466,7 +676,7 @@ await client.connect(transport);</code></pre>
         <p>List all connected browser tabs.</p>
         <p><strong>Returns:</strong> JSON array of all connected tabs with their information</p>
 
-        <h3>kapturemcp://tab/{tabId}</h3>
+        <h3>kapture://tab/{tabId}</h3>
         <p>Get detailed information about a specific tab.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
@@ -474,21 +684,182 @@ await client.connect(transport);</code></pre>
         </ul>
         <p><strong>Returns:</strong> JSON object with tab details including URL, title, dimensions, scroll position, etc.</p>
 
-        <h3>kapturemcp://tab/{tabId}/console</h3>
+        <h3>kapture://tab/{tabId}/console</h3>
         <p>Get console logs from a specific tab.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (in URL path): The tab ID</li>
             <li><code>before</code> (query param, optional): ISO timestamp to get logs before</li>
             <li><code>limit</code> (query param, optional): Maximum number of logs to return (default: 100)</li>
+            <li><code>level</code> (query param, optional): Filter by log level (log, info, warn, error)</li>
         </ul>
         <p><strong>Returns:</strong> JSON object with:</p>
         <ul>
             <li><code>logs</code> (array): Log entries (newest first) with timestamp, level, and message</li>
             <li><code>total</code> (number): Total number of logs available</li>
+            <li><code>filteredTotal</code> (number): Number of logs matching the filter criteria</li>
             <li><code>nextCursor</code> (string): Timestamp for pagination</li>
+            <li><code>level</code> (string): The level filter applied (if any)</li>
         </ul>
-        <p><strong>Example:</strong> <code>kapturemcp://tab/abc123/console?limit=50&before=2024-01-01T00:00:00.000Z</code></p>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>kapturemcp://tab/abc123/console?limit=50&before=2024-01-01T00:00:00.000Z</code></li>
+            <li><code>kapturemcp://tab/abc123/console?level=error</code></li>
+            <li><code>kapturemcp://tab/abc123/console?level=warn&limit=20</code></li>
+        </ul>
+
+        <h3>kapture://tab/{tabId}/screenshot</h3>
+        <p>Capture a screenshot of a specific tab or element.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (in URL path): The tab ID</li>
+            <li><code>selector</code> (query param, optional): CSS selector of element to capture (only the first matching element will be captured)</li>
+            <li><code>xpath</code> (query param, optional): XPath expression to find element to capture (alternative to selector)</li>
+            <li><code>scale</code> (query param, optional): Scale factor (0.1-1.0) to reduce screenshot size (default: 0.3)</li>
+            <li><code>format</code> (query param, optional): Image format - webp, jpeg, or png (default: webp)</li>
+            <li><code>quality</code> (query param, optional): Compression quality for webp/jpeg (0.1-1.0, default: 0.85)</li>
+        </ul>
+        <p><strong>Returns:</strong> JSON object with:</p>
+        <ul>
+            <li><code>tabId</code> (string): The tab ID</li>
+            <li><code>url</code> (string): Current URL of the tab</li>
+            <li><code>title</code> (string): Current title of the tab</li>
+            <li><code>parameters</code> (object): The parameters used for the screenshot</li>
+            <li><code>screenshot</code> (object): Screenshot data including:
+                <ul>
+                    <li><code>dataUrl</code> (string): Base64 encoded data URL of the image</li>
+                    <li><code>scale</code> (number): The scale factor applied</li>
+                    <li><code>format</code> (string): The image format used</li>
+                    <li><code>quality</code> (number): The compression quality used</li>
+                    <li><code>name</code> (string): Name of the screenshot</li>
+                </ul>
+            </li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>kapturemcp://tab/abc123/screenshot</code> - Full page screenshot with defaults</li>
+            <li><code>kapturemcp://tab/abc123/screenshot?selector=.main-content</code> - Capture specific element</li>
+            <li><code>kapturemcp://tab/abc123/screenshot?scale=0.5&format=jpeg&quality=0.9</code> - Higher quality JPEG</li>
+            <li><code>kapturemcp://tab/abc123/screenshot?selector=%23header&format=png</code> - PNG of element with ID "header"</li>
+        </ul>
+        <p><strong>Note:</strong> This resource provides the same functionality as the <code>kapturemcp_screenshot</code> tool but as a resource for better integration with MCP clients.</p>
+
+        <h3>kapture://tab/{tabId}/elementsFromPoint</h3>
+        <p>Get information about all elements at a specific coordinate in the viewport.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (in URL path): The tab ID</li>
+            <li><code>x</code> (query param, required): X coordinate relative to the viewport</li>
+            <li><code>y</code> (query param, required): Y coordinate relative to the viewport</li>
+        </ul>
+        <p><strong>Returns:</strong> JSON object with:</p>
+        <ul>
+            <li><code>tabId</code> (string): The tab ID</li>
+            <li><code>url</code> (string): Current URL of the tab</li>
+            <li><code>title</code> (string): Current title of the tab</li>
+            <li><code>coordinates</code> (object): The x and y coordinates queried</li>
+            <li><code>elements</code> (array): Array of elements at the specified point, ordered from top to bottom, each containing:
+                <ul>
+                    <li><code>index</code> (number): Order in the stack (0 is topmost)</li>
+                    <li><code>tagName</code> (string): HTML tag name</li>
+                    <li><code>id</code> (string|null): Element ID if present</li>
+                    <li><code>className</code> (string|null): Element className attribute</li>
+                    <li><code>classList</code> (array): Array of individual class names</li>
+                    <li><code>selector</code> (string): Unique CSS selector for the element</li>
+                    <li><code>text</code> (string): Text content (truncated to 100 chars)</li>
+                    <li><code>href</code> (string|null): Link URL for anchor elements</li>
+                    <li><code>src</code> (string|null): Source URL for images/media</li>
+                    <li><code>alt</code> (string|null): Alt text for images</li>
+                    <li><code>value</code> (string|null): Form element value</li>
+                    <li><code>type</code> (string|null): Input/button type</li>
+                    <li><code>name</code> (string|null): Form element name</li>
+                    <li><code>role</code> (string|null): ARIA role</li>
+                    <li><code>ariaLabel</code> (string|null): ARIA label</li>
+                    <li><code>dataAttributes</code> (object): All data-* attributes</li>
+                    <li><code>bounds</code> (object): Element position and dimensions</li>
+                    <li><code>style</code> (object): Key computed styles (display, visibility, opacity, etc.)</li>
+                    <li><code>isVisible</code> (boolean): Whether the element is visible</li>
+                </ul>
+            </li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>kapturemcp://tab/abc123/elementsFromPoint?x=100&y=200</code> - Get all elements at viewport coordinates (100, 200)</li>
+            <li><code>kapturemcp://tab/abc123/elementsFromPoint?x=500.5&y=300.25</code> - Supports decimal coordinates</li>
+        </ul>
+        <p><strong>Note:</strong> This uses the browser's <code>document.elementsFromPoint()</code> API to get all elements at the specified coordinates, from topmost to bottommost in the stacking order.</p>
+
+        <h3>kapture://tab/{tabId}/dom</h3>
+        <p>Get the DOM HTML of a specific tab or element.</p>
+        <p><strong>Parameters:</strong></p>
+        <ul>
+            <li><code>tabId</code> (in URL path): The tab ID</li>
+            <li><code>selector</code> (query param, optional): CSS selector of element to get HTML from (defaults to body, only the first matching element will be used)</li>
+            <li><code>xpath</code> (query param, optional): XPath expression to find element (alternative to selector)</li>
+        </ul>
+        <p><strong>Returns:</strong> JSON object with:</p>
+        <ul>
+            <li><code>tabId</code> (string): The tab ID</li>
+            <li><code>url</code> (string): Current URL of the tab</li>
+            <li><code>title</code> (string): Current title of the tab</li>
+            <li><code>selector</code> (string): The CSS selector used (or 'body' if none provided)</li>
+            <li><code>dom</code> (object): DOM data containing:
+                <ul>
+                    <li><code>found</code> (boolean): Whether the element was found</li>
+                    <li><code>html</code> (string): The outerHTML of the element</li>
+                    <li><code>error</code> (object|undefined): Error details if element not found</li>
+                </ul>
+            </li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>kapturemcp://tab/abc123/dom</code> - Get full body HTML</li>
+            <li><code>kapturemcp://tab/abc123/dom?selector=.main-content</code> - Get HTML of element with class "main-content"</li>
+            <li><code>kapturemcp://tab/abc123/dom?selector=%23header</code> - Get HTML of element with ID "header"</li>
+        </ul>
+        <p><strong>Note:</strong> This resource provides the same functionality as the <code>kapturemcp_dom</code> tool but as a resource for better integration with MCP clients.</p>
+
+        <h2 id="mcp-notifications">MCP Notifications</h2>
+        
+        <p>Kapture sends real-time notifications for various events:</p>
+        
+        <h3>kapture/tabs_changed</h3>
+        <p>Sent when tabs connect, disconnect, or update their information.</p>
+        <p><strong>Payload:</strong></p>
+        <pre><code>{
+  "tabs": [/* array of tab objects */],
+  "timestamp": 1234567890
+}</code></pre>
+        
+        <h3>kapture/tab_disconnected</h3>
+        <p>Sent when a specific tab disconnects.</p>
+        <p><strong>Payload:</strong></p>
+        <pre><code>{
+  "tabId": "tab-123",
+  "timestamp": 1234567890
+}</code></pre>
+        
+        <h3>kapture/console_log</h3>
+        <p>Real-time console log events from browser tabs.</p>
+        <p><strong>Payload:</strong></p>
+        <pre><code>{
+  "tabId": "tab-123",
+  "logEntry": {
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "level": "error",
+    "message": "Error message"
+  },
+  "timestamp": 1234567890
+}</code></pre>
+        
+        <p><strong>Example: Subscribing to Console Logs</strong></p>
+        <pre><code>// In your MCP client
+client.on('notification', (notification) => {
+  if (notification.method === 'kapture/console_log') {
+    const { tabId, logEntry } = notification.params;
+    console.log(`[${logEntry.level}] Tab ${tabId}: ${logEntry.message}`);
+  }
+});</code></pre>
 
         <h2 id="usage-examples">Usage Examples</h2>
 
@@ -669,6 +1040,171 @@ await client.callTool('kapturemcp_evaluate', {
             </ul>
             </li>
         </ol>
+        
+        <h2 id="http-endpoints">HTTP Endpoints</h2>
+        
+        <p>In addition to MCP resources, Kapture provides direct HTTP endpoints for accessing data and images. These are useful for debugging, testing, or integration with non-MCP tools.</p>
+        
+        <h3>Discovery Endpoint</h3>
+        <p><strong>GET http://localhost:{port}/</strong></p>
+        <p>Returns server status and MCP client information.</p>
+        <p><strong>Response:</strong></p>
+        <pre><code>{
+  "mcpClient": {
+    "name": "Claude Desktop",
+    "version": "0.7.2"
+  }
+}</code></pre>
+        
+        <h3>Tab List</h3>
+        <p><strong>GET http://localhost:{port}/tabs</strong></p>
+        <p>Returns a JSON array of all connected tabs.</p>
+        <p><strong>Response:</strong></p>
+        <pre><code>[
+  {
+    "tabId": "1",
+    "url": "https://example.com",
+    "title": "Example Domain",
+    "connectedAt": 1234567890,
+    "lastPing": 1234567900
+  }
+]</code></pre>
+        
+        <h3>Tab Information</h3>
+        <p><strong>GET http://localhost:{port}/tab/{tabId}</strong></p>
+        <p>Returns detailed information about a specific tab.</p>
+        <p><strong>Response:</strong></p>
+        <pre><code>{
+  "tabId": "1",
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "connectedAt": 1234567890,
+  "lastPing": 1234567900,
+  "domSize": 12345,
+  "fullPageDimensions": {"width": 1200, "height": 2400},
+  "viewportDimensions": {"width": 1200, "height": 800},
+  "scrollPosition": {"x": 0, "y": 0},
+  "pageVisibility": {"visible": true, "visibilityState": "visible"}
+}</code></pre>
+        
+        <h3>Console Logs</h3>
+        <p><strong>GET http://localhost:{port}/tab/{tabId}/console</strong></p>
+        <p>Returns console logs from a specific tab.</p>
+        <p><strong>Query Parameters:</strong></p>
+        <ul>
+            <li><code>before</code>: ISO timestamp to get logs before</li>
+            <li><code>limit</code>: Maximum number of logs (default: 100)</li>
+            <li><code>level</code>: Filter by log level (log, info, warn, error)</li>
+        </ul>
+        <p><strong>Example:</strong> <code>http://localhost:61822/tab/1/console?level=error&limit=50</code></p>
+        
+        <h3>Screenshot (JSON)</h3>
+        <p><strong>GET http://localhost:{port}/tab/{tabId}/screenshot</strong></p>
+        <p>Returns screenshot data as JSON with base64 encoded image.</p>
+        <p><strong>Query Parameters:</strong></p>
+        <ul>
+            <li><code>selector</code>: CSS selector of element to capture</li>
+            <li><code>xpath</code>: XPath expression to find element (alternative to selector)</li>
+            <li><code>scale</code>: Scale factor (0.1-1.0, default: 0.3)</li>
+            <li><code>format</code>: Image format - webp, jpeg, or png (default: webp)</li>
+            <li><code>quality</code>: Compression quality (0.1-1.0, default: 0.85)</li>
+        </ul>
+        <p><strong>Response:</strong></p>
+        <pre><code>{
+  "tabId": "1",
+  "url": "https://example.com",
+  "title": "Example Domain",
+  "parameters": {
+    "selector": null,
+    "scale": 0.3,
+    "format": "webp",
+    "quality": 0.85
+  },
+  "screenshot": {
+    "dataUrl": "data:image/webp;base64,...",
+    "scale": 0.3,
+    "format": "webp",
+    "quality": 0.85,
+    "name": "screenshot"
+  }
+}</code></pre>
+        
+        <h3>Screenshot (Direct Image)</h3>
+        <p><strong>GET http://localhost:{port}/tab/{tabId}/screenshot/view</strong></p>
+        <p>Returns the screenshot as a direct image response (not JSON).</p>
+        <p><strong>Query Parameters:</strong> Same as the JSON endpoint above.</p>
+        <p><strong>Response:</strong> Binary image data with appropriate Content-Type header.</p>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>http://localhost:61822/tab/1/screenshot/view</code> - Full page screenshot</li>
+            <li><code>http://localhost:61822/tab/1/screenshot/view?selector=.header&format=png</code> - PNG of header</li>
+            <li><code>http://localhost:61822/tab/1/screenshot/view?scale=1&quality=0.95</code> - High quality screenshot</li>
+        </ul>
+        <p>This endpoint is particularly useful for:</p>
+        <ul>
+            <li>Viewing screenshots directly in a browser</li>
+            <li>Embedding in HTML: <code>&lt;img src="http://localhost:61822/tab/1/screenshot/view"&gt;</code></li>
+            <li>Downloading screenshots with tools like curl or wget</li>
+            <li>Integration with image processing tools</li>
+        </ul>
+        
+        <h3>Elements at Point</h3>
+        <p><strong>GET http://localhost:{port}/tab/{tabId}/elementsFromPoint</strong></p>
+        <p>Get information about all elements at a specific coordinate in the viewport.</p>
+        <p><strong>Query Parameters:</strong></p>
+        <ul>
+            <li><code>x</code> (required): X coordinate relative to the viewport</li>
+            <li><code>y</code> (required): Y coordinate relative to the viewport</li>
+        </ul>
+        <p><strong>Response:</strong> JSON object with element information (same as the MCP resource).</p>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>http://localhost:61822/tab/1/elementsFromPoint?x=100&y=200</code> - Get elements at (100, 200)</li>
+            <li><code>http://localhost:61822/tab/1/elementsFromPoint?x=500.5&y=300.25</code> - Decimal coordinates</li>
+        </ul>
+        <p>This endpoint is useful for:</p>
+        <ul>
+            <li>Debugging element stacking and layout issues</li>
+            <li>Finding clickable elements at specific coordinates</li>
+            <li>Analyzing page structure at mouse positions</li>
+            <li>Building custom interaction tools</li>
+        </ul>
+        
+        <h3>DOM</h3>
+        <p><strong>GET http://localhost:{port}/tab/{tabId}/dom</strong></p>
+        <p>Get the DOM HTML of a specific tab or element.</p>
+        <p><strong>Query Parameters:</strong></p>
+        <ul>
+            <li><code>selector</code> (optional): CSS selector of element to get HTML from (defaults to body)</li>
+            <li><code>xpath</code> (optional): XPath expression to find element (alternative to selector)</li>
+        </ul>
+        <p><strong>Response:</strong> JSON object with:</p>
+        <ul>
+            <li><code>tabId</code> (string): The tab ID</li>
+            <li><code>url</code> (string): Current URL of the tab</li>
+            <li><code>title</code> (string): Current title of the tab</li>
+            <li><code>selector</code> (string): The CSS selector used (or 'body' if none provided)</li>
+            <li><code>dom</code> (object): DOM data containing:
+                <ul>
+                    <li><code>found</code> (boolean): Whether the element was found</li>
+                    <li><code>html</code> (string): The outerHTML of the element</li>
+                    <li><code>error</code> (object|undefined): Error details if element not found</li>
+                </ul>
+            </li>
+        </ul>
+        <p><strong>Examples:</strong></p>
+        <ul>
+            <li><code>http://localhost:61822/tab/1/dom</code> - Get full body HTML</li>
+            <li><code>http://localhost:61822/tab/1/dom?selector=.main-content</code> - Get HTML of element with class "main-content"</li>
+            <li><code>http://localhost:61822/tab/1/dom?selector=%23header</code> - Get HTML of element with ID "header" (URL encoded)</li>
+        </ul>
+        <p>This endpoint is particularly useful for:</p>
+        <ul>
+            <li>Extracting specific page sections for analysis</li>
+            <li>Monitoring DOM changes during automation</li>
+            <li>Debugging element structure</li>
+            <li>Content scraping and extraction</li>
+        </ul>
 
         <h2 id="troubleshooting">Troubleshooting</h2>
 

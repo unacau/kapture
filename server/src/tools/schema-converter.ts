@@ -79,6 +79,13 @@ export function zodToJsonSchema(schema: z.ZodType<any>): any {
     };
   }
 
+  // Handle ZodEffects (created by .refine(), .transform(), etc.)
+  if ((schema as any)._def?.typeName === 'ZodEffects') {
+    // Get the inner schema from the effects
+    const innerSchema = (schema as any)._def.schema;
+    return zodToJsonSchema(innerSchema);
+  }
+
   // Default fallback
   return { type: 'string' };
 }

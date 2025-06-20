@@ -51,6 +51,42 @@ if (!window.__kaptureConsoleListenerSetup) {
 
   // Helper functions
   const helpers = {
+    // Find element by selector or XPath
+    findElement: function(selector, xpath) {
+      // Selector takes precedence if both are provided
+      if (selector) {
+        return document.querySelector(selector);
+      } else if (xpath) {
+        try {
+          const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+          return result.singleNodeValue;
+        } catch (e) {
+          // Invalid XPath expression
+          return null;
+        }
+      }
+      return null;
+    },
+    
+    // Find all elements by selector or XPath
+    findAllElements: function(selector, xpath) {
+      if (selector) {
+        return Array.from(document.querySelectorAll(selector));
+      } else if (xpath) {
+        try {
+          const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+          const elements = [];
+          for (let i = 0; i < result.snapshotLength; i++) {
+            elements.push(result.snapshotItem(i));
+          }
+          return elements;
+        } catch (e) {
+          // Invalid XPath expression
+          return [];
+        }
+      }
+      return [];
+    },
     // Standardized element data extraction
     getElementData: function(element, index = 0) {
       const rect = element.getBoundingClientRect();
@@ -167,13 +203,14 @@ if (!window.__kaptureConsoleListenerSetup) {
     },
 
     // Element operations
-    getElementInfo: function(selector) {
-      const element = document.querySelector(selector);
+    getElementInfo: function(selector, xpath) {
+      const element = this.findElement(selector, xpath);
       if (!element) {
         return {
           error: true,
           code: 'ELEMENT_NOT_FOUND',
-          selector: selector
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined
         };
       }
 
@@ -181,13 +218,14 @@ if (!window.__kaptureConsoleListenerSetup) {
       return helpers.getElementData(element);
     },
 
-    scrollAndGetElementPosition: function(selector) {
-      const element = document.querySelector(selector);
+    scrollAndGetElementPosition: function(selector, xpath) {
+      const element = this.findElement(selector, xpath);
       if (!element) {
         return {
           error: true,
           code: 'ELEMENT_NOT_FOUND',
-          selector: selector
+          selector: selector,
+          xpath: xpath
         };
       }
 
@@ -209,13 +247,14 @@ if (!window.__kaptureConsoleListenerSetup) {
       };
     },
 
-    getElementBounds: function(selector) {
-      const element = document.querySelector(selector);
+    getElementBounds: function(selector, xpath) {
+      const element = this.findElement(selector, xpath);
       if (!element) {
         return {
           error: true,
           code: 'ELEMENT_NOT_FOUND',
-          selector: selector
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined
         };
       }
       const rect = element.getBoundingClientRect();
@@ -234,13 +273,14 @@ if (!window.__kaptureConsoleListenerSetup) {
     },
 
     // Form operations
-    fillElement: function(selector, value) {
-      const element = document.querySelector(selector);
+    fillElement: function(selector, xpath, value) {
+      const element = this.findElement(selector, xpath);
       if (!element) {
         return {
           error: true,
           code: 'ELEMENT_NOT_FOUND',
-          selector: selector
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined
         };
       }
 
@@ -253,7 +293,8 @@ if (!window.__kaptureConsoleListenerSetup) {
           error: true,
           code: 'INVALID_ELEMENT',
           message: 'Element is not fillable: ' + tagName,
-          selector: selector
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined
         };
       }
 
@@ -291,13 +332,14 @@ if (!window.__kaptureConsoleListenerSetup) {
       };
     },
 
-    selectOption: function(selector, value) {
-      const element = document.querySelector(selector);
+    selectOption: function(selector, xpath, value) {
+      const element = this.findElement(selector, xpath);
       if (!element) {
         return {
           error: true,
           code: 'ELEMENT_NOT_FOUND',
-          selector: selector
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined
         };
       }
 
@@ -306,7 +348,8 @@ if (!window.__kaptureConsoleListenerSetup) {
           error: true,
           code: 'INVALID_ELEMENT',
           message: 'Element is not a select: ' + element.tagName,
-          selector: selector
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined
         };
       }
 
@@ -411,19 +454,20 @@ if (!window.__kaptureConsoleListenerSetup) {
     },
 
     // DOM operations
-    getOuterHTML: function(selector) {
-      if (!selector) {
+    getOuterHTML: function(selector, xpath) {
+      if (!selector && !xpath) {
         return {
           found: true,
           html: document.body.outerHTML
         };
       }
 
-      const element = document.querySelector(selector);
+      const element = this.findElement(selector, xpath);
       if (!element) {
         return {
           found: false,
-          selector: selector,
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined,
           error: {
             code: 'ELEMENT_NOT_FOUND',
             message: 'Element not found'
@@ -476,15 +520,16 @@ if (!window.__kaptureConsoleListenerSetup) {
       }
     },
 
-    // Get all elements matching a CSS selector
-    querySelectorAll: function(selector) {
+    // Get all elements matching a CSS selector or XPath
+    querySelectorAll: function(selector, xpath) {
       try {
-        const elements = document.querySelectorAll(selector);
+        const elements = this.findAllElements(selector, xpath);
 
         if (!elements || elements.length === 0) {
           return {
             found: false,
-            selector: selector,
+            selector: selector || undefined,
+            xpath: !selector ? xpath : undefined,
             elements: []
           };
         }
@@ -496,16 +541,18 @@ if (!window.__kaptureConsoleListenerSetup) {
 
         return {
           found: true,
-          selector: selector,
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined,
           count: elementData.length,
           elements: elementData
         };
       } catch (error) {
         return {
           found: false,
-          selector: selector,
+          selector: selector || undefined,
+          xpath: !selector ? xpath : undefined,
           error: {
-            code: 'INVALID_SELECTOR',
+            code: selector ? 'INVALID_SELECTOR' : 'INVALID_XPATH',
             message: error.message
           }
         };
@@ -686,24 +733,25 @@ if (!window.__kaptureConsoleListenerSetup) {
 
       // DOM queries
       case 'querySelector':
-        if (!params.selector) throw new Error('Selector parameter required');
-        const elements = document.querySelectorAll(params.selector);
+        if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
+        const elements = helpers.findAllElements(params.selector, params.xpath);
         return {
           found: elements.length > 0,
           count: elements.length,
-          selector: params.selector
+          selector: params.selector || undefined,
+          xpath: !params.selector ? params.xpath : undefined
         };
 
       case 'getElementInfo':
-        if (!params.selector) throw new Error('Selector parameter required');
-        return helpers.getElementInfo(params.selector);
+        if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
+        return helpers.getElementInfo(params.selector, params.xpath);
 
       case 'getElementBounds':
-        if (!params.selector) throw new Error('Selector parameter required');
-        return helpers.getElementBounds(params.selector);
+        if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
+        return helpers.getElementBounds(params.selector, params.xpath);
 
       case 'getOuterHTML':
-        return helpers.getOuterHTML(params.selector);
+        return helpers.getOuterHTML(params.selector, params.xpath);
 
       case 'getElementsFromPoint':
         if (typeof params.x !== 'number' || typeof params.y !== 'number') {
@@ -712,22 +760,23 @@ if (!window.__kaptureConsoleListenerSetup) {
         return helpers.getElementsFromPoint(params.x, params.y);
 
       case 'querySelectorAll':
-        if (!params.selector) throw new Error('Selector parameter required');
-        return helpers.querySelectorAll(params.selector);
+        if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
+        return helpers.querySelectorAll(params.selector, params.xpath);
 
       case 'scrollAndGetElementPosition':
-        if (!params.selector) throw new Error('Selector parameter required');
-        return helpers.scrollAndGetElementPosition(params.selector);
+        if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
+        return helpers.scrollAndGetElementPosition(params.selector, params.xpath);
 
       // Element interactions
       case 'click':
-        if (!params.selector) throw new Error('Selector parameter required');
-        const clickElement = document.querySelector(params.selector);
+        if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
+        const clickElement = helpers.findElement(params.selector, params.xpath);
         if (!clickElement) {
           return {
             error: true,
             code: 'ELEMENT_NOT_FOUND',
-            selector: params.selector
+            selector: params.selector || undefined,
+            xpath: !params.selector ? params.xpath : undefined
           };
         }
         // Get the unique selector (which may add an ID)
@@ -739,13 +788,14 @@ if (!window.__kaptureConsoleListenerSetup) {
         };
 
       case 'hover':
-        if (!params.selector) throw new Error('Selector parameter required');
-        const hoverElement = document.querySelector(params.selector);
+        if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
+        const hoverElement = helpers.findElement(params.selector, params.xpath);
         if (!hoverElement) {
           return {
             error: true,
             code: 'ELEMENT_NOT_FOUND',
-            selector: params.selector
+            selector: params.selector || undefined,
+            xpath: !params.selector ? params.xpath : undefined
           };
         }
         // Get the unique selector (which may add an ID)
@@ -758,16 +808,16 @@ if (!window.__kaptureConsoleListenerSetup) {
         };
 
       case 'fill':
-        if (!params.selector || params.value === undefined) {
-          throw new Error('Selector and value parameters required');
+        if ((!params.selector && !params.xpath) || params.value === undefined) {
+          throw new Error('Selector/XPath and value parameters required');
         }
-        return helpers.fillElement(params.selector, params.value);
+        return helpers.fillElement(params.selector, params.xpath, params.value);
 
       case 'select':
-        if (!params.selector || !params.value) {
-          throw new Error('Selector and value parameters required');
+        if ((!params.selector && !params.xpath) || !params.value) {
+          throw new Error('Selector/XPath and value parameters required');
         }
-        return helpers.selectOption(params.selector, params.value);
+        return helpers.selectOption(params.selector, params.xpath, params.value);
 
       // Mouse cursor operations
       case 'showCursor':
@@ -808,13 +858,14 @@ if (!window.__kaptureConsoleListenerSetup) {
 
       // Scroll operations
       case 'scrollTo':
-        if (params.selector) {
-          const element = document.querySelector(params.selector);
+        if (params.selector || params.xpath) {
+          const element = helpers.findElement(params.selector, params.xpath);
           if (!element) {
             return {
               error: true,
               code: 'ELEMENT_NOT_FOUND',
-              selector: params.selector
+              selector: params.selector || undefined,
+              xpath: !params.selector ? params.xpath : undefined
             };
           }
           // Get the unique selector (which may add an ID)
@@ -825,7 +876,7 @@ if (!window.__kaptureConsoleListenerSetup) {
           window.scrollTo(params.x, params.y);
           return { scrolled: true };
         } else {
-          throw new Error('Either selector or x/y coordinates required');
+          throw new Error('Either selector/xpath or x/y coordinates required');
         }
 
       default:

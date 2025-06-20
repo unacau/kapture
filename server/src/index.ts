@@ -281,7 +281,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   try {
-    const result = await mcpHandler.executeCommand(name, args);
+    // Validate input against schema
+    const validatedArgs = tool.inputSchema.parse(args);
+    
+    const result = await mcpHandler.executeCommand(name, validatedArgs);
     
     // Special handling for screenshot tool
     if (name === 'screenshot' && result.dataUrl) {
@@ -292,13 +295,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         // Build URL for HTTP endpoint
         const params = new URLSearchParams();
-        if (args?.selector) params.append('selector', String(args.selector));
-        if (args?.scale) params.append('scale', String(args.scale));
-        if (args?.format) params.append('format', String(args.format));
-        if (args?.quality) params.append('quality', String(args.quality));
+        const screenshotArgs = validatedArgs as any;
+        if (screenshotArgs?.selector) params.append('selector', String(screenshotArgs.selector));
+        if (screenshotArgs?.xpath) params.append('xpath', String(screenshotArgs.xpath));
+        if (screenshotArgs?.scale) params.append('scale', String(screenshotArgs.scale));
+        if (screenshotArgs?.format) params.append('format', String(screenshotArgs.format));
+        if (screenshotArgs?.quality) params.append('quality', String(screenshotArgs.quality));
         
         const queryString = params.toString();
-        const screenshotUrl = `http://localhost:${PORT}/tab/${args?.tabId}/screenshot/view${queryString ? '?' + queryString : ''}`;
+        const screenshotUrl = `http://localhost:${PORT}/tab/${screenshotArgs?.tabId}/screenshot/view${queryString ? '?' + queryString : ''}`;
         
         const enhancedResult = {
           preview: screenshotUrl,
@@ -331,6 +336,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       ]
     };
   } catch (error: any) {
+    // Check if it's a Zod validation error
+    if (error.name === 'ZodError') {
+      const issues = error.issues.map((issue: any) => issue.message).join(', ');
+      throw new Error(issues);
+    }
     return {
       content: [
         {
@@ -822,6 +832,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     
     // Parse query parameters
     let selector: string | undefined;
+    let xpath: string | undefined;
     let scale = 0.3;
     let format: 'webp' | 'jpeg' | 'png' = 'webp';
     let quality = 0.85;
@@ -830,6 +841,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     if (queryMatch) {
       const params = new URLSearchParams(queryMatch[1]);
       selector = params.get('selector') || undefined;
+      xpath = params.get('xpath') || undefined;
       const scaleParam = params.get('scale');
       if (scaleParam) {
         const parsedScale = parseFloat(scaleParam);
@@ -855,6 +867,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       const screenshotData = await mcpHandler.executeCommand('screenshot', {
         tabId,
         selector,
+        xpath,
         scale,
         format,
         quality
@@ -978,20 +991,23 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       throw new Error(`Tab ${tabId} not found`);
     }
     
-    // Parse query parameters for selector
+    // Parse query parameters for selector or xpath
     let selector: string | undefined;
+    let xpath: string | undefined;
     
     const queryIndex = uri.indexOf('?');
     if (queryIndex !== -1) {
       const params = new URLSearchParams(uri.substring(queryIndex + 1));
       selector = params.get('selector') || undefined;
+      xpath = params.get('xpath') || undefined;
     }
     
     try {
       // Execute DOM command
       const domData = await mcpHandler.executeCommand('dom', {
         tabId,
-        selector
+        selector,
+        xpath
       });
       
       // Return the DOM data as JSON
@@ -1004,7 +1020,8 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
               tabId: tabId,
               url: tab.url,
               title: tab.title,
-              selector: selector || 'body',
+              selector: selector || undefined,
+              xpath: !selector ? xpath : undefined,
               dom: domData
             }, null, 2)
           }
@@ -1025,25 +1042,28 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       throw new Error(`Tab ${tabId} not found`);
     }
     
-    // Parse query parameters for selector
+    // Parse query parameters for selector or xpath
     let selector: string | undefined;
+    let xpath: string | undefined;
     
     const queryIndex = uri.indexOf('?');
     if (queryIndex !== -1) {
       const params = new URLSearchParams(uri.substring(queryIndex + 1));
       selector = params.get('selector') || undefined;
+      xpath = params.get('xpath') || undefined;
     }
     
-    // Validate that selector is provided
-    if (!selector) {
-      throw new Error('Selector parameter is required');
+    // Validate that either selector or xpath is provided
+    if (!selector && !xpath) {
+      throw new Error('Either selector or xpath parameter is required');
     }
     
     try {
       // Execute querySelectorAll command
       const result = await mcpHandler.executeCommand('querySelectorAll', {
         tabId,
-        selector
+        selector,
+        xpath
       });
       
       // Return the elements data as JSON
@@ -1056,7 +1076,8 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
               tabId: tabId,
               url: tab.url,
               title: tab.title,
-              selector: selector,
+              selector: selector || undefined,
+              xpath: xpath || undefined,
               ...result
             }, null, 2)
           }
@@ -1341,6 +1362,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
         try {
           // Parse query parameters
           let selector: string | undefined;
+          let xpath: string | undefined;
           let scale = 0.3;
           let format: 'webp' | 'jpeg' | 'png' = 'webp';
           let quality = 0.85;
@@ -1348,6 +1370,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           if (queryString) {
             const params = new URLSearchParams(queryString);
             selector = params.get('selector') || undefined;
+            xpath = params.get('xpath') || undefined;
             const scaleParam = params.get('scale');
             if (scaleParam) {
               const parsedScale = parseFloat(scaleParam);
@@ -1372,6 +1395,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           const screenshotData = await mcpHandler.executeCommand('screenshot', {
             tabId,
             selector,
+            xpath,
             scale,
             format,
             quality
@@ -1409,6 +1433,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
         try {
           // Parse query parameters
           let selector: string | undefined;
+          let xpath: string | undefined;
           let scale = 0.3;
           let format: 'webp' | 'jpeg' | 'png' = 'webp';
           let quality = 0.85;
@@ -1416,6 +1441,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           if (queryString) {
             const params = new URLSearchParams(queryString);
             selector = params.get('selector') || undefined;
+            xpath = params.get('xpath') || undefined;
             const scaleParam = params.get('scale');
             if (scaleParam) {
               const parsedScale = parseFloat(scaleParam);
@@ -1440,6 +1466,7 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           const screenshotData = await mcpHandler.executeCommand('screenshot', {
             tabId,
             selector,
+            xpath,
             scale,
             format,
             quality
@@ -1576,18 +1603,21 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
       
       if (tab) {
         try {
-          // Parse query parameters for selector
+          // Parse query parameters for selector and xpath
           let selector: string | undefined;
+          let xpath: string | undefined;
           
           if (queryString) {
             const params = new URLSearchParams(queryString);
             selector = params.get('selector') || undefined;
+            xpath = params.get('xpath') || undefined;
           }
           
           // Execute DOM command
           const domData = await mcpHandler.executeCommand('dom', {
             tabId,
-            selector
+            selector,
+            xpath
           });
           
           // Return the DOM data as JSON
@@ -1596,7 +1626,8 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
               tabId: tabId,
               url: tab.url,
               title: tab.title,
-              selector: selector || 'body',
+              selector: selector || undefined,
+              xpath: !selector ? xpath : undefined,
               dom: domData
             }, null, 2),
             mimeType: 'application/json'
@@ -1616,18 +1647,20 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
       
       if (tab) {
         try {
-          // Parse query parameters for selector
+          // Parse query parameters for selector and xpath
           let selector: string | undefined;
+          let xpath: string | undefined;
           
           if (queryString) {
             const params = new URLSearchParams(queryString);
             selector = params.get('selector') || undefined;
+            xpath = params.get('xpath') || undefined;
           }
           
-          // Validate that selector is provided
-          if (!selector) {
+          // Validate that either selector or xpath is provided
+          if (!selector && !xpath) {
             return {
-              content: JSON.stringify({ error: 'Selector parameter is required' }),
+              content: JSON.stringify({ error: 'Either selector or xpath parameter is required' }),
               mimeType: 'application/json',
               statusCode: 400
             };
@@ -1636,7 +1669,8 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
           // Execute querySelectorAll command
           const result = await mcpHandler.executeCommand('querySelectorAll', {
             tabId,
-            selector
+            selector,
+            xpath
           });
           
           // Return the elements data as JSON
@@ -1645,7 +1679,8 @@ handleResourceEndpoint = async (resourcePath: string, queryString?: string) => {
               tabId: tabId,
               url: tab.url,
               title: tab.title,
-              selector: selector,
+              selector: selector || undefined,
+              xpath: xpath || undefined,
               ...result
             }, null, 2),
             mimeType: 'application/json'
