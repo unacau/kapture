@@ -32,7 +32,6 @@ export class WebSocketManager {
   private responseHandler?: (response: ResponseMessage) => void;
   private consoleLogHandler?: (tabId: string, logEntry: any) => void;
   private mcpClientInfo: { name?: string; version?: string } = {};
-  private mcpWebSocketHandler?: any;
 
   constructor(
     private wss: WebSocketServer,
@@ -41,9 +40,6 @@ export class WebSocketManager {
     this.setupWebSocketServer();
   }
 
-  setMCPWebSocketHandler(handler: any): void {
-    this.mcpWebSocketHandler = handler;
-  }
 
   setResponseHandler(handler: (response: ResponseMessage) => void): void {
     this.responseHandler = handler;
@@ -69,17 +65,8 @@ export class WebSocketManager {
     this.wss.on('connection', (ws: WebSocket, request) => {
       logger.log(`New WebSocket connection: ${request.url}`);
       
-      // Check if this is an MCP connection
+      // Skip MCP connections - they're handled at the HTTP server level
       if (request.url === '/mcp') {
-        if (this.mcpWebSocketHandler) {
-          this.mcpWebSocketHandler.handleConnection(ws).catch((error: any) => {
-            logger.error('Failed to handle MCP WebSocket connection:', error);
-            ws.close(1011, 'Failed to establish MCP connection');
-          });
-        } else {
-          logger.error('MCP WebSocket handler not configured');
-          ws.close(1011, 'MCP WebSocket handler not available');
-        }
         return;
       }
       

@@ -101,7 +101,15 @@ Add to your Claude Desktop config:
 
 ## 🚀 Run Multiple AI Assistants Simultaneously
 
-One of Kapture's powerful features is the ability to run multiple AI clients at the same time. Each AI assistant can control different browser tabs without interference by using separate ports. [See the complete guide →](docs/MULTI_ASSISTANT_GUIDE.md)
+Kapture supports multiple MCP clients connecting to the same server! You can run multiple Claude Code instances or other MCP clients, and they can all control the same browser tabs simultaneously.
+
+### Multiple Connections to Same Server (NEW!)
+- Multiple MCP clients can connect via WebSocket to `ws://localhost:61822/mcp`
+- All clients share access to the same browser tabs
+- Notifications are broadcast to all connected clients
+
+### Multiple Servers on Different Ports
+For isolation between AI assistants, you can also run separate servers on different ports. Each AI assistant can control different browser tabs without interference. [See the complete guide →](docs/MULTI_ASSISTANT_GUIDE.md)
 
 **Claude Desktop** (using default port 61822):
 ```json
