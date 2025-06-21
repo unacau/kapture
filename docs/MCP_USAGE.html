@@ -1108,7 +1108,7 @@ await client.callTool('kapturemcp_evaluate', {
         <p>In addition to MCP resources, Kapture provides direct HTTP endpoints for accessing data and images. These are useful for debugging, testing, or integration with non-MCP tools.</p>
         
         <h3>Discovery Endpoint</h3>
-        <p><strong>GET http://localhost:{port}/</strong></p>
+        <p><strong>GET http://localhost:61822/</strong></p>
         <p>Returns server status and MCP client information.</p>
         <p><strong>Response:</strong></p>
         <pre><code>{
@@ -1119,7 +1119,7 @@ await client.callTool('kapturemcp_evaluate', {
 }</code></pre>
         
         <h3>Tab List</h3>
-        <p><strong>GET http://localhost:{port}/tabs</strong></p>
+        <p><strong>GET http://localhost:61822/tabs</strong></p>
         <p>Returns a JSON array of all connected tabs.</p>
         <p><strong>Response:</strong></p>
         <pre><code>[
@@ -1133,7 +1133,7 @@ await client.callTool('kapturemcp_evaluate', {
 ]</code></pre>
         
         <h3>Tab Information</h3>
-        <p><strong>GET http://localhost:{port}/tab/{tabId}</strong></p>
+        <p><strong>GET http://localhost:61822/tab/{tabId}</strong></p>
         <p>Returns detailed information about a specific tab.</p>
         <p><strong>Response:</strong></p>
         <pre><code>{
@@ -1150,7 +1150,7 @@ await client.callTool('kapturemcp_evaluate', {
 }</code></pre>
         
         <h3>Console Logs</h3>
-        <p><strong>GET http://localhost:{port}/tab/{tabId}/console</strong></p>
+        <p><strong>GET http://localhost:61822/tab/{tabId}/console</strong></p>
         <p>Returns console logs from a specific tab.</p>
         <p><strong>Query Parameters:</strong></p>
         <ul>
@@ -1161,7 +1161,7 @@ await client.callTool('kapturemcp_evaluate', {
         <p><strong>Example:</strong> <code>http://localhost:61822/tab/1/console?level=error&limit=50</code></p>
         
         <h3>Screenshot (JSON)</h3>
-        <p><strong>GET http://localhost:{port}/tab/{tabId}/screenshot</strong></p>
+        <p><strong>GET http://localhost:61822/tab/{tabId}/screenshot</strong></p>
         <p>Returns screenshot data as JSON with base64 encoded image.</p>
         <p><strong>Query Parameters:</strong></p>
         <ul>
@@ -1192,7 +1192,7 @@ await client.callTool('kapturemcp_evaluate', {
 }</code></pre>
         
         <h3>Screenshot (Direct Image)</h3>
-        <p><strong>GET http://localhost:{port}/tab/{tabId}/screenshot/view</strong></p>
+        <p><strong>GET http://localhost:61822/tab/{tabId}/screenshot/view</strong></p>
         <p>Returns the screenshot as a direct image response (not JSON).</p>
         <p><strong>Query Parameters:</strong> Same as the JSON endpoint above.</p>
         <p><strong>Response:</strong> Binary image data with appropriate Content-Type header.</p>
@@ -1211,7 +1211,7 @@ await client.callTool('kapturemcp_evaluate', {
         </ul>
         
         <h3>Elements at Point</h3>
-        <p><strong>GET http://localhost:{port}/tab/{tabId}/elementsFromPoint</strong></p>
+        <p><strong>GET http://localhost:61822/tab/{tabId}/elementsFromPoint</strong></p>
         <p>Get information about all elements at a specific coordinate in the viewport.</p>
         <p><strong>Query Parameters:</strong></p>
         <ul>
@@ -1233,7 +1233,7 @@ await client.callTool('kapturemcp_evaluate', {
         </ul>
         
         <h3>DOM</h3>
-        <p><strong>GET http://localhost:{port}/tab/{tabId}/dom</strong></p>
+        <p><strong>GET http://localhost:61822/tab/{tabId}/dom</strong></p>
         <p>Get the DOM HTML of a specific tab or element.</p>
         <p><strong>Query Parameters:</strong></p>
         <ul>

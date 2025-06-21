@@ -862,7 +862,7 @@ Common error codes:
 In addition to MCP resources, Kapture provides direct HTTP endpoints for accessing data and images. These are useful for debugging, testing, or integration with non-MCP tools.
 
 ### Discovery Endpoint
-**GET http://localhost:{port}/**
+**GET http://localhost:61822/**
 
 Returns server status and MCP client information.
 
@@ -877,7 +877,7 @@ Returns server status and MCP client information.
 ```
 
 ### Tab List
-**GET http://localhost:{port}/tabs**
+**GET http://localhost:61822/tabs**
 
 Returns a JSON array of all connected tabs.
 
@@ -895,7 +895,7 @@ Returns a JSON array of all connected tabs.
 ```
 
 ### Tab Information
-**GET http://localhost:{port}/tab/{tabId}**
+**GET http://localhost:61822/tab/{tabId}**
 
 Returns detailed information about a specific tab.
 
@@ -916,7 +916,7 @@ Returns detailed information about a specific tab.
 ```
 
 ### Console Logs
-**GET http://localhost:{port}/tab/{tabId}/console**
+**GET http://localhost:61822/tab/{tabId}/console**
 
 Returns console logs from a specific tab.
 
@@ -928,7 +928,7 @@ Returns console logs from a specific tab.
 **Example:** `http://localhost:61822/tab/1/console?level=error&limit=50`
 
 ### Screenshot (JSON)
-**GET http://localhost:{port}/tab/{tabId}/screenshot**
+**GET http://localhost:61822/tab/{tabId}/screenshot**
 
 Returns screenshot data as JSON with base64 encoded image.
 
@@ -958,7 +958,7 @@ Returns screenshot data as JSON with base64 encoded image.
 ```
 
 ### Screenshot (Direct Image)
-**GET http://localhost:{port}/tab/{tabId}/screenshot/view**
+**GET http://localhost:61822/tab/{tabId}/screenshot/view**
 
 Returns the screenshot as a direct image response (not JSON).
 
@@ -978,7 +978,7 @@ This endpoint is particularly useful for:
 - Integration with image processing tools
 
 ### Elements at Point
-**GET http://localhost:{port}/tab/{tabId}/elementsFromPoint**
+**GET http://localhost:61822/tab/{tabId}/elementsFromPoint**
 
 Get information about all elements at a specific coordinate in the viewport.
 
@@ -999,7 +999,7 @@ This endpoint is useful for:
 - Building custom interaction tools
 
 ### DOM
-**GET http://localhost:{port}/tab/{tabId}/dom**
+**GET http://localhost:61822/tab/{tabId}/dom**
 
 Get the DOM HTML of a specific tab or element.
 
