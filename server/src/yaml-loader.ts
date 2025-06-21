@@ -18,27 +18,22 @@ function preprocessToolDefinition(tool: any): ToolDefinition {
   if (tool.inputSchema) {
     return tool as ToolDefinition;
   }
-  
+
   // Transform compact format to standard format
   const inputSchema: any = {
     type: 'object'
   };
-  
+
   // Move properties if they exist
   if (tool.properties && Object.keys(tool.properties).length > 0) {
     inputSchema.properties = tool.properties;
   }
-  
+
   // Move required if it exists and is not empty
   if (tool.required && tool.required.length > 0) {
     inputSchema.required = tool.required;
   }
-  
-  // Move oneOf if it exists
-  if (tool.oneOf) {
-    inputSchema.oneOf = tool.oneOf;
-  }
-  
+
   // Create the tool definition in standard format
   return {
     name: tool.name,
@@ -78,7 +73,7 @@ function processResources(resources: Record<string, any> | any[], isDynamic: boo
     // Legacy array format
     return resources;
   }
-  
+
   // New object format - convert to array with generated uri
   const resourcesArray: any[] = [];
   for (const [key, resource] of Object.entries(resources)) {
@@ -105,7 +100,7 @@ function processPrompts(prompts: Record<string, any> | any[]) {
     // Legacy array format
     return prompts;
   }
-  
+
   // New object format - convert to array
   const promptsArray: any[] = [];
   for (const [name, prompt] of Object.entries(prompts)) {
@@ -135,37 +130,37 @@ function jsonSchemaToZod(schema: any): z.ZodType<any> {
 
   if (schema.type === 'object') {
     const shape: Record<string, z.ZodType<any>> = {};
-    
+
     if (schema.properties) {
       for (const [key, propSchema] of Object.entries(schema.properties)) {
         let zodType = jsonSchemaToZod(propSchema as any);
-        
+
         // Handle default values
         if ((propSchema as any).default !== undefined) {
           zodType = zodType.default((propSchema as any).default);
         }
-        
+
         // Check if property is required
         if (!schema.required || !schema.required.includes(key)) {
           zodType = zodType.optional();
         }
-        
+
         shape[key] = zodType;
       }
     }
-    
+
     let objectSchema: any = z.object(shape);
-    
+
     // Handle oneOf validation (e.g., selector or xpath required)
     if (schema.oneOf) {
       // For selector/xpath pattern
-      const hasSelector = schema.oneOf.some((s: any) => 
+      const hasSelector = schema.oneOf.some((s: any) =>
         s.required && s.required.includes('selector')
       );
-      const hasXpath = schema.oneOf.some((s: any) => 
+      const hasXpath = schema.oneOf.some((s: any) =>
         s.required && s.required.includes('xpath')
       );
-      
+
       if (hasSelector && hasXpath) {
         objectSchema = objectSchema.refine(
           (data: any) => data.selector || data.xpath,
@@ -173,46 +168,46 @@ function jsonSchemaToZod(schema: any): z.ZodType<any> {
         );
       }
     }
-    
+
     return objectSchema;
   }
-  
+
   if (schema.type === 'string') {
     let stringSchema = z.string();
-    
+
     if (schema.description) {
       stringSchema = stringSchema.describe(schema.description);
     }
-    
+
     if (schema.format === 'url') {
       stringSchema = stringSchema.url();
     }
-    
+
     if (schema.enum) {
       return z.enum(schema.enum as [string, ...string[]]);
     }
-    
+
     return stringSchema;
   }
-  
+
   if (schema.type === 'number') {
     let numberSchema = z.number();
-    
+
     if (schema.description) {
       numberSchema = numberSchema.describe(schema.description);
     }
-    
+
     if (schema.minimum !== undefined) {
       numberSchema = numberSchema.min(schema.minimum);
     }
-    
+
     if (schema.maximum !== undefined) {
       numberSchema = numberSchema.max(schema.maximum);
     }
-    
+
     return numberSchema;
   }
-  
+
   return z.any();
 }
 
@@ -221,7 +216,7 @@ const convertedTools: Record<string, any> = {};
 
 for (const tool of toolsConfig.tools) {
   const zodSchema = jsonSchemaToZod(tool.inputSchema);
-  
+
   convertedTools[`${tool.name}Tool`] = {
     name: tool.name,
     description: tool.description,
@@ -259,7 +254,7 @@ export const allTools = [
   evaluateTool,
   elementsFromPointTool,
   querySelectorAllTool,
-  
+
   // Keeping these around since Claude Desktop doesn't offer great interactions with Resources
   screenshotTool,  // use kapturemcp://tab/{tabId}/screenshot resource instead
   domTool,  // use kapturemcp://tab/{tabId}/dom resource instead
@@ -273,7 +268,7 @@ export const dynamicTabResourceTemplates = resourcesConfig.dynamicTabResources;
 // Helper function to create dynamic resources for a specific tab
 export function createTabResources(tabId: string, tabTitle: string): Map<string, any> {
   const resources = new Map<string, any>();
-  
+
   for (const template of dynamicTabResourceTemplates) {
     const key = template.key.replace('{tabId}', tabId);
     const resource = {
@@ -284,7 +279,7 @@ export function createTabResources(tabId: string, tabTitle: string): Map<string,
     };
     resources.set(key, resource);
   }
-  
+
   return resources;
 }
 
