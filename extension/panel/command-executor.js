@@ -95,8 +95,8 @@ class CommandExecutor {
         case 'elementsFromPoint':
           return await this.getElementsFromPoint(params);
 
-        case 'querySelectorAll':
-          return await this.querySelectorAll(params);
+        case 'elements':
+          return await this.elements(params);
 
         case 'getLogs':
           return await this.getLogs(params);
@@ -1124,12 +1124,13 @@ class CommandExecutor {
   }
 
   // Query all elements matching a CSS selector or XPath
-  async querySelectorAll(params) {
-    const { selector, xpath } = this.validateSelectorOrXPath(params, 'querySelectorAll');
+  async elements(params) {
+    const { selector, xpath, visible } = this.validateSelectorOrXPath(params, 'elements');
+    const visibilityFilter = params.visible || 'all';
 
     try {
       // Execute querySelectorAll in the page context
-      const result = await window.MessagePassing.executeInPage('querySelectorAll', { selector, xpath });
+      const result = await window.MessagePassing.executeInPage('elements', { selector, xpath, visible: visibilityFilter });
       return await this.getTabInfoWithCommand(result);
     } catch (error) {
       throw new Error(`Query selector all failed: ${error.message}`);

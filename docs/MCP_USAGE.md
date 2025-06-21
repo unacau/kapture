@@ -202,7 +202,7 @@ This means:
 - The response will include a selector like `#kapture-123` that uniquely identifies the exact element that was used
 - Subsequent operations can use this unique selector to target the same element precisely
 
-**For Multiple Elements**: Use the `querySelectorAll` tool to get information about all matching elements first, then use their unique selectors for individual operations.
+**For Multiple Elements**: Use the `elements` tool to get information about all matching elements first, then use their unique selectors for individual operations. You can filter by visibility using the `visible` parameter (true = only visible, false = only hidden, all = all elements).
 
 ### XPath Support
 

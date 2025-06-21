@@ -27,6 +27,6 @@ dynamicTabResources:
     name: "DOM: {tabTitle}"
     description: "Get the DOM HTML of browser tab {tabId}"
   
-  "{tabId}/querySelectorAll":
-    name: "Query Selector All: {tabTitle}"
-    description: "Query elements by CSS selector in browser tab {tabId}"
+  "{tabId}/elements":
+    name: "Elements: {tabTitle}"
+    description: "Query elements by CSS selector or XPath in browser tab {tabId}, with optional visibility filtering"

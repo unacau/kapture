@@ -478,6 +478,17 @@ function createToolCard(tool) {
           `;
         });
         inputHtml += `</div>`;
+      } else if (name === 'visible' && schema.enum) {
+        // Create dropdown for visibility selection
+        inputHtml = `<select id="${inputId}" ${isRequired ? 'required' : ''}>`;
+        schema.enum.forEach(option => {
+          const isDefault = schema.default === option;
+          const label = option === 'true' ? 'Only visible elements' : 
+                       option === 'false' ? 'Only hidden elements' : 
+                       'All elements';
+          inputHtml += `<option value="${option}" ${isDefault ? 'selected' : ''}>${label}</option>`;
+        });
+        inputHtml += `</select>`;
       } else {
         // Add placeholder hints for selector, xpath, and key fields
         let placeholder = '';
@@ -546,7 +557,7 @@ function createResourceCard(resource) {
   const isConsoleResource = resource.uri.includes('/console');
   const isScreenshotResource = resource.uri.includes('/screenshot');
   const isElementsFromPointResource = resource.uri.includes('/elementsFromPoint');
-  const isQuerySelectorAllResource = resource.uri.includes('/querySelectorAll');
+  const isElementsResource = resource.uri.includes('/elements');
   const isDomResource = resource.uri.includes('/dom');
 
   let paramsHtml = '';
@@ -648,8 +659,8 @@ function createResourceCard(resource) {
         </div>
       </div>
     `;
-  } else if (isQuerySelectorAllResource) {
-    // Add parameter inputs for querySelectorAll resource
+  } else if (isElementsResource) {
+    // Add parameter inputs for elements resource
     paramsHtml = `
       <div class="tool-params">
         <div class="param-group">
@@ -663,6 +674,16 @@ function createResourceCard(resource) {
             xpath <span style="color: #999; font-size: 0.85rem;">(optional, alternative to selector)</span>
           </label>
           <input type="text" id="${resource.uri}-xpath" placeholder="XPath (e.g., //button[contains(text(), 'Submit')])">
+        </div>
+        <div class="param-group">
+          <label for="${resource.uri}-visible">
+            visible <span style="color: #999; font-size: 0.85rem;">(optional)</span>
+          </label>
+          <select id="${resource.uri}-visible">
+            <option value="all" selected>All elements</option>
+            <option value="true">Only visible elements</option>
+            <option value="false">Only hidden elements</option>
+          </select>
         </div>
         <p style="color: #f39c12; font-size: 0.85rem; margin-top: 0.5rem;"><strong>Note:</strong> Use either selector OR xpath, not both. If both are provided, selector takes precedence.</p>
       </div>
@@ -1036,15 +1057,19 @@ async function queryResource(resourceUri, button) {
       if (yInput && yInput.value) {
         params.append('y', yInput.value);
       }
-    } else if (resourceUri.includes('/querySelectorAll')) {
+    } else if (resourceUri.includes('/elements')) {
       const selectorInput = document.getElementById(`${resourceUri}-selector`);
       const xpathInput = document.getElementById(`${resourceUri}-xpath`);
+      const visibleInput = document.getElementById(`${resourceUri}-visible`);
 
       if (selectorInput && selectorInput.value) {
         params.append('selector', selectorInput.value);
       }
       if (xpathInput && xpathInput.value && !(selectorInput && selectorInput.value)) {
         params.append('xpath', xpathInput.value);
+      }
+      if (visibleInput && visibleInput.value) {
+        params.append('visible', visibleInput.value);
       }
     } else if (resourceUri.includes('/dom')) {
       const selectorInput = document.getElementById(`${resourceUri}-selector`);

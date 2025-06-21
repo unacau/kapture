@@ -467,7 +467,7 @@ await client.connect(transport);</code></pre>
             <li>Subsequent operations can use this unique selector to target the same element precisely</li>
         </ul>
         
-        <p><strong>For Multiple Elements</strong>: Use the <code>querySelectorAll</code> tool to get information about all matching elements first, then use their unique selectors for individual operations.</p>
+        <p><strong>For Multiple Elements</strong>: Use the <code>elements</code> tool to get information about all matching elements first, then use their unique selectors for individual operations. You can filter by visibility using the <code>visible</code> parameter (true = only visible, false = only hidden, all = all elements).</p>
         
         <h3>XPath Support</h3>
         
@@ -708,13 +708,14 @@ await client.callTool('keypress', {
         </ul>
         <p><strong>Returns:</strong> Array of elements at the specified point, ordered from top to bottom.</p>
 
-        <h3>kapturemcp_querySelectorAll</h3>
+        <h3>elements</h3>
         <p>Query all elements matching a CSS selector or XPath and get detailed information about each element.</p>
         <p><strong>Parameters:</strong></p>
         <ul>
             <li><code>tabId</code> (string, required): Target tab ID</li>
             <li><code>selector</code> (string, conditionally required): CSS selector to query elements</li>
             <li><code>xpath</code> (string, conditionally required): XPath expression to find elements (alternative to selector)</li>
+            <li><code>visible</code> (string, optional): Filter elements by visibility - "true" (only visible), "false" (only hidden), "all" (default, all elements)</li>
         </ul>
         <p><strong>Returns:</strong> Array of element information for all matching elements.</p>
 

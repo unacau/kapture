@@ -267,7 +267,7 @@ async function startServer() {
     logger.log(`Screenshot view endpoints: http://localhost:${PORT}/tab/{tabId}/screenshot/view`);
     logger.log(`Elements at point endpoints: http://localhost:${PORT}/tab/{tabId}/elementsFromPoint?x={x}&y={y}`);
     logger.log(`DOM endpoints: http://localhost:${PORT}/tab/{tabId}/dom`);
-    logger.log(`Query selector endpoints: http://localhost:${PORT}/tab/{tabId}/querySelectorAll?selector={selector}`);
+    logger.log(`Elements endpoints: http://localhost:${PORT}/tab/{tabId}/elements?selector={selector}&visible={true|false|all}`);
     logger.log(`MCP WebSocket endpoint: ws://localhost:${PORT}/mcp`);
     logger.log('Multiple MCP clients can now connect simultaneously');
     // Server is ready

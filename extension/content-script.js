@@ -692,7 +692,7 @@ if (!window.__kaptureConsoleListenerSetup) {
     },
 
     // Get all elements matching a CSS selector or XPath
-    querySelectorAll: function(selector, xpath) {
+    elements: function(selector, xpath, visibilityFilter = 'all') {
       try {
         const elements = this.findAllElements(selector, xpath);
 
@@ -706,15 +706,22 @@ if (!window.__kaptureConsoleListenerSetup) {
         }
 
         // Map elements to return data using the standardized helper
-        const elementData = Array.from(elements).map((element, index) => {
+        let elementData = Array.from(elements).map((element, index) => {
           return helpers.getElementData(element, index);
         });
+
+        // Apply visibility filter
+        if (visibilityFilter !== 'all') {
+          const filterVisible = visibilityFilter === 'true';
+          elementData = elementData.filter(el => el.visible === filterVisible);
+        }
 
         return {
           found: true,
           selector: selector || undefined,
           xpath: !selector ? xpath : undefined,
           count: elementData.length,
+          visibilityFilter: visibilityFilter,
           elements: elementData
         };
       } catch (error) {
@@ -957,9 +964,9 @@ if (!window.__kaptureConsoleListenerSetup) {
         }
         return helpers.getElementsFromPoint(params.x, params.y);
 
-      case 'querySelectorAll':
+      case 'elements':
         if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');
-        return helpers.querySelectorAll(params.selector, params.xpath);
+        return helpers.elements(params.selector, params.xpath, params.visible);
 
       case 'scrollAndGetElementPosition':
         if (!params.selector && !params.xpath) throw new Error('Selector or XPath parameter required');

@@ -159,7 +159,7 @@ Then ask Claude to interact with web pages:
 - `select` - Select dropdown options (HTML `<select>` only, uses first matching element, returns unique selector)
 - `keypress` - Send keyboard events to the page or specific elements (supports modifier keys)
 - `evaluate` - Execute JavaScript
-- `querySelectorAll` - Query all elements matching a CSS selector
+- `elements` - Query all elements matching a CSS selector or XPath with optional visibility filtering
 
 **Note on Selectors**: Tools that accept a `selector` parameter (`click`, `hover`, `fill`, `select`, `keypress`, `screenshot`, `dom`) will only operate on the **first element** that matches the CSS selector. The tool response includes the unique selector of the actual element that was used, which may include an auto-generated ID if the element didn't have one.
 
@@ -210,7 +210,7 @@ Examples:
 - `kapture://tab/{tabId}/screenshot` - Capture screenshots of a tab or element
 - `kapture://tab/{tabId}/dom` - Get HTML content of a tab or element
 - `kapture://tab/{tabId}/elementsFromPoint` - Get elements at specific coordinates
-- `kapture://tab/{tabId}/querySelectorAll?selector={selector}` - Query all elements matching a CSS selector
+- `kapture://tab/{tabId}/elements?selector={selector}&visible={true|false|all}` - Query all elements matching a CSS selector or XPath with optional visibility filtering
 
 ## Development
 

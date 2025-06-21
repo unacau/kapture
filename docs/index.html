@@ -898,8 +898,8 @@
                     <div class="mcp-item">evaluate
                         <div class="mcp-item-description">Execute JavaScript in page context</div>
                     </div>
-                    <div class="mcp-item">querySelectorAll
-                        <div class="mcp-item-description">Query elements by CSS selector</div>
+                    <div class="mcp-item">elements
+                        <div class="mcp-item-description">Query elements by CSS selector or XPath with visibility filtering</div>
                     </div>
                     <div class="mcp-item">elementsFromPoint
                         <div class="mcp-item-description">Get all elements at specific coordinates</div>
@@ -999,9 +999,9 @@
                             <p>Query multiple elements</p>
                         </div>
                     </div>
-                    <div class="mcp-item">kapture://tab/{tabId}/querySelectorAll
+                    <div class="mcp-item">kapture://tab/{tabId}/elements
                         <div class="mcp-item-description">
-                            Query all matching elements: <code>?selector={css}</code><br>
+                            Query all matching elements: <code>?selector={css}&visible={true|false|all}</code><br>
                             Returns array with details and select options
                         </div>
                     </div>
@@ -1130,7 +1130,7 @@
                                 <span class="tool-item">GET /tab/{tabId}/screenshot</span>
                                 <span class="tool-item">GET /tab/{tabId}/elementsFromPoint</span>
                                 <span class="tool-item">GET /tab/{tabId}/dom</span>
-                                <span class="tool-item">GET /tab/{tabId}/querySelectorAll</span>
+                                <span class="tool-item">GET /tab/{tabId}/elements</span>
                             </div>
                             <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
                                 <code>GET /</code> returns server status and MCP client info for discovery

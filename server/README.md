@@ -115,7 +115,7 @@ Each AI assistant will automatically connect to its designated port and can cont
 - `fill` - Fill input fields
 - `select` - Select dropdown options
 - `evaluate` - Execute JavaScript
-- `querySelectorAll` - Query all elements matching a CSS selector
+- `elements` - Query all elements matching a CSS selector or XPath with optional visibility filtering
 
 ## MCP Resources
 
@@ -125,7 +125,7 @@ Each AI assistant will automatically connect to its designated port and can cont
 - `kapture://tab/{tabId}/screenshot` - Capture screenshots
 - `kapture://tab/{tabId}/dom` - Get DOM HTML
 - `kapture://tab/{tabId}/elementsFromPoint` - Get elements at coordinates
-- `kapture://tab/{tabId}/querySelectorAll?selector={selector}` - Query all elements matching a CSS selector
+- `kapture://tab/{tabId}/elements?selector={selector}&visible={true|false|all}` - Query all elements matching a CSS selector or XPath with optional visibility filtering
 
 ## Documentation
 

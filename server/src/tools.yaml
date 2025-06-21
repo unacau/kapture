@@ -189,6 +189,22 @@ tools:
       tabId: *tabId
       <<: *selectorAndXpath
 
+  elements:
+    description: >-
+      Query all elements matching a CSS selector or XPath and get detailed 
+      information about each element. Use the visible parameter to filter 
+      elements by visibility status.
+    required: [tabId]
+    <<: *oneOfSelectorOrXpath
+    properties:
+      tabId: *tabId
+      <<: *selectorAndXpath
+      visible:
+        type: string
+        description: Filter elements by visibility (true = only visible, false = only hidden, all = all elements)
+        default: "all"
+        enum: ["true", "false", "all"]
+
   elementsFromPoint:
     description: Get information about all elements at a specific coordinate in the viewport
     required: [tabId, x, y]
@@ -200,13 +216,3 @@ tools:
       y:
         type: number
         description: Y coordinate relative to the viewport
-
-  querySelectorAll:
-    description: >-
-      Query all elements matching a CSS selector or XPath and get detailed 
-      information about each element
-    required: [tabId]
-    <<: *oneOfSelectorOrXpath
-    properties:
-      tabId: *tabId
-      <<: *selectorAndXpath

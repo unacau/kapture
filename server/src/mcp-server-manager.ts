@@ -45,12 +45,12 @@ export class MCPServerManager {
     // Tab connect callback
     this.tabRegistry.setConnectCallback(async (tabId: string) => {
       logger.log(`Tab connected: ${tabId}`);
-      
+
       const tab = this.tabRegistry.get(tabId);
       const tabTitle = tab?.title || `Tab ${tabId}`;
-      
+
       this.updateTabResources(tabId, tabTitle);
-      
+
       // Send notifications to all initialized connections
       await this.notifyAllConnections(async (connection) => {
         await connection.server.notification({
@@ -58,20 +58,20 @@ export class MCPServerManager {
           params: {}
         });
       });
-      
+
       await this.sendTabListChangeNotification();
     });
 
     // Tab update callback
     this.tabRegistry.setUpdateCallback(async (tabId: string) => {
       logger.log(`Tab updated: ${tabId}`);
-      
+
       if (this.dynamicTabResources.has(tabId)) {
         const tab = this.tabRegistry.get(tabId);
         const tabTitle = tab?.title || `Tab ${tabId}`;
-        
+
         this.updateTabResources(tabId, tabTitle);
-        
+
         await this.notifyAllConnections(async (connection) => {
           await connection.server.notification({
             method: 'notifications/resources/list_changed',
@@ -79,7 +79,7 @@ export class MCPServerManager {
           });
         });
       }
-      
+
       await this.sendTabListChangeNotification();
     });
 
@@ -91,15 +91,15 @@ export class MCPServerManager {
       this.dynamicTabResources.delete(`${tabId}/screenshot`);
       this.dynamicTabResources.delete(`${tabId}/elementsFromPoint`);
       this.dynamicTabResources.delete(`${tabId}/dom`);
-      this.dynamicTabResources.delete(`${tabId}/querySelectorAll`);
-      
+      this.dynamicTabResources.delete(`${tabId}/elements`);
+
       // Send notifications to all initialized connections
       await this.notifyAllConnections(async (connection) => {
         await connection.server.notification({
           method: 'notifications/resources/list_changed',
           params: {}
         });
-        
+
         await connection.server.notification({
           method: 'kapture/tab_disconnected',
           params: {
@@ -108,7 +108,7 @@ export class MCPServerManager {
           }
         });
       });
-      
+
       await this.sendTabListChangeNotification();
     });
 
@@ -129,7 +129,7 @@ export class MCPServerManager {
 
   private updateTabResources(tabId: string, tabTitle: string): void {
     const tabResources = createTabResources(tabId, tabTitle);
-    
+
     // Add all resources for this tab
     for (const [key, resource] of tabResources) {
       this.dynamicTabResources.set(key, resource);
@@ -138,7 +138,7 @@ export class MCPServerManager {
 
   private async notifyAllConnections(handler: (connection: MCPConnection) => Promise<void>): Promise<void> {
     const promises: Promise<void>[] = [];
-    
+
     for (const connection of this.connections.values()) {
       if (connection.initialized) {
         promises.push(
@@ -148,7 +148,7 @@ export class MCPServerManager {
         );
       }
     }
-    
+
     await Promise.all(promises);
   }
 
@@ -165,9 +165,9 @@ export class MCPServerManager {
       scrollPosition: tab.scrollPosition,
       pageVisibility: tab.pageVisibility
     }));
-    
+
     logger.log(`Preparing tabs_changed notification with ${tabs.length} tabs`);
-    
+
     await this.notifyAllConnections(async (connection) => {
       await connection.server.notification({
         method: 'kapture/tabs_changed',
@@ -211,7 +211,7 @@ export class MCPServerManager {
       if (request.params.clientInfo) {
         connection.clientInfo = request.params.clientInfo;
         logger.log(`MCP client connected (${connectionId}): ${connection.clientInfo.name} v${connection.clientInfo.version}`);
-        
+
         this.mcpHandler.setClientInfo(connection.clientInfo);
         this.wsManager.setMcpClientInfo(connection.clientInfo);
       }
@@ -236,7 +236,7 @@ export class MCPServerManager {
       if (connection) {
         logger.log(`Client initialized (${connectionId})`);
         connection.initialized = true;
-        
+
         // Send initial notifications if tabs are connected
         if (this.tabRegistry.getAll().length > 0) {
           this.sendTabListChangeNotification().catch(error => {
@@ -268,21 +268,21 @@ export class MCPServerManager {
 
       try {
         const validatedArgs = tool.inputSchema.parse(args) as any;
-        
+
         // For keypress tool, automatically adjust timeout based on delay
         if (name === 'keypress' && validatedArgs.delay && !validatedArgs.timeout) {
           // Add 2 seconds to the delay for processing overhead
           validatedArgs.timeout = Math.max(5000, validatedArgs.delay + 2000);
         }
-        
+
         const result = await this.mcpHandler.executeCommand(name, validatedArgs);
-        
+
         // Special handling for screenshot tool
         if (name === 'screenshot' && result.dataUrl) {
           const match = result.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
           if (match) {
             const [, mimeType, base64Data] = match;
-            
+
             const params = new URLSearchParams();
             const screenshotArgs = validatedArgs as any;
             if (screenshotArgs?.selector) params.append('selector', String(screenshotArgs.selector));
@@ -290,15 +290,15 @@ export class MCPServerManager {
             if (screenshotArgs?.scale) params.append('scale', String(screenshotArgs.scale));
             if (screenshotArgs?.format) params.append('format', String(screenshotArgs.format));
             if (screenshotArgs?.quality) params.append('quality', String(screenshotArgs.quality));
-            
+
             const queryString = params.toString();
             const screenshotUrl = `http://localhost:${this.port}/tab/${screenshotArgs?.tabId}/screenshot/view${queryString ? '?' + queryString : ''}`;
-            
+
             const enhancedResult = {
               preview: screenshotUrl,
               ...result
             };
-            
+
             return {
               content: [
                 {
@@ -314,7 +314,7 @@ export class MCPServerManager {
             };
           }
         }
-        
+
         return {
           content: [
             {
@@ -346,7 +346,7 @@ export class MCPServerManager {
         ...baseResources,
         ...Array.from(this.dynamicTabResources.values())
       ];
-      
+
       return {
         resources: allResources
       };
@@ -355,7 +355,7 @@ export class MCPServerManager {
     // Read resource handler
     server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       const { uri } = request.params;
-      
+
       // Use the shared resource reading logic
       const result = await this.readResource(uri);
       return result;
@@ -371,12 +371,12 @@ export class MCPServerManager {
     // Get prompt handler
     server.setRequestHandler(GetPromptRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      
+
       const prompt = prompts.find(p => p.name === name);
       if (!prompt) {
         throw new Error(`Unknown prompt: ${name}`);
       }
-      
+
       // Use the shared prompt logic
       return this.getPrompt(name, args);
     });
@@ -391,7 +391,7 @@ export class MCPServerManager {
   async connectStdio(): Promise<void> {
     const connectionId = `stdio-${Date.now()}`;
     const server = this.createMCPServer(connectionId);
-    
+
     this.connections.set(connectionId, {
       id: connectionId,
       server,
@@ -400,7 +400,7 @@ export class MCPServerManager {
     });
 
     const transport = new StdioServerTransport();
-    
+
     // Add disconnect detection for stdin
     process.stdin.on('end', () => {
       logger.log('stdin ended - MCP client disconnected');
@@ -408,7 +408,7 @@ export class MCPServerManager {
         transport.onclose();
       }
     });
-    
+
     process.stdin.on('close', () => {
       logger.log('stdin closed - MCP client disconnected');
       if (transport.onclose) {
@@ -423,7 +423,7 @@ export class MCPServerManager {
   async connectWebSocket(ws: WebSocket): Promise<void> {
     const connectionId = `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const server = this.createMCPServer(connectionId);
-    
+
     this.connections.set(connectionId, {
       id: connectionId,
       server,
@@ -432,7 +432,7 @@ export class MCPServerManager {
     });
 
     const transport = new WebSocketTransport(ws);
-    
+
     try {
       await server.connect(transport);
       logger.log(`MCP WebSocket server connected (${connectionId})`);
@@ -467,7 +467,7 @@ export class MCPServerManager {
     if (uri === 'kapture://tabs') {
       const tabsData = this.mcpHandler.listTabs();
       const tabsArray = tabsData.tabs || [];
-      
+
       return {
         contents: [
           {
@@ -478,14 +478,14 @@ export class MCPServerManager {
         ]
       };
     }
-    
+
     // Check various resource patterns
     const patterns = [
       { regex: /^kapture:\/\/tab\/(.+)\/console(?:\?.*)?$/, handler: this.readConsoleResource.bind(this) },
       { regex: /^kapture:\/\/tab\/(.+)\/screenshot(?:\?.*)?$/, handler: this.readScreenshotResource.bind(this) },
-      { regex: /^kapture:\/\/tab\/(.+)\/elementsFromPoint(?:\?.*)?$/, handler: this.readElementsResource.bind(this) },
+      { regex: /^kapture:\/\/tab\/(.+)\/elementsFromPoint(?:\?.*)?$/, handler: this.readElementsFromPointResource.bind(this) },
       { regex: /^kapture:\/\/tab\/(.+)\/dom(?:\?.*)?$/, handler: this.readDomResource.bind(this) },
-      { regex: /^kapture:\/\/tab\/(.+)\/querySelectorAll(?:\?.*)?$/, handler: this.readQuerySelectorResource.bind(this) },
+      { regex: /^kapture:\/\/tab\/(.+)\/elements(?:\?.*)?$/, handler: this.readElementsResource.bind(this) },
       { regex: /^kapture:\/\/tab\/(.+)$/, handler: this.readTabResource.bind(this) }
     ];
 
@@ -495,14 +495,14 @@ export class MCPServerManager {
         return handler(uri, match);
       }
     }
-    
+
     throw new Error(`Unknown resource: ${uri}`);
   }
 
   // Individual resource handlers
   private async readConsoleResource(uri: string, match: RegExpMatchArray): Promise<any> {
     const tabId = match[1];
-    
+
     let before: string | undefined;
     let limit = 100;
     let level: string | undefined;
@@ -512,19 +512,19 @@ export class MCPServerManager {
       before = params.get('before') || undefined;
       limit = parseInt(params.get('limit') || '100', 10);
       level = params.get('level') || undefined;
-      
+
       if (isNaN(limit) || limit < 1) limit = 100;
       if (limit > 500) limit = 500;
       if (level && !['log', 'info', 'warn', 'error'].includes(level)) {
         level = undefined;
       }
     }
-    
+
     const tab = this.tabRegistry.get(tabId);
     if (!tab) {
       throw new Error(`Tab ${tabId} not found`);
     }
-    
+
     try {
       const logsData = await this.mcpHandler.getConsoleLogs(tabId, before, limit, level);
       const logs = logsData.logs || [];
@@ -538,7 +538,7 @@ export class MCPServerManager {
         url: tab.url,
         title: tab.title
       };
-      
+
       return {
         contents: [
           {
@@ -556,17 +556,17 @@ export class MCPServerManager {
   private async readScreenshotResource(uri: string, match: RegExpMatchArray): Promise<any> {
     const tabId = match[1];
     const tab = this.tabRegistry.get(tabId);
-    
+
     if (!tab) {
       throw new Error(`Tab ${tabId} not found`);
     }
-    
+
     let selector: string | undefined;
     let xpath: string | undefined;
     let scale = 0.3;
     let format: 'webp' | 'jpeg' | 'png' = 'webp';
     let quality = 0.85;
-    
+
     const queryMatch = uri.match(/\?(.+)$/);
     if (queryMatch) {
       const params = new URLSearchParams(queryMatch[1]);
@@ -591,7 +591,7 @@ export class MCPServerManager {
         }
       }
     }
-    
+
     try {
       const screenshotData = await this.mcpHandler.executeCommand('screenshot', {
         tabId,
@@ -601,16 +601,16 @@ export class MCPServerManager {
         format,
         quality
       });
-      
+
       const viewParams = new URLSearchParams();
       if (selector) viewParams.append('selector', selector);
       viewParams.append('scale', scale.toString());
       viewParams.append('format', format);
       viewParams.append('quality', quality.toString());
-      
+
       const viewQueryString = viewParams.toString();
       const screenshotUrl = `http://localhost:${this.port}/tab/${tabId}/screenshot/view${viewQueryString ? '?' + viewQueryString : ''}`;
-      
+
       return {
         contents: [
           {
@@ -639,30 +639,30 @@ export class MCPServerManager {
     }
   }
 
-  private async readElementsResource(uri: string, match: RegExpMatchArray): Promise<any> {
+  private async readElementsFromPointResource(uri: string, match: RegExpMatchArray): Promise<any> {
     const tabId = match[1];
     const tab = this.tabRegistry.get(tabId);
-    
+
     if (!tab) {
       throw new Error(`Tab ${tabId} not found`);
     }
-    
+
     let x: number | undefined;
     let y: number | undefined;
-    
+
     const queryIndex = uri.indexOf('?');
     if (queryIndex !== -1) {
       const params = new URLSearchParams(uri.substring(queryIndex + 1));
       const xParam = params.get('x');
       const yParam = params.get('y');
-      
+
       if (xParam) {
         const parsedX = parseFloat(xParam);
         if (!isNaN(parsedX)) {
           x = parsedX;
         }
       }
-      
+
       if (yParam) {
         const parsedY = parseFloat(yParam);
         if (!isNaN(parsedY)) {
@@ -670,18 +670,18 @@ export class MCPServerManager {
         }
       }
     }
-    
+
     if (x === undefined || y === undefined) {
       throw new Error('Both x and y coordinates are required');
     }
-    
+
     try {
       const elementsData = await this.mcpHandler.executeCommand('elementsFromPoint', {
         tabId,
         x,
         y
       });
-      
+
       return {
         contents: [
           {
@@ -705,28 +705,28 @@ export class MCPServerManager {
   private async readDomResource(uri: string, match: RegExpMatchArray): Promise<any> {
     const tabId = match[1];
     const tab = this.tabRegistry.get(tabId);
-    
+
     if (!tab) {
       throw new Error(`Tab ${tabId} not found`);
     }
-    
+
     let selector: string | undefined;
     let xpath: string | undefined;
-    
+
     const queryIndex = uri.indexOf('?');
     if (queryIndex !== -1) {
       const params = new URLSearchParams(uri.substring(queryIndex + 1));
       selector = params.get('selector') || undefined;
       xpath = params.get('xpath') || undefined;
     }
-    
+
     try {
       const domData = await this.mcpHandler.executeCommand('dom', {
         tabId,
         selector,
         xpath
       });
-      
+
       return {
         contents: [
           {
@@ -748,35 +748,38 @@ export class MCPServerManager {
     }
   }
 
-  private async readQuerySelectorResource(uri: string, match: RegExpMatchArray): Promise<any> {
+  private async readElementsResource(uri: string, match: RegExpMatchArray): Promise<any> {
     const tabId = match[1];
     const tab = this.tabRegistry.get(tabId);
-    
+
     if (!tab) {
       throw new Error(`Tab ${tabId} not found`);
     }
-    
+
     let selector: string | undefined;
     let xpath: string | undefined;
-    
+    let visible: string | undefined;
+
     const queryIndex = uri.indexOf('?');
     if (queryIndex !== -1) {
       const params = new URLSearchParams(uri.substring(queryIndex + 1));
       selector = params.get('selector') || undefined;
       xpath = params.get('xpath') || undefined;
+      visible = params.get('visible') || undefined;
     }
-    
+
     if (!selector && !xpath) {
       throw new Error('Either selector or xpath parameter is required');
     }
-    
+
     try {
-      const result = await this.mcpHandler.executeCommand('querySelectorAll', {
+      const result = await this.mcpHandler.executeCommand('elements', {
         tabId,
         selector,
-        xpath
+        xpath,
+        visible
       });
-      
+
       return {
         contents: [
           {
@@ -788,6 +791,7 @@ export class MCPServerManager {
               title: tab.title,
               selector: selector || undefined,
               xpath: xpath || undefined,
+              visible: visible || undefined,
               ...result
             }, null, 2)
           }
@@ -801,11 +805,11 @@ export class MCPServerManager {
   private async readTabResource(uri: string, match: RegExpMatchArray): Promise<any> {
     const tabId = match[1];
     const tab = this.tabRegistry.get(tabId);
-    
+
     if (!tab) {
       throw new Error(`Tab ${tabId} not found`);
     }
-    
+
     const tabInfo = {
       tabId: tab.tabId,
       url: tab.url,
@@ -818,7 +822,7 @@ export class MCPServerManager {
       scrollPosition: tab.scrollPosition,
       pageVisibility: tab.pageVisibility
     };
-    
+
     return {
       contents: [
         {
@@ -836,11 +840,11 @@ export class MCPServerManager {
     if (!prompt) {
       throw new Error(`Unknown prompt: ${name}`);
     }
-    
+
     if (name === 'list-tabs') {
       const tabsData = this.mcpHandler.listTabs();
       const tabsArray = tabsData.tabs || [];
-      
+
       return {
         description: prompt.description,
         messages: [
@@ -855,7 +859,7 @@ export class MCPServerManager {
             role: 'assistant',
             content: {
               type: 'text',
-              text: tabsArray.length === 0 
+              text: tabsArray.length === 0
                 ? `No browser tabs are currently connected to Kapture.
 
 To connect a browser tab:
@@ -880,17 +884,17 @@ You can use these tab IDs with other Kapture tools like navigate, click, fill, e
         ]
       };
     }
-    
+
     if (name === 'tab-details') {
       if (!args?.tabId) {
         throw new Error('tabId argument is required');
       }
-      
+
       const tab = this.tabRegistry.get(args.tabId);
       if (!tab) {
         throw new Error(`Tab ${args.tabId} not found`);
       }
-      
+
       return {
         description: prompt.description,
         messages: [
@@ -933,7 +937,7 @@ You can interact with this tab using tools like:
         ]
       };
     }
-    
+
     if (name === 'navigate-to-url') {
       if (!args?.tabId) {
         throw new Error('tabId argument is required');
@@ -941,17 +945,17 @@ You can interact with this tab using tools like:
       if (!args?.url) {
         throw new Error('url argument is required');
       }
-      
+
       const tab = this.tabRegistry.get(args.tabId);
       if (!tab) {
         throw new Error(`Tab ${args.tabId} not found`);
       }
-      
+
       let targetUrl = args.url;
       if (!targetUrl.match(/^https?:\/\//i)) {
         targetUrl = `https://${targetUrl}`;
       }
-      
+
       return {
         description: prompt.description,
         messages: [
@@ -1004,26 +1008,26 @@ To execute this navigation, use the \`navigate\` tool:
         ]
       };
     }
-    
+
     if (name === 'take-screenshot') {
       if (!args?.tabId) {
         throw new Error('tabId argument is required');
       }
-      
+
       const tab = this.tabRegistry.get(args.tabId);
       if (!tab) {
         throw new Error(`Tab ${args.tabId} not found`);
       }
-      
+
       const selector = args.selector || null;
       const scale = args.scale || 0.3;
       const format = args.format || 'webp';
       const quality = format === 'png' ? 1.0 : 0.85;
-      
+
       const validScale = Math.min(Math.max(typeof scale === 'string' ? parseFloat(scale) : scale, 0.1), 1.0);
       const validFormats = ['webp', 'jpeg', 'png'];
       const validFormat = validFormats.includes(format) ? format : 'webp';
-      
+
       return {
         description: prompt.description,
         messages: [
@@ -1031,7 +1035,7 @@ To execute this navigation, use the \`navigate\` tool:
             role: 'user',
             content: {
               type: 'text',
-              text: selector 
+              text: selector
                 ? `Take a screenshot of the element matching "${selector}" in tab ${args.tabId}`
                 : `Take a screenshot of tab ${args.tabId}`
             }
@@ -1090,7 +1094,7 @@ ${selector ? `- Make sure the element is visible on the page
         ]
       };
     }
-    
+
     throw new Error(`Prompt ${name} not implemented`);
   }
 }

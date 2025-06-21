@@ -238,7 +238,7 @@ export const screenshotTool = convertedTools.screenshotTool;
 export const evaluateTool = convertedTools.evaluateTool;
 export const domTool = convertedTools.domTool;
 export const elementsFromPointTool = convertedTools.elementsFromPointTool;
-export const querySelectorAllTool = convertedTools.querySelectorAllTool;
+export const elementsTool = convertedTools.elementsTool;
 export const listTabsTool = convertedTools.list_tabsTool;
 
 // Export all tools array
@@ -253,7 +253,7 @@ export const allTools = [
   keypressTool,
   evaluateTool,
   elementsFromPointTool,
-  querySelectorAllTool,
+  elementsTool,
 
   // Keeping these around since Claude Desktop doesn't offer great interactions with Resources
   screenshotTool,  // use kapturemcp://tab/{tabId}/screenshot resource instead
