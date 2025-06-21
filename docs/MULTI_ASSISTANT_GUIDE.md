@@ -72,7 +72,7 @@ Connect to `ws://localhost:61822/mcp` using the MCP WebSocket protocol.
 ### 3. Connect Browser Tabs
 
 1. Open Chrome and navigate to different websites in separate tabs
-2. Open DevTools (F12) in each tab
+2. Open DevTools (F12 on Windows/Linux, Cmd+Option+I on macOS) in each tab
 3. Go to the "Kapture" panel
 4. The extension will automatically connect to the server
 

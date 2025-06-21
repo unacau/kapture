@@ -11,7 +11,7 @@ This Chrome Extension enables browser automation through the Model Context Proto
 
 ## Usage
 
-1. Open Chrome DevTools (F12 or right-click → Inspect)
+1. Open Chrome DevTools (F12 on Windows/Linux, Cmd+Option+I on macOS, or right-click → Inspect)
 2. Navigate to the "Kapture" panel
 3. Click "Connect" to establish connection with the MCP server
 4. The extension will display a unique Tab ID for this browser tab

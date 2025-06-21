@@ -52,7 +52,7 @@ Available MCP tools: navigate, back, forward, click, hover, ...
 ### 2. Connect Chrome Tab
 
 1. Open Chrome and navigate to any website
-2. Open Chrome DevTools (F12)
+2. Open Chrome DevTools (F12 on Windows/Linux, Cmd+Option+I on macOS)
 3. Navigate to the "Kapture" panel
 4. The extension will automatically connect to the server on port 61822
 

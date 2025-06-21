@@ -864,7 +864,7 @@ export class MCPServerManager {
 
 To connect a browser tab:
 1. Make sure the Kapture Chrome extension is installed
-2. Open Chrome DevTools (F12 or right-click → Inspect)
+2. Open Chrome DevTools (F12 on Windows/Linux, Cmd+Option+I on macOS, or right-click → Inspect)
 3. Navigate to the "Kapture" panel in DevTools
 4. The tab will automatically connect to this server
 

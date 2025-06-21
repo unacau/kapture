@@ -66,7 +66,7 @@ npm start
 ### 4. Connect via DevTools
 
 1. Open any website in Chrome
-2. Open Chrome/Brave Developer Tools
+2. Open Chrome/Brave Developer Tools (F12 on Windows/Linux, Cmd+Option+I on macOS)
 3. Navigate to "Kapture" panel
 4. The extension will automatically connect to the server on port 61822
 5. Select a server from the dropdown to connect automatically
