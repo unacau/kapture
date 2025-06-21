@@ -20,7 +20,11 @@ This guide explains how to use Kapture with Model Context Protocol (MCP) clients
 
 ### 1. Start the Kapture MCP Server
 
-The server is typically started automatically by your MCP client (Claude Desktop, Cline, etc.) when configured properly. 
+The server is typically started automatically by your MCP client (Claude Desktop, Cline, etc.) when configured properly.
+
+**Smart Server Detection**: When running `npx kapture-mcp-server`, it automatically detects if a server is already running:
+- **No existing server**: Starts a new server on port 61822
+- **Server already running**: Shows helpful connection information and exits gracefully
 
 If you need to run it manually:
 
@@ -42,7 +46,7 @@ The server will start and display:
 Kapture MCP Server starting...
 WebSocket server listening on ws://localhost:61822
 MCP Server ready for connections
-Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...
+Available MCP tools: navigate, back, forward, click, hover, ...
 ```
 
 ### 2. Connect Chrome Tab
@@ -50,17 +54,23 @@ Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...
 1. Open Chrome and navigate to any website
 2. Open Chrome DevTools (F12)
 3. Navigate to the "Kapture" panel
-4. Select a server from the dropdown (it will connect automatically)
+4. The extension will automatically connect to the server on port 61822
 
 The tab is now ready to receive commands.
 
 ## Running Multiple AI Assistants Simultaneously
 
-Kapture excels at supporting multiple AI clients at the same time. The first client connects via stdio (when using Claude Desktop), while additional clients connect via WebSocket:
+Kapture excels at supporting multiple AI clients through a single server instance:
+
+### How It Works
+- **First client** (typically Claude Desktop): Connects via stdio
+- **Additional clients**: Connect via WebSocket to `ws://localhost:61822/mcp`
+- All clients share access to the same browser tabs
+- Notifications are broadcast to all connected clients
 
 ### Example Setup: Claude Desktop + Cline
 
-**1. Claude Desktop** (uses default port 61822):
+**1. Claude Desktop** (first client - stdio):
 ```json
 {
   "mcpServers": {
@@ -72,28 +82,26 @@ Kapture excels at supporting multiple AI clients at the same time. The first cli
 }
 ```
 
-**2. Cline/VS Code** (uses port 61823):
+**2. Cline/VS Code** (additional client - WebSocket):
 ```json
 {
   "cline.mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
 ```
 
-**3. Additional Clients** (increment ports as needed):
-- Third client: port 61824
-- Fourth client: port 61825
-- And so on...
+**3. Additional Clients**:
+Connect more clients using the same WebSocket URL: `ws://localhost:61822/mcp`
 
-Each AI assistant will:
-- Start its own MCP server instance
-- Connect to different browser tabs
-- Operate independently without interference
-- Show up as separate servers in the Kapture DevTools dropdown
+All AI assistants will:
+- Share the same server instance
+- Control the same browser tabs
+- Receive real-time notifications
+- Work collaboratively or independently
 
 ### 3. Configure Your MCP Client
 

@@ -301,6 +301,12 @@
         
         <p>The server is typically started automatically by your MCP client (Claude Desktop, Cline, etc.) when configured properly.</p>
         
+        <p><strong>Smart Server Detection</strong>: When running <code>npx kapture-mcp-server</code>, it automatically detects if a server is already running:</p>
+        <ul>
+            <li><strong>No existing server</strong>: Starts a new server on port 61822</li>
+            <li><strong>Server already running</strong>: Shows helpful connection information and exits gracefully</li>
+        </ul>
+        
         <p>If you need to run it manually:</p>
         
         <p><strong>Option 1: Using npx (no installation required)</strong></p>
@@ -316,25 +322,33 @@ npm start</code></pre>
         <pre><code>Kapture MCP Server starting...
 WebSocket server listening on ws://localhost:61822
 MCP Server ready for connections
-Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...</code></pre>
+Available MCP tools: navigate, back, forward, click, hover, ...</code></pre>
 
         <h3>2. Connect Chrome Tab</h3>
         <ol>
             <li>Open Chrome and navigate to any website</li>
             <li>Open Chrome DevTools (F12)</li>
             <li>Navigate to the "Kapture" panel</li>
-            <li>Select a server from the dropdown (it will connect automatically)</li>
+            <li>The extension will automatically connect to the server on port 61822</li>
         </ol>
 
         <p>The tab is now ready to receive commands.</p>
 
         <h2 id="multiple-assistants">Running Multiple AI Assistants Simultaneously</h2>
         
-        <p>Kapture excels at supporting multiple AI clients at the same time. The first client connects via stdio (when using Claude Desktop), while additional clients connect via WebSocket:</p>
+        <p>Kapture excels at supporting multiple AI clients through a single server instance:</p>
+        
+        <h3>How It Works</h3>
+        <ul>
+            <li><strong>First client</strong> (typically Claude Desktop): Connects via stdio</li>
+            <li><strong>Additional clients</strong>: Connect via WebSocket to <code>ws://localhost:61822/mcp</code></li>
+            <li>All clients share access to the same browser tabs</li>
+            <li>Notifications are broadcast to all connected clients</li>
+        </ul>
         
         <h3>Example Setup: Claude Desktop + Cline</h3>
         
-        <p><strong>1. Claude Desktop</strong> (uses default port 61822):</p>
+        <p><strong>1. Claude Desktop</strong> (first client - stdio):</p>
         <pre><code>{
   "mcpServers": {
     "kapture": {
@@ -344,29 +358,25 @@ Available MCP tools: kapturemcp_navigate, kapturemcp_go_back, ...</code></pre>
   }
 }</code></pre>
         
-        <p><strong>2. Cline/VS Code</strong> (uses port 61823):</p>
+        <p><strong>2. Cline/VS Code</strong> (additional client - WebSocket):</p>
         <pre><code>{
   "cline.mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }</code></pre>
         
-        <p><strong>3. Additional Clients</strong> (increment ports as needed):</p>
-        <ul>
-            <li>Third client: port 61824</li>
-            <li>Fourth client: port 61825</li>
-            <li>And so on...</li>
-        </ul>
+        <p><strong>3. Additional Clients</strong>:</p>
+        <p>Connect more clients using the same WebSocket URL: <code>ws://localhost:61822/mcp</code></p>
         
-        <p>Each AI assistant will:</p>
+        <p>All AI assistants will:</p>
         <ul>
-            <li>Start its own MCP server instance</li>
-            <li>Connect to different browser tabs</li>
-            <li>Operate independently without interference</li>
-            <li>Show up as separate servers in the Kapture DevTools dropdown</li>
+            <li>Share the same server instance</li>
+            <li>Control the same browser tabs</li>
+            <li>Receive real-time notifications</li>
+            <li>Work collaboratively or independently</li>
         </ul>
 
         <h3>3. Configure Your MCP Client</h3>

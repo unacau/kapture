@@ -12,11 +12,15 @@ MCP server for Kapture browser automation. This server enables AI assistants lik
 npx kapture-mcp-server
 ```
 
-### Run with custom port
+The server automatically runs on port 61822.
 
-```bash
-npx kapture-mcp-server
-```
+### Smart Server Detection
+
+When running `npx kapture-mcp-server`, it automatically detects if a server is already running:
+- **No existing server**: Starts a new server
+- **Server already running**: Shows connection info and exits gracefully
+
+This prevents port conflicts and provides helpful information about existing connections.
 
 ### Install globally
 
@@ -60,11 +64,15 @@ Or if you installed it globally:
 
 ## Command Line Options
 
-None - the server runs on the fixed port 61822
+None - the server always runs on port 61822
 
 ## Running Multiple AI Assistants
 
-Kapture supports multiple AI clients running simultaneously through a single server instance:
+Kapture supports multiple AI clients through a single server instance:
+
+- **First client** (usually Claude Desktop): Connects via stdio
+- **Additional clients**: Connect via WebSocket to `ws://localhost:61822/mcp`
+- All clients share access to the same browser tabs
 
 **Example: Claude Desktop + Cline**
 
@@ -80,19 +88,19 @@ Claude Desktop (claude_desktop_config.json):
 }
 ```
 
-Cline (VS Code settings.json):
+Cline (VS Code settings.json) - WebSocket connection:
 ```json
 {
   "cline.mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
 ```
 
-Each AI assistant will automatically connect to its designated port and can control different browser tabs independently.
+All connected clients can control the same browser tabs simultaneously.
 
 ## Requirements
 
@@ -101,7 +109,7 @@ Each AI assistant will automatically connect to its designated port and can cont
 
 ## How it Works
 
-1. The MCP server starts and listens on the specified port
+1. The MCP server starts and listens on port 61822
 2. The Kapture Chrome extension connects to the server via WebSocket
 3. AI assistants can now control the browser through MCP tools
 

@@ -51,7 +51,7 @@ cd test-app
 npm run dev
 ```
 
-The server starts on port 61822 by default. You can specify a custom port:
+The server starts on port 61822.
 
 ```bash
 # Server
@@ -101,17 +101,24 @@ Add to your Claude Desktop config:
 
 ## 🚀 Run Multiple AI Assistants Simultaneously
 
-Kapture supports multiple MCP clients connecting to the same server! You can run multiple Claude Code instances or other MCP clients, and they can all control the same browser tabs simultaneously.
+Kapture supports multiple MCP clients connecting to the same server! You can run Claude Desktop, Cline, and other MCP clients simultaneously through a single server instance.
 
-### Multiple Connections to Same Server (NEW!)
-- Multiple MCP clients can connect via WebSocket to `ws://localhost:61822/mcp`
+### How It Works
+- First client connects via stdio (usually Claude Desktop)
+- Additional clients connect via WebSocket to `ws://localhost:61822/mcp`
 - All clients share access to the same browser tabs
 - Notifications are broadcast to all connected clients
 
-### Multiple Servers on Different Ports
-For isolation between AI assistants, you can also run separate servers on different ports. Each AI assistant can control different browser tabs without interference. [See the complete guide →](docs/MULTI_ASSISTANT_GUIDE.md)
+### Smart Server Detection
+When running `npx kapture-mcp-server`, the command automatically detects if a server is already running:
+- **No existing server**: Starts a new server on port 61822
+- **Server already running**: Shows connection information and exits gracefully
 
-**Claude Desktop** (using default port 61822):
+This prevents errors and confusion when multiple clients try to start servers.
+
+### Setting Up Multiple Clients
+
+**Claude Desktop** (first client - stdio):
 ```json
 {
   "mcpServers": {
@@ -123,19 +130,19 @@ For isolation between AI assistants, you can also run separate servers on differ
 }
 ```
 
-**Cline/VS Code** (using port 61823):
+**Cline/VS Code** (additional client - WebSocket):
 ```json
 {
   "cline.mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
 ```
 
-This allows multiple AI clients to control different browser tabs simultaneously without conflict.
+[See the complete multi-assistant guide →](docs/MULTI_ASSISTANT_GUIDE.md)
 
 ### Benefits of Multiple AI Assistants:
 - **Parallel Workflows**: Have Claude Desktop research while Cline develops code
