@@ -57,9 +57,7 @@ tools:
     properties:
       tabId: *tabId
       <<: *selectorAndXpath
-    oneOf:
-      - required: [selector]
-      - required: [xpath]
+    <<: *oneOfSelectorOrXpath
 
   hover:
     description: >-
