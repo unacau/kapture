@@ -240,6 +240,9 @@ Environment variables:
 }
 
 if (require.main === module) {
+  // Set process title for easier identification
+  process.title = 'Kapture MCP to WebSocket Bridge';
+  
   const options = parseArgs();
   const bridge = new MCPWebSocketBridge(options);
   bridge.start();
