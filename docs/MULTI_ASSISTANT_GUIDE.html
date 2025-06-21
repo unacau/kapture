@@ -3,157 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Running Multiple AI Assistants - Kapture</title>
-    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <title>Running Multiple AI Assistants with Kapture</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            color: #1a202c;
-            background: #f7fafc;
-            padding: 40px 20px;
-        }
-
-        .container {
-            max-width: 900px;
+            color: #333;
+            max-width: 1000px;
             margin: 0 auto;
-            background: white;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
         h1 {
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            color: #2d3748;
+            color: #2563eb;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
         }
-
         h2 {
-            font-size: 1.8em;
+            color: #1e40af;
             margin-top: 40px;
             margin-bottom: 20px;
-            color: #4a5568;
         }
-
         h3 {
-            font-size: 1.4em;
+            color: #3730a3;
             margin-top: 30px;
             margin-bottom: 15px;
-            color: #4a5568;
         }
-
-        p {
-            margin-bottom: 16px;
-            line-height: 1.7;
-        }
-
-        ul {
-            margin-left: 24px;
-            margin-bottom: 16px;
-        }
-
-        li {
-            margin-bottom: 8px;
-        }
-
         pre {
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px;
-            overflow-x: auto;
-            margin: 16px 0;
-        }
-
-        code {
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-            font-size: 0.9em;
-            background: #f7fafc;
-            padding: 2px 6px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
             border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+            margin: 15px 0;
         }
-
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
         pre code {
-            background: none;
+            background-color: transparent;
             padding: 0;
         }
-
-        .highlight {
-            background: #fff3cd;
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .feature-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .diagram {
+            background-color: #f9fafb;
             padding: 20px;
             border-radius: 8px;
-            border-left: 4px solid #ffc107;
             margin: 20px 0;
-        }
-
-        .nav-links {
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .nav-links a {
-            color: #667eea;
-            text-decoration: none;
-            margin-right: 20px;
-        }
-
-        .nav-links a:hover {
-            text-decoration: underline;
-        }
-
-        .emoji {
-            font-size: 1.2em;
-            margin-right: 8px;
-        }
-
-        .architecture-diagram {
-            background: #f7fafc;
-            padding: 30px;
-            border-radius: 8px;
             text-align: center;
-            margin: 20px 0;
             font-family: monospace;
-            line-height: 2;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        strong {
+            color: #1e293b;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="nav-links">
-            <a href="index.html">← Home</a>
-            <a href="MCP_USAGE.html">MCP Usage Guide</a>
-            <a href="https://github.com/williamkapke/kapture">GitHub</a>
-        </div>
-
-        <h1><span class="emoji">🚀</span>Running Multiple AI Assistants with Kapture</h1>
+        <a href="index.html" class="back-link">← Back to Documentation</a>
         
-        <p>Kapture's powerful architecture supports running multiple AI assistants simultaneously, enabling advanced workflows and team collaboration scenarios.</p>
+        <h1>Running Multiple AI Assistants with Kapture</h1>
+        
+        <p>Kapture's powerful architecture supports running multiple AI assistants simultaneously through a single server instance, enabling advanced workflows and team collaboration scenarios.</p>
 
         <h2>Why Run Multiple AI Assistants?</h2>
 
-        <h3><span class="emoji">🚀</span>Parallel Workflows</h3>
+        <h3>🚀 Parallel Workflows</h3>
         <ul>
             <li><strong>Research & Development</strong>: Have Claude Desktop research documentation while Cline writes implementation code</li>
             <li><strong>Testing & Building</strong>: Use one AI to run tests while another builds features</li>
             <li><strong>Multi-tasking</strong>: Automate different websites or tasks concurrently</li>
         </ul>
 
-        <h3><span class="emoji">👥</span>Team Collaboration</h3>
+        <h3>👥 Team Collaboration</h3>
         <ul>
             <li>Multiple developers can use their preferred AI tools simultaneously</li>
-            <li>Each team member gets their own dedicated port and browser tabs</li>
+            <li>Each AI gets their own browser tabs</li>
             <li>No conflicts or interference between different AI sessions</li>
         </ul>
 
-        <h3><span class="emoji">🧪</span>A/B Testing</h3>
+        <h3>🧪 A/B Testing</h3>
         <ul>
             <li>Compare how different AI models approach the same task</li>
             <li>Test automation scripts with one AI while developing with another</li>
@@ -162,20 +134,22 @@
 
         <h2>How It Works</h2>
 
-        <p>Each AI client runs its own Kapture MCP server instance on a different port:</p>
+        <p>Kapture supports multiple connection methods to a single server instance:</p>
 
-        <div class="architecture-diagram">
-            Claude Desktop → Port 61822 → Chrome Tab 1<br>
-            Cline &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Port 61823 → Chrome Tab 2<br>
-            Custom AI &nbsp;&nbsp;&nbsp;&nbsp;→ Port 61824 → Chrome Tab 3
-        </div>
+        <div class="diagram">Claude Desktop → stdio connection → Kapture Server ← WebSocket ← Additional MCP Clients
+                                   ↓
+                            Chrome Extension
+                                   ↓
+                            Browser Tabs</div>
 
-        <p>The Kapture Chrome extension automatically discovers all running servers and displays them in a dropdown menu.</p>
+        <p>The first client (typically Claude Desktop) connects via stdio, while additional clients connect via WebSocket on port 61822.</p>
 
         <h2>Quick Setup Guide</h2>
 
-        <h3>1. Configure Claude Desktop (Port 61822)</h3>
+        <h3>1. Configure Claude Desktop (Primary Client)</h3>
+
         <p>Edit <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:</p>
+
         <pre><code>{
   "mcpServers": {
     "kapture": {
@@ -185,165 +159,136 @@
   }
 }</code></pre>
 
-        <h3>2. Configure Cline/VS Code (Port 61823)</h3>
-        <p>Add to VS Code settings:</p>
+        <h3>2. Configure Additional Clients (WebSocket)</h3>
+
+        <p>Additional MCP clients can connect to the same server via WebSocket:</p>
+
+        <p><strong>For Cline/VS Code:</strong></p>
         <pre><code>{
   "cline.mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61823"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }</code></pre>
 
-        <h3>3. Configure Additional AI Clients</h3>
-        <p>For each additional client, increment the port number:</p>
-        <pre><code>{
-  "otherAI.mcpServers": {
-    "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61824"]
-    }
-  }
-}</code></pre>
+        <p><strong>For custom clients:</strong><br>
+        Connect to <code>ws://localhost:61822/mcp</code> using the MCP WebSocket protocol.</p>
 
-        <h3>4. Connect Browser Tabs</h3>
+        <h3>3. Connect Browser Tabs</h3>
+
         <ol>
             <li>Open Chrome and navigate to different websites in separate tabs</li>
             <li>Open DevTools (F12) in each tab</li>
             <li>Go to the "Kapture" panel</li>
-            <li>Select the appropriate server from the dropdown to connect automatically</li>
+            <li>The extension will automatically connect to the server</li>
         </ol>
 
-        <p>Each tab will connect to its designated AI assistant's server.</p>
+        <p>Each tab gets a unique ID and can be controlled independently by any connected AI client.</p>
 
-        <h2>Advanced Configurations</h2>
+        <h2>Server Management</h2>
 
-        <h3>Custom Port Ranges</h3>
-        <p>If you need specific port ranges for your organization:</p>
-        <pre><code># Development team
-npx kapture-mcp-server --port 62000  # Developer 1
-npx kapture-mcp-server --port 62001  # Developer 2
+        <h3>Starting the Server</h3>
 
-# QA team  
-npx kapture-mcp-server --port 63000  # QA Tester 1
-npx kapture-mcp-server --port 63001  # QA Tester 2</code></pre>
+        <p>The server is automatically started when Claude Desktop launches. You can also start it manually:</p>
 
-        <h3>Docker Deployment</h3>
-        <p>Run multiple isolated instances using Docker:</p>
-        <pre><code>version: '3'
-services:
-  claude-kapture:
-    image: kapture-mcp-server
-    ports:
-      - "61822:61822"
-    environment:
-      - PORT=61822
-      
-  cline-kapture:
-    image: kapture-mcp-server
-    ports:
-      - "61823:61823"
-    environment:
-      - PORT=61823</code></pre>
+        <pre><code>npx kapture-mcp-server</code></pre>
+
+        <h3>Monitoring Connections</h3>
+
+        <p>The server shows connected clients in its logs:</p>
+        <ul>
+            <li>stdio client (Claude Desktop)</li>
+            <li>WebSocket clients count</li>
+            <li>Active browser tabs</li>
+        </ul>
+
+        <h3>Server Status</h3>
+
+        <p>Check server status by visiting:</p>
+        <pre><code>http://localhost:61822/</code></pre>
+
+        <h2>Use Cases</h2>
+
+        <h3>Example 1: Documentation & Implementation</h3>
+        <ol>
+            <li>Claude Desktop browses documentation sites</li>
+            <li>Cline (via WebSocket) implements code based on Claude's findings</li>
+            <li>Both work in parallel on different browser tabs</li>
+        </ol>
+
+        <h3>Example 2: Testing Workflow</h3>
+        <ol>
+            <li>One AI writes test scenarios</li>
+            <li>Another AI executes them in the browser</li>
+            <li>A third AI analyzes results</li>
+        </ol>
+
+        <h3>Example 3: Multi-Site Management</h3>
+        <ol>
+            <li>AI #1 manages social media accounts</li>
+            <li>AI #2 handles email and communications</li>
+            <li>AI #3 performs data analysis on dashboards</li>
+        </ol>
 
         <h2>Best Practices</h2>
 
-        <h3>Port Management</h3>
+        <h3>Tab Organization</h3>
         <ul>
-            <li><strong>Default</strong>: 61822 (Claude Desktop)</li>
-            <li><strong>Secondary</strong>: 61823-61832 (Other AI clients)</li>
-            <li><strong>Custom</strong>: 62000+ (Avoid conflicts with other services)</li>
+            <li>Use descriptive tab names</li>
+            <li>Group related tabs together</li>
+            <li>Keep tabs open for quick access</li>
         </ul>
 
-        <h3>Organization Tips</h3>
-        <ol>
-            <li><strong>Document your port assignments</strong> in a team wiki</li>
-            <li><strong>Use consistent naming</strong> for different AI instances</li>
-            <li><strong>Monitor resource usage</strong> when running many instances</li>
-            <li><strong>Set up scripts</strong> to start/stop multiple servers</li>
-        </ol>
-
-        <h3>Performance Considerations</h3>
+        <h3>Resource Management</h3>
         <ul>
-            <li>Each server instance uses ~50MB of memory</li>
-            <li>WebSocket connections are lightweight</li>
-            <li>Chrome DevTools must be open for each connected tab</li>
-            <li>No practical limit on concurrent instances</li>
+            <li>Monitor server resource usage</li>
+            <li>Close unused tabs to free memory</li>
+            <li>Restart server if performance degrades</li>
         </ul>
 
-        <h2>Real-World Examples</h2>
-
-        <h3>Example 1: Development Workflow</h3>
-        <pre><code># Terminal 1: Claude Desktop for code generation (default port)
-# Configured in claude_desktop_config.json
-
-# Terminal 2: Cline for code review and testing
-# Configured in VS Code settings with port 61823
-
-# Terminal 3: Custom script for automated testing
-npx kapture-mcp-server --port 61824</code></pre>
-
-        <h3>Example 2: Customer Support Automation</h3>
-        <p>Multiple support agents using different AI assistants to handle customer inquiries:</p>
+        <h3>Security</h3>
         <ul>
-            <li>Agent 1: Claude Desktop on port 61822 for complex queries</li>
-            <li>Agent 2: Cline on port 61823 for technical issues</li>
-            <li>Agent 3: Custom chatbot on port 61824 for routine tasks</li>
+            <li>Run server only on localhost</li>
+            <li>Don't expose port 61822 to the internet</li>
+            <li>Monitor connected clients regularly</li>
         </ul>
-
-        <h3>Example 3: Web Scraping Pipeline</h3>
-        <p>Parallel data collection from multiple sources:</p>
-        <pre><code>// AI 1: Scrape news sites
-const ai1 = connectToKapture(61822);
-
-// AI 2: Scrape social media
-const ai2 = connectToKapture(61823);
-
-// AI 3: Scrape e-commerce
-const ai3 = connectToKapture(61824);
-
-// Run all scrapers in parallel
-await Promise.all([
-  ai1.scrapeNews(),
-  ai2.scrapeSocial(),
-  ai3.scrapeCommerce()
-]);</code></pre>
 
         <h2>Troubleshooting</h2>
 
-        <h3>Common Issues</h3>
+        <h3>Connection Issues</h3>
+        <ol>
+            <li>Ensure server is running</li>
+            <li>Check that port 61822 is not blocked</li>
+            <li>Verify WebSocket URL is correct</li>
+        </ol>
 
-        <p><strong>Q: Server dropdown shows "No servers found"</strong></p>
+        <h3>Performance</h3>
         <ul>
-            <li>Ensure all MCP servers are running</li>
-            <li>Check that ports 61822-61832 are not blocked by firewall</li>
-            <li>Refresh the DevTools panel</li>
+            <li>Limit concurrent operations</li>
+            <li>Use appropriate delays between actions</li>
+            <li>Monitor Chrome memory usage</li>
         </ul>
 
-        <p><strong>Q: "Port already in use" error</strong></p>
-        <ul>
-            <li>Another process is using the port</li>
-            <li>Check with: <code>lsof -i :61822</code> (macOS/Linux)</li>
-            <li>Use a different port or stop the conflicting process</li>
-        </ul>
+        <h3>Debugging</h3>
+        <p>Enable debug logging:</p>
+        <pre><code>KAPTURE_DEBUG=1 npx kapture-mcp-server</code></pre>
 
-        <p><strong>Q: Can't connect multiple tabs</strong></p>
-        <ul>
-            <li>Each tab needs its own DevTools panel open</li>
-            <li>Ensure you're selecting the correct server from dropdown</li>
-            <li>Check that Chrome extension has proper permissions</li>
-        </ul>
+        <h2>Advanced Features</h2>
 
-        <h3>Debug Mode</h3>
-        <p>Enable debug logging for all instances:</p>
-        <pre><code>KAPTURE_DEBUG=1 npx kapture-mcp-server --port 61822
-KAPTURE_DEBUG=1 npx kapture-mcp-server --port 61823</code></pre>
+        <h3>Console Log Monitoring</h3>
+        <p>All connected clients receive real-time console logs from browser tabs.</p>
 
-        <div class="highlight">
-            <h2>Conclusion</h2>
-            <p>Running multiple AI assistants with Kapture unlocks powerful automation capabilities. Whether you're building complex workflows, enabling team collaboration, or maximizing productivity, Kapture's multi-instance support makes it possible.</p>
-            <p>Start with two AI assistants and expand as your needs grow. The architecture scales effortlessly to support your most ambitious automation projects.</p>
+        <h3>Resource Sharing</h3>
+        <p>Resources like screenshots and DOM content are available to all connected clients.</p>
+
+        <h3>Synchronized Notifications</h3>
+        <p>Tab changes and events are broadcast to all connected clients.</p>
+
+        <div class="feature-box">
+            <p><strong>Conclusion</strong></p>
+            <p>Running multiple AI assistants with Kapture unlocks powerful automation capabilities. Whether you're building complex workflows, enabling team collaboration, or maximizing productivity, Kapture's multi-client support makes it possible through a single, efficient server instance.</p>
         </div>
     </div>
 </body>

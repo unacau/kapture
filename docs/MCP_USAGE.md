@@ -4,7 +4,7 @@ This guide explains how to use Kapture with Model Context Protocol (MCP) clients
 
 ## 🚀 Multiple AI Assistants Support
 
-**Kapture's standout feature**: Run multiple AI assistants simultaneously! Each AI client can control different browser tabs independently by using separate ports. This enables powerful workflows like:
+**Kapture's standout feature**: Run multiple AI assistants simultaneously! Multiple AI clients can connect to the same server and control different browser tabs independently. This enables powerful workflows like:
 - Having Claude Desktop perform web research while Cline writes code
 - Running multiple automation tasks in parallel
 - Team collaboration with different AI tools
@@ -56,7 +56,7 @@ The tab is now ready to receive commands.
 
 ## Running Multiple AI Assistants Simultaneously
 
-Kapture excels at supporting multiple AI clients at the same time. Each client uses a different port to avoid conflicts:
+Kapture excels at supporting multiple AI clients at the same time. The first client connects via stdio (when using Claude Desktop), while additional clients connect via WebSocket:
 
 ### Example Setup: Claude Desktop + Cline
 
@@ -78,7 +78,7 @@ Kapture excels at supporting multiple AI clients at the same time. Each client u
   "cline.mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61823"]
+      "args": ["kapture-mcp-server"]
     }
   }
 }

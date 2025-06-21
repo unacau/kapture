@@ -9,37 +9,8 @@ import { logger } from './logger.js';
 // Set process title for better identification
 process.title = 'Kapture MCP Server';
 
-// Parse command line arguments
-function parseArgs() {
-  const args = process.argv.slice(2);
-  let port = 61822;
-  
-  for (let i = 0; i < args.length; i++) {
-    if ((args[i] === '--port' || args[i] === '-p') && args[i + 1]) {
-      const parsedPort = parseInt(args[i + 1], 10);
-      if (!isNaN(parsedPort) && parsedPort >= 1 && parsedPort <= 65535) {
-        port = parsedPort;
-        i++; // Skip next argument
-      } else {
-        logger.error(`Invalid port number: ${args[i + 1]}`);
-        process.exit(1);
-      }
-    } else if (args[i] === '--help' || args[i] === '-h') {
-      // Use stderr for help message to avoid breaking MCP protocol on stdout
-      process.stderr.write('Kapture MCP Server\n');
-      process.stderr.write('Usage: node dist/index.js [options]\n');
-      process.stderr.write('\n');
-      process.stderr.write('Options:\n');
-      process.stderr.write('  -p, --port <number>  WebSocket port (default: 61822)\n');
-      process.stderr.write('  -h, --help          Show this help message\n');
-      process.exit(0);
-    }
-  }
-  
-  return { port };
-}
-
-const { port: PORT } = parseArgs();
+// Fixed port - no command line arguments
+const PORT = 61822;
 
 // Initialize tab registry
 const tabRegistry = new TabRegistry();

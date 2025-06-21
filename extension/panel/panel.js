@@ -6,7 +6,6 @@ const statusText = statusIndicator.querySelector('.status-text');
 const statusTextHover = statusIndicator.querySelector('.status-text-hover');
 const statusDot = statusIndicator.querySelector('.status-dot');
 const tabIdElement = document.getElementById('tab-id');
-const serverDropdown = document.getElementById('server-dropdown');
 
 const messagesList = document.getElementById('messages-list');
 const detailView = document.getElementById('detail-view');
@@ -28,43 +27,30 @@ let commandQueue = null;
 let messages = [];
 let selectedMessageIndex = null;
 let isManualDisconnect = false;  // Track if user manually disconnected
-let discoveredServers = [];
-let selectedPort = null;  // Start with null instead of default port
-let discoveryInterval = null;
-let hasDiscoveredOnce = false;  // Track if we've run discovery at least once
 let connectedServerInfo = null; // Store info about connected server
-let reconnectTimeout = null; // Store timeout for server switching
+let reconnectTimeout = null; // Store timeout for reconnection
 
 // Console log storage - make it globally accessible for CommandExecutor
 window.consoleLogs = [];
 const MAX_CONSOLE_LOGS = 1000;
 
-// Load saved tab IDs from session storage
-function loadSavedTabIds() {
+// Load saved tab ID from session storage
+function loadSavedTabId() {
   try {
-    const saved = sessionStorage.getItem('kapture-tab-ids');
-    return saved ? JSON.parse(saved) : {};
+    return sessionStorage.getItem('kapture-tab-id') || null;
   } catch (e) {
-    console.error('Failed to load saved tab IDs:', e);
-    return {};
+    console.error('Failed to load saved tab ID:', e);
+    return null;
   }
 }
 
-// Save tab ID for a specific port
-function saveTabIdForPort(port, tabId) {
+// Save tab ID
+function saveTabId(tabId) {
   try {
-    const tabIds = loadSavedTabIds();
-    tabIds[port] = tabId;
-    sessionStorage.setItem('kapture-tab-ids', JSON.stringify(tabIds));
+    sessionStorage.setItem('kapture-tab-id', tabId);
   } catch (e) {
     console.error('Failed to save tab ID:', e);
   }
-}
-
-// Get saved tab ID for a specific port
-function getSavedTabIdForPort(port) {
-  const tabIds = loadSavedTabIds();
-  return tabIds[port] || null;
 }
 
 // Update UI state
@@ -91,14 +77,6 @@ function updateConnectionStatus(connected, retrying = false) {
   } else if (isError) {
     // Keep error state - don't override it
     return;
-  } else if (!hasDiscoveredOnce || (discoveredServers.length === 0 && !selectedPort)) {
-    // Still searching for servers
-    statusIndicator.classList.remove('connected');
-    statusIndicator.classList.remove('retrying');
-    statusIndicator.classList.remove('error');
-    statusText.textContent = 'Searching...';
-    statusTextHover.textContent = 'Searching...';
-    tabIdElement.textContent = 'Tab: -';
   } else {
     statusIndicator.classList.remove('connected');
     statusIndicator.classList.remove('retrying');
@@ -263,200 +241,35 @@ function navigateMessages(direction) {
   }
 }
 
-// Server discovery
-async function discoverServers() {
-  const startPort = 61822;
-  const endPort = 61832;
-  const discovered = [];
-
-  // Try to fetch from each port in parallel
-  const promises = [];
-  for (let port = startPort; port <= endPort; port++) {
-    promises.push(
-      fetch(`http://localhost:${port}/`, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-          'Accept': 'application/json'
-        }
-      })
-      .then(response => {
-        // Only process 200 OK responses
-        if (response.ok) {
-          return response.json();
-        }
-        return null;
-      })
-      .then(data => {
-        if (data) {
-          // Server is running, even if MCP client not connected yet
-          if (data.mcpClient) {
-            discovered.push({
-              port,
-              mcpClient: data.mcpClient,
-              label: `${data.mcpClient.name} ${data.mcpClient.version} (${port})`
-            });
-          } else {
-            // Server running but no MCP client connected
-            discovered.push({
-              port,
-              mcpClient: null,
-              label: `Kapture Server (${port}) - No MCP client`
-            });
-          }
-        }
-      })
-      .catch(() => {
-        // Silently ignore connection failures
-      })
-    );
-  }
-
-  // Wait for all requests to complete
-  await Promise.allSettled(promises);
-
-  // Sort discovered servers by port number for stable ordering
-  discovered.sort((a, b) => a.port - b.port);
-
-  // Update discovered servers
-  discoveredServers = discovered;
-  hasDiscoveredOnce = true;  // Mark that we've completed at least one discovery
-
-  // If we discovered servers and don't have a port selected, select the first one
-  const shouldAutoConnect = discovered.length > 0 && !selectedPort;
-  if (shouldAutoConnect) {
-    selectedPort = discovered[0].port;
-
-    // Load saved tab ID for this port
-    const savedTabId = getSavedTabIdForPort(selectedPort);
-    if (savedTabId) {
-      previousTabId = savedTabId;
-    } else {
-      // Clear previousTabId for new server
-      previousTabId = null;
-    }
-  }
-
-  updateServerDropdown();
-
-  // Update connection status to reflect current state
-  updateConnectionStatus(isConnected, isRetrying);
-
-  // Auto-connect to the first discovered server if we just selected it
-  if (shouldAutoConnect && !isConnected && !isRetrying) {
-    startRetrying();
-  }
-
-  return discovered.length > 0;
-}
-
-// Update server dropdown UI
-function updateServerDropdown() {
-  // Build list of servers to show
-  const serversToShow = [...discoveredServers];
-
-  // If connected, ensure the connected server is in the list
-  if (connectedServerInfo && isConnected) {
-    // Check if connected server is already in discovered list
-    const alreadyInList = serversToShow.find(s => s.port === connectedServerInfo.port);
-    if (!alreadyInList) {
-      // Add connected server to the beginning of the list
-      serversToShow.unshift(connectedServerInfo);
-    }
-  }
-
-  // Sort all servers by port for consistent ordering
-  serversToShow.sort((a, b) => a.port - b.port);
-
-  // Get current options to check if update is needed
-  const currentOptions = Array.from(serverDropdown.options);
-  const currentValues = currentOptions.map(opt => opt.value);
-  const newValues = serversToShow.map(s => s.port.toString());
-
-  // Check if we need to update (different servers or different order)
-  const needsUpdate = serversToShow.length === 0 && currentOptions.length > 0 ||
-                     serversToShow.length > 0 && currentOptions.length === 0 ||
-                     JSON.stringify(currentValues) !== JSON.stringify(newValues) ||
-                     currentOptions.some((opt, i) =>
-                       serversToShow[i] && opt.textContent !== serversToShow[i].label
-                     );
-
-  if (!needsUpdate) {
-    // Just ensure the selection is correct
-    if (selectedPort) {
-      serverDropdown.value = selectedPort;
-    }
-    return;
-  }
-
-  // Store whether dropdown is open and current scroll position
-  const isOpen = document.activeElement === serverDropdown;
-
-  // Clear and rebuild
-  serverDropdown.innerHTML = '';
-
-  if (serversToShow.length === 0) {
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'No servers found';
-    serverDropdown.appendChild(option);
-    serverDropdown.disabled = true;
-  } else {
-    serverDropdown.disabled = false;
-
-    // Add all servers to dropdown
-    serversToShow.forEach(server => {
-      const option = document.createElement('option');
-      option.value = server.port;
-      option.textContent = server.label;
-      serverDropdown.appendChild(option);
-    });
-
-    // Select the currently selected port
-    if (selectedPort) {
-      serverDropdown.value = selectedPort;
-    }
-  }
-
-  // If dropdown was open, keep it open
-  if (isOpen) {
-    serverDropdown.focus();
-  }
-}
-
-// Start discovery process
-function startDiscovery() {
-  // Update status to show we're searching
-  updateConnectionStatus(false, false);
-
-  // Initial discovery
-  discoverServers().then(found => {
-    // If we're retrying and found servers, connect to the first one
-    if (found && isRetrying && !isConnected) {
-      connect(true);
-    }
-  });
-
-  // Set up interval for continuous discovery
-  discoveryInterval = setInterval(async () => {
-    // Only discover if not connected
-    if (!isConnected) {
-      const found = await discoverServers();
-      // If we're retrying and found servers, connect
-      if (found && isRetrying && !isConnected) {
-        connect(true);
+// Check if server is available
+async function checkServerAvailable() {
+  const port = 61822;
+  
+  try {
+    const response = await fetch(`http://localhost:${port}/`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json'
       }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      connectedServerInfo = {
+        port,
+        mcpClient: data.mcpClient || null,
+        label: data.mcpClient ? `${data.mcpClient.name} ${data.mcpClient.version}` : 'Kapture Server - No MCP client'
+      };
+      return true;
     }
-  }, 3000);
-}
-
-// Stop discovery process
-function stopDiscovery() {
-  if (discoveryInterval) {
-    clearInterval(discoveryInterval);
-    discoveryInterval = null;
+    return false;
+  } catch (error) {
+    return false;
   }
 }
+
+
 
 // Get current tab info
 async function getCurrentTabInfo() {
@@ -515,11 +328,8 @@ async function connect(fromRetry = false) {
       throw error;  // Re-throw to stop connection attempt
     }
 
-    // Stop discovery when connecting
-    stopDiscovery();
-
-    // Create WebSocket connection
-    ws = new WebSocket(`ws://localhost:${selectedPort}`);
+    // Create WebSocket connection to fixed port
+    ws = new WebSocket(`ws://localhost:61822`);
 
     ws.onopen = () => {
       console.log('WebSocket connected');
@@ -541,8 +351,8 @@ async function connect(fromRetry = false) {
         pageVisibility: tabInfo.pageVisibility
       };
 
-      // Only use saved tab ID for this specific port
-      const savedTabId = getSavedTabIdForPort(selectedPort);
+      // Use saved tab ID if available
+      const savedTabId = loadSavedTabId();
       if (savedTabId) {
         registerMessage.requestedTabId = savedTabId;
       }
@@ -571,15 +381,15 @@ async function connect(fromRetry = false) {
           previousTabId = tabId;  // Store for reconnection
           tabIdElement.textContent = `Tab: ${tabId}`;
 
-          // Save tab ID for this port
-          saveTabIdForPort(selectedPort, tabId);
+          // Save tab ID
+          saveTabId(tabId);
 
           // Store connected server info if provided
           if (message.mcpClient && message.mcpClient.name) {
             connectedServerInfo = {
-              port: selectedPort,
+              port: 61822,
               mcpClient: message.mcpClient,
-              label: `${message.mcpClient.name} ${message.mcpClient.version || '?'} (${selectedPort})`
+              label: `${message.mcpClient.name} ${message.mcpClient.version || '?'}`
             };
           } else {
             connectedServerInfo = null;
@@ -591,8 +401,6 @@ async function connect(fromRetry = false) {
             reconnectTimeout = null;
           }
           updateConnectionStatus(true);
-          // Update dropdown to show connected server
-          updateServerDropdown();
 
           // Start monitoring for tab changes
           startTabMonitoring();
@@ -601,12 +409,10 @@ async function connect(fromRetry = false) {
           // Update connected server info when MCP client connects later
           if (message.mcpClient && message.mcpClient.name) {
             connectedServerInfo = {
-              port: selectedPort,
+              port: 61822,
               mcpClient: message.mcpClient,
-              label: `${message.mcpClient.name} ${message.mcpClient.version || '?'} (${selectedPort})`
+              label: `${message.mcpClient.name} ${message.mcpClient.version || '?'}`
             };
-            // Update dropdown to show the new server info
-            updateServerDropdown();
           }
 
         } else if (message.type === 'command') {
@@ -689,10 +495,6 @@ function disconnect(maintainRetryState = false) {
   // Stop monitoring tab changes
   stopTabMonitoring();
 
-  // Restart discovery when disconnected
-  if (!isConnected) {
-    startDiscovery();
-  }
 }
 
 // Start automatic retry
@@ -744,49 +546,9 @@ function clearLogs() {
 }
 
 // Connect button handler
-// Server dropdown handler
-serverDropdown.addEventListener('change', (e) => {
-  const newPort = parseInt(e.target.value);
-  if (newPort && newPort !== selectedPort) {
-    selectedPort = newPort;
-    isManualDisconnect = false; // Auto-connect when selecting a server
-
-    // Load saved tab ID for this port
-    const savedTabId = getSavedTabIdForPort(newPort);
-    if (savedTabId) {
-      previousTabId = savedTabId;
-    } else {
-      // Clear previousTabId when switching to a different server with no saved ID
-      previousTabId = null;
-    }
-
-    // If connected to a different server, disconnect first
-    if (isConnected || isRetrying) {
-      stopRetrying();
-      disconnect();
-      // Cancel any pending reconnect
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = null;
-      }
-      // Small delay before reconnecting
-      reconnectTimeout = setTimeout(() => {
-        reconnectTimeout = null;
-        startRetrying(); // Start connection with retry
-      }, 100);
-    } else {
-      // Not connected, start connection
-      startRetrying();
-    }
-  }
-});
 
 // Status indicator button handler
 statusIndicator.addEventListener('click', () => {
-  if (!selectedPort) {
-    // No server selected, can't do anything
-    return;
-  }
 
   if (isConnected) {
     // Disconnect
@@ -830,8 +592,20 @@ document.addEventListener('keydown', (e) => {
 // Initialize
 updateLogCount();
 
-// Start server discovery on load (this will update connection status)
-startDiscovery();
+// Check server availability and start retry on load
+checkServerAvailable().then(available => {
+  if (available) {
+    // Load saved tab ID
+    const savedTabId = loadSavedTabId();
+    if (savedTabId) {
+      previousTabId = savedTabId;
+    }
+    // Start connection retry
+    startRetrying();
+  } else {
+    updateConnectionStatus(false, false);
+  }
+});
 
 // Inject console capture into the inspected page
 function injectConsoleCapture() {

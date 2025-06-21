@@ -14,37 +14,27 @@ const pendingRequests = new Map();
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);
-  let port = 61822;
   let dev = false;
 
   for (let i = 0; i < args.length; i++) {
-    if ((args[i] === '--port' || args[i] === '-p') && args[i + 1]) {
-      const parsedPort = parseInt(args[i + 1], 10);
-      if (!isNaN(parsedPort) && parsedPort >= 1 && parsedPort <= 65535) {
-        port = parsedPort;
-        i++; // Skip next argument
-      } else {
-        console.error(`Invalid port number: ${args[i + 1]}`);
-        process.exit(1);
-      }
-    } else if (args[i] === '--dev') {
+    if (args[i] === '--dev') {
       dev = true;
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log('Kapture Test App (WebSocket Mode)');
       console.log('Usage: npm start -- [options]');
       console.log('');
       console.log('Options:');
-      console.log('  -p, --port <number>  MCP WebSocket port (default: 61822)');
       console.log('  --dev               Open DevTools on startup');
       console.log('  -h, --help          Show this help message');
       process.exit(0);
     }
   }
 
-  return { port, dev };
+  return { dev };
 }
 
-const { port: wsPort, dev: isDev } = parseArgs();
+const { dev: isDev } = parseArgs();
+const wsPort = 61822; // Fixed port
 
 function createWindow() {
   mainWindow = new BrowserWindow({

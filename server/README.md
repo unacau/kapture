@@ -2,7 +2,7 @@
 
 MCP server for Kapture browser automation. This server enables AI assistants like Claude to control web browsers through the Kapture Chrome extension.
 
-**✨ Key Feature**: Support for multiple AI assistants running simultaneously! Run Claude Desktop, Cline, and other MCP clients at the same time using different ports.
+**✨ Key Feature**: Support for multiple AI assistants running simultaneously! Claude Desktop connects via stdio, while additional clients can connect via WebSocket to the same server.
 
 ## Quick Start
 
@@ -15,7 +15,7 @@ npx kapture-mcp-server
 ### Run with custom port
 
 ```bash
-npx kapture-mcp-server --port 61823
+npx kapture-mcp-server
 ```
 
 ### Install globally
@@ -60,11 +60,11 @@ Or if you installed it globally:
 
 ## Command Line Options
 
-- `--port <number>` - Specify WebSocket port (default: 61822)
+None - the server runs on the fixed port 61822
 
 ## Running Multiple AI Assistants
 
-Kapture supports multiple AI clients running simultaneously. Simply run each on a different port:
+Kapture supports multiple AI clients running simultaneously through a single server instance:
 
 **Example: Claude Desktop + Cline**
 
@@ -86,7 +86,7 @@ Cline (VS Code settings.json):
   "cline.mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61823"]
+      "args": ["kapture-mcp-server"]
     }
   }
 }

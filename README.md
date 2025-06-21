@@ -2,7 +2,7 @@
 
 Kapture is a Chrome DevTools Extension that enables browser automation through the Model Context Protocol (MCP). It allows AI applications like Claude to control web browsers via a three-layer architecture.
 
-**✨ Key Feature**: Run multiple AI assistants simultaneously! Each AI client (Claude Desktop, Cline, etc.) can control different browser tabs using separate ports.
+**✨ Key Feature**: Multiple AI clients can connect to the same server! Claude Desktop, Cline, and other MCP clients can all control browser tabs through a single server instance.
 
 ![Kapture DevTools Extension Panel](extension/ScreenshotWithExtensionPanel.webp)
 
@@ -12,7 +12,7 @@ Kapture bridges AI assistants with web browsers through:
 - **MCP Server**: Handles MCP protocol communication
 - **Chrome Extension**: DevTools panel for browser automation
 - **WebSocket Bridge**: Real-time communication between server and extensions
-- **Multi-Instance Support**: Run multiple AI clients simultaneously on different ports
+- **Multi-Client Support**: Multiple AI clients can connect simultaneously via WebSocket
 
 ## Architecture
 ![How Kapture Works](docs/assets/images/HowKaptureWorks.webp)
@@ -56,11 +56,11 @@ The server starts on port 61822 by default. You can specify a custom port:
 ```bash
 # Server
 cd server
-npm start -- --port 61823
+npm start
 
 # Test App
 cd test-app
-npm start -- --port 61823
+npm start
 ```
 
 ### 4. Connect via DevTools
@@ -68,7 +68,7 @@ npm start -- --port 61823
 1. Open any website in Chrome
 2. Open Chrome/Brave Developer Tools
 3. Navigate to "Kapture" panel
-4. The extension will automatically discover available servers (ports 61822-61832)
+4. The extension will automatically connect to the server on port 61822
 5. Select a server from the dropdown to connect automatically
 
 ## Using with Claude Desktop
@@ -129,7 +129,7 @@ For isolation between AI assistants, you can also run separate servers on differ
   "cline.mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61823"]
+      "args": ["kapture-mcp-server"]
     }
   }
 }
@@ -251,7 +251,7 @@ After making changes:
 
 ## DevTools Panel Features
 
-- **Server Discovery** - Automatically finds available servers on ports 61822-61832
+- **Automatic Connection** - Connects to server on port 61822
 - **Server Selection** - Dropdown to choose between multiple running servers
 - **Connection Status** - Real-time server connection indicator
 - **Tab Info** - Current tab ID and URL display
@@ -263,7 +263,7 @@ After making changes:
 ## Troubleshooting
 
 ### Connection Issues
-- The extension will automatically scan for servers on ports 61822-61832
+- The extension will automatically connect to the server on port 61822
 - If no servers are found, verify the server is running
 - Check the server dropdown to see which servers were discovered
 - Check browser console for errors

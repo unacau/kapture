@@ -1,6 +1,6 @@
 # Running Multiple AI Assistants with Kapture
 
-Kapture's powerful architecture supports running multiple AI assistants simultaneously, enabling advanced workflows and team collaboration scenarios.
+Kapture's powerful architecture supports running multiple AI assistants simultaneously through a single server instance, enabling advanced workflows and team collaboration scenarios.
 
 ## Why Run Multiple AI Assistants?
 
@@ -11,7 +11,7 @@ Kapture's powerful architecture supports running multiple AI assistants simultan
 
 ### 👥 Team Collaboration
 - Multiple developers can use their preferred AI tools simultaneously
-- Each team member gets their own dedicated port and browser tabs
+- Each AI gets their own browser tabs
 - No conflicts or interference between different AI sessions
 
 ### 🧪 A/B Testing
@@ -21,19 +21,21 @@ Kapture's powerful architecture supports running multiple AI assistants simultan
 
 ## How It Works
 
-Each AI client runs its own Kapture MCP server instance on a different port:
+Kapture supports multiple connection methods to a single server instance:
 
 ```
-Claude Desktop → Port 61822 → Chrome Tab 1
-Cline         → Port 61823 → Chrome Tab 2
-Custom AI     → Port 61824 → Chrome Tab 3
+Claude Desktop → stdio connection → Kapture Server ← WebSocket ← Additional MCP Clients
+                                           ↓
+                                    Chrome Extension
+                                           ↓
+                                    Browser Tabs
 ```
 
-The Kapture Chrome extension automatically discovers all running servers and displays them in a dropdown menu.
+The first client (typically Claude Desktop) connects via stdio, while additional clients connect via WebSocket on port 61822.
 
 ## Quick Setup Guide
 
-### 1. Configure Claude Desktop (Port 61822)
+### 1. Configure Claude Desktop (Primary Client)
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -48,177 +50,124 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-### 2. Configure Cline/VS Code (Port 61823)
+### 2. Configure Additional Clients (WebSocket)
 
-Add to VS Code settings:
+Additional MCP clients can connect to the same server via WebSocket:
 
+**For Cline/VS Code:**
 ```json
 {
   "cline.mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61823"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
 ```
 
-### 3. Configure Additional AI Clients
+**For custom clients:**
+Connect to `ws://localhost:61822/mcp` using the MCP WebSocket protocol.
 
-For each additional client, increment the port number:
-
-```json
-{
-  "otherAI.mcpServers": {
-    "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server", "--port", "61824"]
-    }
-  }
-}
-```
-
-### 4. Connect Browser Tabs
+### 3. Connect Browser Tabs
 
 1. Open Chrome and navigate to different websites in separate tabs
 2. Open DevTools (F12) in each tab
 3. Go to the "Kapture" panel
-4. Select the appropriate server from the dropdown to connect automatically
+4. The extension will automatically connect to the server
 
-Each tab will connect to its designated AI assistant's server.
+Each tab gets a unique ID and can be controlled independently by any connected AI client.
 
-## Advanced Configurations
+## Server Management
 
-### Custom Port Ranges
+### Starting the Server
 
-If you need specific port ranges for your organization:
+The server is automatically started when Claude Desktop launches. You can also start it manually:
 
 ```bash
-# Development team
-npx kapture-mcp-server --port 62000  # Developer 1
-npx kapture-mcp-server --port 62001  # Developer 2
-
-# QA team  
-npx kapture-mcp-server --port 63000  # QA Tester 1
-npx kapture-mcp-server --port 63001  # QA Tester 2
+npx kapture-mcp-server
 ```
 
-### Docker Deployment
+### Monitoring Connections
 
-Run multiple isolated instances using Docker:
+The server shows connected clients in its logs:
+- stdio client (Claude Desktop)
+- WebSocket clients count
+- Active browser tabs
 
-```yaml
-version: '3'
-services:
-  claude-kapture:
-    image: kapture-mcp-server
-    ports:
-      - "61822:61822"
-    environment:
-      - PORT=61822
-      
-  cline-kapture:
-    image: kapture-mcp-server
-    ports:
-      - "61823:61823"
-    environment:
-      - PORT=61823
+### Server Status
+
+Check server status by visiting:
 ```
+http://localhost:61822/
+```
+
+## Use Cases
+
+### Example 1: Documentation & Implementation
+
+1. Claude Desktop browses documentation sites
+2. Cline (via WebSocket) implements code based on Claude's findings
+3. Both work in parallel on different browser tabs
+
+### Example 2: Testing Workflow
+
+1. One AI writes test scenarios
+2. Another AI executes them in the browser
+3. A third AI analyzes results
+
+### Example 3: Multi-Site Management
+
+1. AI #1 manages social media accounts
+2. AI #2 handles email and communications
+3. AI #3 performs data analysis on dashboards
 
 ## Best Practices
 
-### Port Management
-- **Default**: 61822 (Claude Desktop)
-- **Secondary**: 61823-61832 (Other AI clients)
-- **Custom**: 62000+ (Avoid conflicts with other services)
+### Tab Organization
+- Use descriptive tab names
+- Group related tabs together
+- Keep tabs open for quick access
 
-### Organization Tips
-1. **Document your port assignments** in a team wiki
-2. **Use consistent naming** for different AI instances
-3. **Monitor resource usage** when running many instances
-4. **Set up scripts** to start/stop multiple servers
+### Resource Management
+- Monitor server resource usage
+- Close unused tabs to free memory
+- Restart server if performance degrades
 
-### Performance Considerations
-- Each server instance uses ~50MB of memory
-- WebSocket connections are lightweight
-- Chrome DevTools must be open for each connected tab
-- No practical limit on concurrent instances
-
-## Real-World Examples
-
-### Example 1: Development Workflow
-
-```bash
-# Terminal 1: Claude Desktop for code generation (default port)
-# Configured in claude_desktop_config.json
-
-# Terminal 2: Cline for code review and testing
-# Configured in VS Code settings with port 61823
-
-# Terminal 3: Custom script for automated testing
-npx kapture-mcp-server --port 61824
-```
-
-### Example 2: Customer Support Automation
-
-Multiple support agents using different AI assistants to handle customer inquiries:
-
-- Agent 1: Claude Desktop on port 61822 for complex queries
-- Agent 2: Cline on port 61823 for technical issues
-- Agent 3: Custom chatbot on port 61824 for routine tasks
-
-### Example 3: Web Scraping Pipeline
-
-Parallel data collection from multiple sources:
-
-```javascript
-// AI 1: Scrape news sites
-const ai1 = connectToKapture(61822);
-
-// AI 2: Scrape social media
-const ai2 = connectToKapture(61823);
-
-// AI 3: Scrape e-commerce
-const ai3 = connectToKapture(61824);
-
-// Run all scrapers in parallel
-await Promise.all([
-  ai1.scrapeNews(),
-  ai2.scrapeSocial(),
-  ai3.scrapeCommerce()
-]);
-```
+### Security
+- Run server only on localhost
+- Don't expose port 61822 to the internet
+- Monitor connected clients regularly
 
 ## Troubleshooting
 
-### Common Issues
+### Connection Issues
+1. Ensure server is running
+2. Check that port 61822 is not blocked
+3. Verify WebSocket URL is correct
 
-**Q: Server dropdown shows "No servers found"**
-- Ensure all MCP servers are running
-- Check that ports 61822-61832 are not blocked by firewall
-- Refresh the DevTools panel
+### Performance
+- Limit concurrent operations
+- Use appropriate delays between actions
+- Monitor Chrome memory usage
 
-**Q: "Port already in use" error**
-- Another process is using the port
-- Check with: `lsof -i :61822` (macOS/Linux)
-- Use a different port or stop the conflicting process
-
-**Q: Can't connect multiple tabs**
-- Each tab needs its own DevTools panel open
-- Ensure you're selecting the correct server from dropdown
-- Check that Chrome extension has proper permissions
-
-### Debug Mode
-
-Enable debug logging for all instances:
-
+### Debugging
+Enable debug logging:
 ```bash
-KAPTURE_DEBUG=1 npx kapture-mcp-server --port 61822
-KAPTURE_DEBUG=1 npx kapture-mcp-server --port 61823
+KAPTURE_DEBUG=1 npx kapture-mcp-server
 ```
+
+## Advanced Features
+
+### Console Log Monitoring
+All connected clients receive real-time console logs from browser tabs.
+
+### Resource Sharing
+Resources like screenshots and DOM content are available to all connected clients.
+
+### Synchronized Notifications
+Tab changes and events are broadcast to all connected clients.
 
 ## Conclusion
 
-Running multiple AI assistants with Kapture unlocks powerful automation capabilities. Whether you're building complex workflows, enabling team collaboration, or maximizing productivity, Kapture's multi-instance support makes it possible.
-
-Start with two AI assistants and expand as your needs grow. The architecture scales effortlessly to support your most ambitious automation projects.
+Running multiple AI assistants with Kapture unlocks powerful automation capabilities. Whether you're building complex workflows, enabling team collaboration, or maximizing productivity, Kapture's multi-client support makes it possible through a single, efficient server instance.
