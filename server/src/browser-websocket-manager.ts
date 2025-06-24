@@ -28,7 +28,7 @@ interface ResponseMessage extends Message {
   };
 }
 
-export class WebSocketManager {
+export class BrowserWebSocketManager {
   private responseHandler?: (response: ResponseMessage) => void;
   private consoleLogHandler?: (tabId: string, logEntry: any) => void;
   private mcpClientInfo: { name?: string; version?: string } = {};
@@ -81,7 +81,7 @@ export class WebSocketManager {
       ws.on('message', (data: Buffer) => {
         try {
           const message = JSON.parse(data.toString()) as Message;
-          this.handleMessage(ws, message);
+          this.routeBrowserMessage(ws, message);
         } catch (error) {
           logger.error('Failed to parse message:', error);
           ws.send(JSON.stringify({
@@ -118,10 +118,20 @@ export class WebSocketManager {
     });
   }
 
-  private handleMessage(ws: WebSocket, message: Message): void {
+  /**
+   * Central message router for all WebSocket messages from Chrome extensions
+   * Handles different message types:
+   * - 'register': New tab registration or reconnection
+   * - 'response': Command execution results from the browser
+   * - 'tab-info': Tab metadata updates (URL, title, dimensions, etc.)
+   * - 'console': Browser console log entries
+   * - 'console-clear': Console clear events
+   * - Unknown types: Sends error response back to extension
+   */
+  private routeBrowserMessage(ws: WebSocket, message: Message): void {
     switch (message.type) {
       case 'register':
-        this.handleRegister(ws, message as RegisterMessage);
+        this.handleTabRegistration(ws, message as RegisterMessage);
         break;
       
       case 'response':
@@ -199,7 +209,16 @@ export class WebSocketManager {
     }
   }
 
-  private handleRegister(ws: WebSocket, message: RegisterMessage): void {
+  /**
+   * Handles tab registration when a Chrome extension connects
+   * This function:
+   * 1. Assigns a tab ID (either the requested one or generates a new one)
+   * 2. Handles reconnection scenarios by terminating old connections
+   * 3. Registers the WebSocket connection with the tab registry
+   * 4. Sends back the assigned tab ID to the extension
+   * 5. Triggers connect/update callbacks for notifications
+   */
+  private handleTabRegistration(ws: WebSocket, message: RegisterMessage): void {
     const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions, 
             scrollPosition, pageVisibility } = message;
     

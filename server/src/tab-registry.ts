@@ -30,7 +30,7 @@ export class TabRegistry {
       this.nextTabId++;
       return newId;
     }
-    
+
     // If requested ID is already in use by an active connection, assign a new one
     if (this.tabs.has(requestedId)) {
       const existing = this.tabs.get(requestedId)!;
@@ -41,14 +41,14 @@ export class TabRegistry {
         return newId;
       }
     }
-    
+
     // Requested ID is available, use it
     // Update nextTabId if necessary to avoid conflicts
     const requestedNum = parseInt(requestedId);
     if (!isNaN(requestedNum) && requestedNum >= this.nextTabId) {
       this.nextTabId = requestedNum + 1;
     }
-    
+
     return requestedId;
   }
 
@@ -58,10 +58,10 @@ export class TabRegistry {
       ws,
       connectedAt: Date.now(),
     };
-    
+
     this.tabs.set(tabId, connection);
     logger.log(`Tab registered: ${tabId}`);
-    
+
     // Call the connect callback if set
     if (this.connectCallback) {
       this.connectCallback(tabId).catch(err => {
@@ -76,7 +76,7 @@ export class TabRegistry {
       ws,
       connectedAt: Date.now(),
     };
-    
+
     this.tabs.set(tabId, connection);
     logger.log(`Tab registered: ${tabId}`);
   }
@@ -108,26 +108,6 @@ export class TabRegistry {
   getAll(): TabConnection[] {
     return Array.from(this.tabs.values());
   }
-  
-  // Get only tabs with open WebSocket connections
-  getActiveTabs(): TabConnection[] {
-    return Array.from(this.tabs.values()).filter(
-      tab => tab.ws.readyState === WebSocket.OPEN
-    );
-  }
-  
-  // Clean up any tabs with closed WebSocket connections
-  cleanupClosedConnections(): number {
-    let cleaned = 0;
-    for (const [tabId, connection] of this.tabs.entries()) {
-      if (connection.ws.readyState !== WebSocket.OPEN) {
-        this.tabs.delete(tabId);
-        cleaned++;
-        logger.log(`Cleaned up closed connection for tab ${tabId}`);
-      }
-    }
-    return cleaned;
-  }
 
   findByWebSocket(ws: WebSocket): TabConnection | undefined {
     for (const connection of this.tabs.values()) {
@@ -138,8 +118,8 @@ export class TabRegistry {
     return undefined;
   }
 
-  updateTabInfo(tabId: string, info: { 
-    url?: string; 
+  updateTabInfo(tabId: string, info: {
+    url?: string;
     title?: string;
     domSize?: number;
     fullPageDimensions?: { width: number; height: number };
@@ -156,7 +136,7 @@ export class TabRegistry {
                        (info.viewportDimensions !== undefined) ||
                        (info.scrollPosition !== undefined) ||
                        (info.pageVisibility !== undefined);
-      
+
       if (info.url !== undefined) connection.url = info.url;
       if (info.title !== undefined) connection.title = info.title;
       if (info.domSize !== undefined) connection.domSize = info.domSize;
@@ -164,7 +144,7 @@ export class TabRegistry {
       if (info.viewportDimensions !== undefined) connection.viewportDimensions = info.viewportDimensions;
       if (info.scrollPosition !== undefined) connection.scrollPosition = info.scrollPosition;
       if (info.pageVisibility !== undefined) connection.pageVisibility = info.pageVisibility;
-      
+
       // Call the update callback if there was a change
       if (hadChange && this.updateCallback) {
         this.updateCallback(tabId).catch(err => {

@@ -348,17 +348,20 @@ Available MCP tools: navigate, back, forward, click, hover, ...</code></pre>
         
         <h3>Example Setup: Claude Desktop + Cline</h3>
         
-        <p><strong>1. Claude Desktop</strong> (first client - stdio):</p>
+        <p><strong>1. Start the server manually:</strong></p>
+        <pre><code>npx kapture-mcp-server</code></pre>
+        
+        <p><strong>2. Claude Desktop</strong> (via WebSocket):</p>
         <pre><code>{
   "mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }</code></pre>
         
-        <p><strong>2. Cline/VS Code</strong> (additional client - WebSocket):</p>
+        <p><strong>3. Cline/VS Code</strong> (via WebSocket):</p>
         <pre><code>{
   "cline.mcpServers": {
     "kapture": {
@@ -428,21 +431,12 @@ Available MCP tools: navigate, back, forward, click, hover, ...</code></pre>
 }</code></pre>
 
         <h4>Custom MCP Client</h4>
-        <p>Connect to the Kapture server via stdio:</p>
+        <p>Connect to the Kapture server via WebSocket:</p>
         <pre><code>import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
 
-// Using npx
-const transport = new StdioClientTransport({
-  command: 'npx',
-  args: ['kapture-mcp-server']
-});
-
-// Or using local installation
-const transport = new StdioClientTransport({
-  command: 'node',
-  args: ['/path/to/kapture/server/dist/index.js']
-});
+// Connect to running server
+const transport = new WebSocketClientTransport(new WebSocket('ws://localhost:61822/mcp'));
 
 const client = new Client({
   name: 'my-mcp-client',

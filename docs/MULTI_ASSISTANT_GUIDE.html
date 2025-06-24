@@ -136,25 +136,26 @@
 
         <p>Kapture supports multiple connection methods to a single server instance:</p>
 
-        <div class="diagram">Claude Desktop → stdio connection → Kapture Server ← WebSocket ← Additional MCP Clients
-                                   ↓
-                            Chrome Extension
-                                   ↓
-                            Browser Tabs</div>
+        <div class="diagram">MCP Clients → WebSocket connection → Kapture Server → Chrome Extension
+                                                    ↓
+                                              Browser Tabs</div>
 
-        <p>The first client (typically Claude Desktop) connects via stdio, while additional clients connect via WebSocket on port 61822.</p>
+        <p>All clients connect via WebSocket on port 61822.</p>
 
         <h2>Quick Setup Guide</h2>
 
         <h3>1. Configure Claude Desktop (Primary Client)</h3>
 
+        <p>Start the server manually:</p>
+        <pre><code>npx kapture-mcp-server</code></pre>
+        
         <p>Edit <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:</p>
 
         <pre><code>{
   "mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }</code></pre>
@@ -199,7 +200,7 @@
 
         <p>The server shows connected clients in its logs:</p>
         <ul>
-            <li>stdio client (Claude Desktop)</li>
+            <li>WebSocket clients</li>
             <li>WebSocket clients count</li>
             <li>Active browser tabs</li>
         </ul>

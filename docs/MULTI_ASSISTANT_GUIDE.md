@@ -24,18 +24,21 @@ Kapture's powerful architecture supports running multiple AI assistants simultan
 Kapture supports multiple connection methods to a single server instance:
 
 ```
-Claude Desktop → stdio connection → Kapture Server ← WebSocket ← Additional MCP Clients
-                                           ↓
-                                    Chrome Extension
-                                           ↓
-                                    Browser Tabs
+MCP Clients → WebSocket connection → Kapture Server → Chrome Extension
+                                                            ↓
+                                                      Browser Tabs
 ```
 
-The first client (typically Claude Desktop) connects via stdio, while additional clients connect via WebSocket on port 61822.
+All clients connect via WebSocket on port 61822.
 
 ## Quick Setup Guide
 
 ### 1. Configure Claude Desktop (Primary Client)
+
+Start the server manually:
+```bash
+npx kapture-mcp-server
+```
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -43,8 +46,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
@@ -91,7 +94,7 @@ npx kapture-mcp-server
 ### Monitoring Connections
 
 The server shows connected clients in its logs:
-- stdio client (Claude Desktop)
+- WebSocket clients
 - WebSocket clients count
 - Active browser tabs
 

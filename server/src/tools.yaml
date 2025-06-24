@@ -21,6 +21,12 @@ tools:
   list_tabs:
     description: List all connected browser tabs
 
+  tab_detail:
+    description: Get detailed information about a specific tab
+    required: [tabId]
+    properties:
+      tabId: *tabId
+
   navigate:
     description: Navigate browser tab to specified URL
     required: [tabId, url]
@@ -216,3 +222,22 @@ tools:
       y:
         type: number
         description: Y coordinate relative to the viewport
+
+  console_logs:
+    description: Get console logs from a browser tab
+    required: [tabId]
+    properties:
+      tabId: *tabId
+      before:
+        type: string
+        description: Get logs before this timestamp (for pagination)
+      limit:
+        type: integer
+        description: Maximum number of logs to return
+        default: 100
+        minimum: 1
+        maximum: 500
+      level:
+        type: string
+        description: Filter logs by level
+        enum: ["log", "info", "warn", "error"]

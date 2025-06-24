@@ -104,9 +104,8 @@ Add to your Claude Desktop config:
 Kapture supports multiple MCP clients connecting to the same server! You can run Claude Desktop, Cline, and other MCP clients simultaneously through a single server instance.
 
 ### How It Works
-- First client connects via stdio (usually Claude Desktop)
-- Additional clients connect via WebSocket to `ws://localhost:61822/mcp`
-- All clients share access to the same browser tabs
+- All MCP clients connect via WebSocket to `ws://localhost:61822/mcp`
+- All MCP clients share access to the same browser tabs
 - Notifications are broadcast to all connected clients
 
 ### Smart Server Detection
@@ -118,7 +117,7 @@ This prevents errors and confusion when multiple clients try to start servers.
 
 ### Setting Up Multiple Clients
 
-**Claude Desktop** (first client - stdio):
+**Claude Desktop** (via STDIO to WebSocket bridge):
 ```json
 {
   "mcpServers": {
@@ -130,7 +129,12 @@ This prevents errors and confusion when multiple clients try to start servers.
 }
 ```
 
-**Cline/VS Code** (additional client - WebSocket):
+**Start the server manually:**
+```bash
+npx kapture-mcp-server
+```
+
+**Cline/VS Code** (via WebSocket):
 ```json
 {
   "cline.mcpServers": {

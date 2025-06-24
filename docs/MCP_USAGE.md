@@ -63,26 +63,30 @@ The tab is now ready to receive commands.
 Kapture excels at supporting multiple AI clients through a single server instance:
 
 ### How It Works
-- **First client** (typically Claude Desktop): Connects via stdio
-- **Additional clients**: Connect via WebSocket to `ws://localhost:61822/mcp`
+- **MCP clients**: Connect via WebSocket to `ws://localhost:61822/mcp`
 - All clients share access to the same browser tabs
 - Notifications are broadcast to all connected clients
 
 ### Example Setup: Claude Desktop + Cline
 
-**1. Claude Desktop** (first client - stdio):
+**1. Start the server manually:**
+```bash
+npx kapture-mcp-server
+```
+
+**2. Claude Desktop** (via WebSocket):
 ```json
 {
   "mcpServers": {
     "kapture": {
-      "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
 ```
 
-**2. Cline/VS Code** (additional client - WebSocket):
+**3. Cline/VS Code** (via WebSocket):
 ```json
 {
   "cline.mcpServers": {
@@ -164,23 +168,14 @@ Add to your VS Code settings:
 
 #### Custom MCP Client
 
-Connect to the Kapture server via stdio:
+Connect to the Kapture server via WebSocket:
 
 ```javascript
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
 
-// Using npx
-const transport = new StdioClientTransport({
-  command: 'npx',
-  args: ['kapture-mcp-server']
-});
-
-// Or using local installation
-const transport = new StdioClientTransport({
-  command: 'node',
-  args: ['/path/to/kapture/server/dist/index.js']
-});
+// Connect to running server
+const transport = new WebSocketClientTransport(new WebSocket('ws://localhost:61822/mcp'));
 
 const client = new Client({
   name: 'my-mcp-client',

@@ -240,26 +240,11 @@ export const domTool = convertedTools.domTool;
 export const elementsFromPointTool = convertedTools.elementsFromPointTool;
 export const elementsTool = convertedTools.elementsTool;
 export const listTabsTool = convertedTools.list_tabsTool;
+export const tabDetailTool = convertedTools.tab_detailTool;
+export const consoleLogsTool = convertedTools.console_logsTool;
 
-// Export all tools array
-export const allTools = [
-  navigateTool,
-  goBackTool,
-  goForwardTool,
-  clickTool,
-  hoverTool,
-  fillTool,
-  selectTool,
-  keypressTool,
-  evaluateTool,
-  elementsFromPointTool,
-  elementsTool,
-
-  // Keeping these around since Claude Desktop doesn't offer great interactions with Resources
-  screenshotTool,  // use kapturemcp://tab/{tabId}/screenshot resource instead
-  domTool,  // use kapturemcp://tab/{tabId}/dom resource instead
-  listTabsTool  // use kapturemcp://tabs resource instead
-];
+// Export all tools array - dynamically from convertedTools
+export const allTools = Object.values(convertedTools).filter(tool => tool && tool.name);
 
 // Export resources
 export const baseResources = resourcesConfig.baseResources;
