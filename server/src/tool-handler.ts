@@ -1,7 +1,6 @@
 import { BrowserCommandHandler } from './browser-command-handler.js';
 import { TabRegistry } from './tab-registry.js';
 import { allTools } from './yaml-loader.js';
-import {undefined} from "zod";
 
 export class ToolHandler {
   constructor(
