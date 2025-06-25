@@ -1,5 +1,20 @@
 // DevTools Panel UI with Real Connection and Data
 
+// Debug what you're actually getting
+console.log('inspectedWindow.tabId:', chrome.devtools.inspectedWindow.tabId);
+
+// Let's also check what chrome.tabs.query gives us for comparison
+chrome.tabs.query({}, (tabs) => {
+  console.log('All tabs:', tabs);
+
+  // Find the tab with the same ID
+  const inspectedTab = tabs.find(tab => tab.id === chrome.devtools.inspectedWindow.tabId);
+  console.log('Inspected tab details:', inspectedTab);
+});
+
+// Also check the inspected window URL
+console.log('inspectedWindow.url:', chrome.devtools.inspectedWindow.url);
+
 const tabId = chrome.devtools.inspectedWindow.tabId;
 let selectedMessageIndex = -1;
 let messages = [];
@@ -10,7 +25,7 @@ let port = null;
 function initializeUI() {
   // Connect to background script
   port = chrome.runtime.connect({ name: 'panel' });
-  
+
   // Listen for state updates
   port.onMessage.addListener((msg) => {
     if (msg.type === 'state' && msg.tabId === tabId) {
@@ -25,16 +40,16 @@ function initializeUI() {
       updateConsoleCount();
     }
   });
-  
+
   // Subscribe to state updates for this tab
   port.postMessage({ type: 'subscribe', tabId });
-  
+
   // Event listeners
   document.getElementById('toggle').addEventListener('change', handleToggleChange);
   document.getElementById('clear-logs').addEventListener('click', handleClearLogs);
   document.getElementById('messages-list').addEventListener('click', handleMessageClick);
   document.addEventListener('keydown', handleKeyDown);
-  
+
   // Resize handle
   initializeResizeHandle();
 }
@@ -46,11 +61,11 @@ function updateUI(connected, status = 'disconnected') {
   const statusEl = document.getElementById('status');
   const statusText = statusEl.querySelector('.status-text');
   const tabInfo = document.getElementById('tab-info');
-  
+
   // Remove existing classes
   statusEl.classList.remove('connected', 'disconnected', 'retrying');
   toggleContainer.classList.remove('connected', 'disconnected', 'retrying');
-  
+
   switch (status) {
     case 'connected':
       toggle.checked = true;
@@ -60,7 +75,7 @@ function updateUI(connected, status = 'disconnected') {
       statusText.textContent = 'Connected';
       tabInfo.textContent = `Tab: ${tabId} - Connected`;
       break;
-      
+
     case 'retrying':
       toggle.checked = true;
       toggle.disabled = false;
@@ -69,7 +84,7 @@ function updateUI(connected, status = 'disconnected') {
       statusText.textContent = 'Retrying...';
       tabInfo.textContent = `Tab: ${tabId} - Reconnecting`;
       break;
-      
+
     case 'disconnected':
     default:
       toggle.checked = false;
@@ -86,28 +101,28 @@ function updateUI(connected, status = 'disconnected') {
 function renderMessages() {
   const messagesList = document.getElementById('messages-list');
   const emptyState = document.getElementById('empty-state');
-  
+
   if (messages.length === 0) {
     emptyState.style.display = 'flex';
     return;
   }
-  
+
   emptyState.style.display = 'none';
   messagesList.innerHTML = '';
-  
+
   messages.forEach((msg, index) => {
     const messageEl = document.createElement('div');
     messageEl.className = 'message';
     if (index === selectedMessageIndex) {
       messageEl.classList.add('selected');
     }
-    
+
     const arrow = msg.direction === 'outgoing' ? '↑' : '↓';
     const arrowClass = msg.direction === 'outgoing' ? 'outgoing' : 'incoming';
-    
+
     // Show the raw JSON data
     const dataText = JSON.stringify(msg.data);
-    
+
     messageEl.innerHTML = `
       <div class="message-data">
         <span class="message-arrow ${arrowClass}">${arrow}</span>
@@ -115,18 +130,18 @@ function renderMessages() {
       </div>
       <div class="message-time">${formatTime(msg.timestamp)}</div>
     `;
-    
+
     messageEl.dataset.index = index;
     messagesList.appendChild(messageEl);
   });
-  
+
   // Scroll to bottom
   messagesList.scrollTop = messagesList.scrollHeight;
 }
 
 // Format timestamp
 function formatTime(date) {
-  return date.toLocaleTimeString('en-US', { 
+  return date.toLocaleTimeString('en-US', {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
@@ -138,7 +153,7 @@ function formatTime(date) {
 function handleMessageClick(e) {
   const messageEl = e.target.closest('.message');
   if (!messageEl) return;
-  
+
   const index = parseInt(messageEl.dataset.index);
   selectMessage(index);
 }
@@ -146,20 +161,20 @@ function handleMessageClick(e) {
 // Select message
 function selectMessage(index) {
   selectedMessageIndex = index;
-  
+
   // Update selected state
   document.querySelectorAll('.message').forEach((el, i) => {
     el.classList.toggle('selected', i === index);
   });
-  
+
   // Show detail view
   const detailContainer = document.getElementById('detail-container');
   const detailContent = document.getElementById('detail-content');
-  
+
   if (index >= 0 && index < messages.length) {
     detailContainer.classList.add('visible');
     const message = messages[index];
-    
+
     // Format JSON with syntax highlighting (simplified)
     detailContent.textContent = JSON.stringify(message, null, 2);
   } else {
@@ -185,9 +200,9 @@ function handleKeyDown(e) {
 // Handle toggle change
 function handleToggleChange(e) {
   const checked = e.target.checked;
-  
+
   chrome.runtime.sendMessage(
-    { 
+    {
       type: checked ? 'connect' : 'disconnect',
       tabId: tabId
     },
@@ -223,7 +238,7 @@ function initializeResizeHandle() {
   let isResizing = false;
   let startY = 0;
   let startHeight = 0;
-  
+
   resizeHandle.addEventListener('mousedown', (e) => {
     isResizing = true;
     startY = e.clientY;
@@ -231,15 +246,15 @@ function initializeResizeHandle() {
     document.body.style.cursor = 'ns-resize';
     e.preventDefault();
   });
-  
+
   document.addEventListener('mousemove', (e) => {
     if (!isResizing) return;
-    
+
     const deltaY = startY - e.clientY;
     const newHeight = Math.min(Math.max(100, startHeight + deltaY), 500);
     detailContainer.style.height = `${newHeight}px`;
   });
-  
+
   document.addEventListener('mouseup', () => {
     isResizing = false;
     document.body.style.cursor = '';

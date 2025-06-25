@@ -1,26 +1,64 @@
 // Background service worker - manages WebSocket connections
 
-import { WebSocketManager } from './modules/websocket-manager.js';
-import { StateManager } from './modules/state-manager.js';
-import { PortManager } from './modules/port-manager.js';
-import { MessageHandler } from './modules/message-handler.js';
+import { TabManager } from './modules/tab-manager.js';
 
-// Initialize modules
-const wsManager = new WebSocketManager();
-const stateManager = new StateManager();
-const portManager = new PortManager();
-const messageHandler = new MessageHandler(wsManager, stateManager);
+// Single source of truth for all tab state
+const tabManager = new TabManager();
 
-// Listen for state changes and broadcast to all ports
-stateManager.addListener((tabId, state) => {
-  portManager.broadcast({ type: 'state', tabId, ...state });
-  
-  // Update action badge for active tab
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]?.id === tabId) {
-      updateActionBadge(state);
-    }
-  });
+// Listen for tab state changes
+tabManager.addListener((tabId, event, tabState, data) => {
+  switch (event) {
+    case 'stateChanged':
+      // Broadcast to all ports for this tab
+      tabState.broadcastToPorts({
+        type: 'state',
+        tabId,
+        ...tabState.getConnectionState()
+      });
+      
+      // Update action badge for active tab
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]?.id === tabId) {
+          updateActionBadge(tabState.getConnectionState());
+        }
+      });
+      break;
+      
+    case 'messageReceived':
+    case 'messageSent':
+      // Broadcast updated messages to all ports
+      tabState.broadcastToPorts({
+        type: 'messages',
+        tabId,
+        messages: tabState.getMessages()
+      });
+      break;
+      
+    case 'consoleLogAdded':
+      // Broadcast updated console count
+      tabState.broadcastToPorts({
+        type: 'consoleCount',
+        tabId,
+        count: tabState.getConsoleLogCount()
+      });
+      break;
+      
+    case 'messagesCleared':
+      tabState.broadcastToPorts({
+        type: 'messages',
+        tabId,
+        messages: []
+      });
+      break;
+      
+    case 'consoleLogsCleared':
+      tabState.broadcastToPorts({
+        type: 'consoleCount',
+        tabId,
+        count: 0
+      });
+      break;
+  }
 });
 
 // Update action badge based on connection status
@@ -45,14 +83,21 @@ function updateActionBadge(state) {
 
 // Handle UI connections
 chrome.runtime.onConnect.addListener((port) => {
-  portManager.addPort(port);
-  
   port.onMessage.addListener((msg) => {
     if (msg.type === 'subscribe' && msg.tabId) {
-      // Send current state to this port
-      const state = stateManager.getState(msg.tabId);
-      portManager.sendToPort(port, { type: 'state', tabId: msg.tabId, ...state });
+      tabManager.addPort(msg.tabId, port);
+    } else if (msg.type === 'clearMessages' && msg.tabId) {
+      tabManager.clearMessages(msg.tabId);
+    } else if (msg.type === 'clearConsoleLogs' && msg.tabId) {
+      tabManager.clearConsoleLogs(msg.tabId);
     }
+  });
+  
+  port.onDisconnect.addListener(() => {
+    // Remove port from all tabs
+    tabManager.getAllTabs().forEach(tabState => {
+      tabState.removePort(port);
+    });
   });
 });
 
@@ -66,11 +111,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return false;
     }
     
-    if (request.type === 'connect' || request.type === 'disconnect') {
-      messageHandler.handleMessage({ type: request.type, tabId: sender.tab.id }, sender)
-        .then(response => sendResponse(response))
-        .catch(error => sendResponse({ error: error.message }));
-      return true;
+    if (request.type === 'connect') {
+      const result = tabManager.connect(sender.tab.id);
+      sendResponse(result);
+      return false;
+    }
+    
+    if (request.type === 'disconnect') {
+      const result = tabManager.disconnect(sender.tab.id);
+      sendResponse(result);
+      return false;
     }
     
     if (request.type === 'openPopup') {
@@ -82,21 +132,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   // Handle messages from popup/panel (not from content scripts)
   if (!sender.tab) {
-    messageHandler.handleMessage(request, sender)
-      .then(response => sendResponse(response))
-      .catch(error => sendResponse({ error: error.message }));
+    if (request.type === 'connect' && request.tabId) {
+      const result = tabManager.connect(request.tabId);
+      sendResponse(result);
+      return false;
+    }
     
-    return true; // Keep message channel open for async response
+    if (request.type === 'disconnect' && request.tabId) {
+      const result = tabManager.disconnect(request.tabId);
+      sendResponse(result);
+      return false;
+    }
+    
+    if (request.type === 'getState' && request.tabId) {
+      const tabState = tabManager.getTab(request.tabId);
+      sendResponse(tabState ? tabState.getConnectionState() : { connected: false, status: 'disconnected' });
+      return false;
+    }
   }
 });
 
 // Update badge when active tab changes
 chrome.tabs.onActivated.addListener((activeInfo) => {
-  const state = stateManager.getState(activeInfo.tabId);
-  updateActionBadge(state);
+  const tabState = tabManager.getTab(activeInfo.tabId);
+  if (tabState) {
+    updateActionBadge(tabState.getConnectionState());
+  } else {
+    updateActionBadge({ status: 'disconnected' });
+  }
 });
 
 // Clean up when tabs are closed
 chrome.tabs.onRemoved.addListener((tabId) => {
-  stateManager.removeTab(tabId);
+  tabManager.removeTab(tabId);
 });
