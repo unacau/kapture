@@ -133,41 +133,60 @@ function serializeValue(value, depth = 0, maxDepth = 3, seen = new WeakSet()) {
   // Fallback for unknown types
   return String(value);
 }
+function getTabInfo() {
+  return {
+    url: window.location.href,
+    title: document.title,
+    domSize: document.documentElement.outerHTML.length,
+    fullPageDimensions: {
+      width: document.documentElement.scrollWidth,
+      height: document.documentElement.scrollHeight
+    },
+    viewportDimensions: {
+      width: window.innerWidth,
+      height: window.innerHeight
+    },
+    scrollPosition: {
+      x: window.pageXOffset || document.documentElement.scrollLeft,
+      y: window.pageYOffset || document.documentElement.scrollTop
+    },
+    pageVisibility: {
+      visible: !document.hidden,
+      visibilityState: document.visibilityState
+    }
+  };
+}
 
+function respondWith(obj) {
+  return {
+    ...getTabInfo(),
+    ...obj
+  };
+}
 const helpers = window.__kaptureHelpers = {
-  getTabInfo: function () {
-    return {
-      url: window.location.href,
-      title: document.title,
-      domSize: document.documentElement.outerHTML.length,
-      fullPageDimensions: {
-        width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight
-      },
-      viewportDimensions: {
-        width: window.innerWidth,
-        height: window.innerHeight
-      },
-      scrollPosition: {
-        x: window.pageXOffset || document.documentElement.scrollLeft,
-        y: window.pageYOffset || document.documentElement.scrollTop
-      },
-      pageVisibility: {
-        visible: !document.hidden,
-        visibilityState: document.visibilityState
-      }
-    };
+  getTabInfo,
+  navigate: ({url}) => {
+    window.location.href = url;
+    return respondWith({ success: true });
   },
-  navigate: ({url}) => window.location.href = url,
-  back: () => window.history.back(),
-  forward: () => window.history.forward(),
-  reload: () => window.location.reload(),
+  back: () => {
+    window.history.back();
+    return respondWith({ success: true });
+  },
+  forward: () => {
+    window.history.forward();
+    return respondWith({ success: true });
+  },
+  reload: () => {
+    window.location.reload();
+    return respondWith({ success: true });
+  },
 };
 
 // Listen for requests from the extension
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.name && helpers[request.name]) {
-    sendResponse(helpers[request.name](request.args));
+  if (request.command && helpers[request.command]) {
+    sendResponse(helpers[request.command](request.params));
     return false;
   }
 });

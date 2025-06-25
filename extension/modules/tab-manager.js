@@ -36,20 +36,20 @@ export class TabManager {
   // WebSocket connection management
   async connect(tabId) {
     const tabState = this.getOrCreateTab(tabId);
-    
+
     if (tabState.websocket && tabState.websocket.readyState === WebSocket.OPEN) {
       return { ok: true, message: 'Already connected' };
     }
 
     // Get tab info from content script
-    const tabInfo = await chrome.tabs.sendMessage(tabId, { name: 'getTabInfo' });
+    const tabInfo = await chrome.tabs.sendMessage(tabId, { command: 'getTabInfo' });
     tabState.updatePageMetadata(tabInfo);
 
     // Set up connection
     tabState.connectionInfo.userDisconnected = false;
-    
+
     this._createConnection(tabState);
-    
+
     return { ok: true };
   }
 
@@ -60,7 +60,7 @@ export class TabManager {
     }
 
     tabState.connectionInfo.setDisconnected(true);
-    
+
     if (tabState.websocket) {
       tabState.websocket.close();
       tabState.clearWebSocket();
@@ -73,7 +73,7 @@ export class TabManager {
     }
 
     this.notifyListeners(tabId, 'stateChanged', tabState);
-    
+
     return { ok: true };
   }
 
@@ -85,26 +85,26 @@ export class TabManager {
     ws.onopen = () => {
       tabState.connectionInfo.setConnected();
       this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
-      
+
       // Send registration message with metadata
       const registerMessage = {
         type: 'register',
         ...tabState.pageMetadata
       };
-      
+
       this.sendMessage(tabState.tabId, registerMessage);
     };
 
     ws.onclose = () => {
       tabState.clearWebSocket();
-      
+
       if (!tabState.connectionInfo.userDisconnected) {
         // Schedule reconnect
         this._scheduleReconnect(tabState);
       } else {
         tabState.connectionInfo.setDisconnected(true);
       }
-      
+
       this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
     };
 
@@ -114,11 +114,16 @@ export class TabManager {
       this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
         const message = tabState.addMessage('incoming', data);
         this.notifyListeners(tabState.tabId, 'messageReceived', tabState, message);
+
+        // Handle commands
+        if (data.type === 'command' && data.command && data.id) {
+          await this._handleCommand(tabState, data);
+        }
       } catch (e) {
         console.error('Failed to parse WebSocket message:', e);
       }
@@ -128,7 +133,7 @@ export class TabManager {
   _scheduleReconnect(tabState) {
     const attemptNumber = tabState.connectionInfo.reconnectAttempts;
     const backoffMs = this._getBackoffMs(attemptNumber);
-    
+
     tabState.connectionInfo.setRetrying(attemptNumber + 1, backoffMs);
     this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
 
@@ -142,6 +147,19 @@ export class TabManager {
   _getBackoffMs(attemptNumber) {
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, then cap at 60s
     return Math.min(1000 * Math.pow(2, attemptNumber), 60000);
+  }
+
+  async _handleCommand(tabState, {command, params, id}) {
+    try {
+      // Send command to content script
+      const result = await chrome.tabs.sendMessage(tabState.tabId, { command, params });
+      const response = { id, type: 'response', success: !result.error, result };
+      this.sendMessage(tabState.tabId, response);
+    }
+    catch (error) {
+      const errorResponse = { id, type: 'response', success: false,  error: { message: error.message, code: 'COMMAND_FAILED' }};
+      this.sendMessage(tabState.tabId, errorResponse);
+    }
   }
 
   // Message sending
@@ -191,7 +209,7 @@ export class TabManager {
   addPort(tabId, port) {
     const tabState = this.getOrCreateTab(tabId);
     tabState.addPort(port);
-    
+
     // Send initial state
     port.postMessage({
       type: 'state',
