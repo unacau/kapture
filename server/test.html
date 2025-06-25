@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapture Window Events Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        .connect { background-color: #4CAF50; color: white; }
+        .disconnect { background-color: #f44336; color: white; }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        #status {
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        #status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kapture Window Events Test</h1>
+
+    <div class="info">
+        <p>This page demonstrates connecting to Kapture via window events.</p>
+        <p>Make sure the Kapture extension is installed and check the console for logs.</p>
+    </div>
+
+    <div id="status" class="connecting">Waiting for auto-connect...</div>
+
+    <button class="connect" onclick="connectKapture()">Connect to Kapture</button>
+    <button class="disconnect" onclick="disconnectKapture()">Disconnect from Kapture</button>
+
+    <h2>How to use:</h2>
+    <ol>
+        <li>Open the browser console (F12)</li>
+        <li>Click "Connect to Kapture" to establish connection</li>
+        <li>Check the extension popup/badge to see the connection status</li>
+        <li>Click "Disconnect from Kapture" to close the connection</li>
+    </ol>
+
+    <h2>Code Example:</h2>
+    <pre><code>// Connect to Kapture
+window.dispatchEvent(new CustomEvent('kapture-message', {
+    detail: { type: 'connect' }
+}));
+
+// Disconnect from Kapture
+window.dispatchEvent(new CustomEvent('kapture-message', {
+    detail: { type: 'disconnect' }
+}));</code></pre>
+
+    <script>
+        function connectKapture() {
+            console.log('Dispatching connect event...');
+            const event = new CustomEvent('kapture-message', {
+                detail: { type: 'connect' }
+            });
+            window.dispatchEvent(event);
+        }
+
+        function disconnectKapture() {
+            console.log('Dispatching disconnect event...');
+            const event = new CustomEvent('kapture-message', {
+                detail: { type: 'disconnect' }
+            });
+            window.dispatchEvent(event);
+        }
+
+        // Update status display
+        function updateStatus(text, className) {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = className;
+        }
+
+        // Auto-connect when Kapture is loaded
+        window.addEventListener('kapture-loaded', () => {
+            console.log('Kapture loaded! Auto-connecting...');
+            updateStatus('Kapture loaded, connecting...', 'connecting');
+            connectKapture();
+
+            setTimeout(() => {
+                updateStatus('Connected! Check the extension badge.', 'connected');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

@@ -56,29 +56,38 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
-// Handle commands
+// Handle all messages
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  messageHandler.handleMessage(request, sender)
-    .then(response => sendResponse(response))
-    .catch(error => sendResponse({ error: error.message }));
+  // Handle content script messages
+  if (sender.tab) {
+    if (request.type === 'contentScriptReady') {
+      console.log(`Content script ready in tab ${sender.tab.id}`);
+      sendResponse({ acknowledged: true });
+      return false;
+    }
+    
+    if (request.type === 'connect' || request.type === 'disconnect') {
+      messageHandler.handleMessage({ type: request.type, tabId: sender.tab.id }, sender)
+        .then(response => sendResponse(response))
+        .catch(error => sendResponse({ error: error.message }));
+      return true;
+    }
+  }
   
-  return true; // Keep message channel open for async response
+  // Handle messages from popup/panel (not from content scripts)
+  if (!sender.tab) {
+    messageHandler.handleMessage(request, sender)
+      .then(response => sendResponse(response))
+      .catch(error => sendResponse({ error: error.message }));
+    
+    return true; // Keep message channel open for async response
+  }
 });
 
 // Update badge when active tab changes
 chrome.tabs.onActivated.addListener((activeInfo) => {
   const state = stateManager.getState(activeInfo.tabId);
   updateActionBadge(state);
-});
-
-// Handle content script messages
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'contentScriptReady' && sender.tab) {
-    console.log(`Content script ready in tab ${sender.tab.id}`);
-    sendResponse({ acknowledged: true });
-    return false;
-  }
-  // Let other handlers process if not a content script message
 });
 
 // Clean up when tabs are closed

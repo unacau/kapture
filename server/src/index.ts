@@ -1,5 +1,9 @@
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { TabRegistry } from './tab-registry.js';
 import { BrowserWebSocketManager } from './browser-websocket-manager.js';
 import { BrowserCommandHandler } from './browser-command-handler.js';
@@ -19,6 +23,10 @@ process.title = 'Kapture MCP Server';
 
 // Fixed port for all connections
 const PORT = 61822;
+
+// Get directory path for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ========================================================================
 // Core Component Initialization
@@ -81,6 +89,21 @@ const httpServer = createServer(async (req, res) => {
 
     const connections = mcpServerManager.getConnectionInfo();
     res.end(JSON.stringify(connections));
+    return;
+  }
+
+  // Serve test.html
+  if (req.url === '/test.html' && req.method === 'GET') {
+    try {
+      const testPath = join(__dirname, '..', 'test.html');
+      const content = await readFile(testPath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(content);
+    } catch (error) {
+      logger.error('Error serving test.html:', error);
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('test.html not found');
+    }
     return;
   }
 

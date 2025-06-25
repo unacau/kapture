@@ -1,16 +1,15 @@
-// Content script injected into web pages
-console.log('[Kapture] Content script starting...');
-
-// Notify background script that content script is ready
-chrome.runtime.sendMessage({
-  type: 'contentScriptReady',
-  timestamp: Date.now()
-}, (response) => {
-  if (chrome.runtime.lastError) {
-    console.error('[Kapture] Failed to notify background:', chrome.runtime.lastError);
-  } else {
-    console.log('[Kapture] Background acknowledged ready state:', response);
-  }
+// Proxy messages from webpage to extension
+window.addEventListener('kapture-message', (event) => {
+  chrome.runtime.sendMessage(event.detail);
 });
 
-console.log('[Kapture] Content script ready');
+function ready() {
+// Notify background script that content script is ready
+  chrome.runtime.sendMessage({ type: 'contentScriptReady' });
+
+  document.body.classList.add('kapture-loaded');
+  window.dispatchEvent(new CustomEvent('kapture-loaded'));
+}
+
+// Notify webpage that Kapture is loaded after DOMContentLoaded
+document.readyState === 'loading'?  document.addEventListener('DOMContentLoaded', ready) : ready();
