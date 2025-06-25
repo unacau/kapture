@@ -3,32 +3,104 @@
 <head>
   <style>
     body {
-      width: 200px;
-      padding: 10px;
-      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      width: 140px;
+      background-color: #202124;
     }
-    .status {
-      margin-bottom: 10px;
-    }
-    .status.connected {
-      color: green;
-    }
-    .status.disconnected {
-      color: red;
-    }
-    .status.retrying {
-      color: orange;
-    }
+    
     button {
       width: 100%;
-      padding: 8px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    /* Disconnected state */
+    button.disconnected {
+      background-color: #3c4043;
+      color: #8ab4f8;
+    }
+    button.disconnected:hover {
+      background-color: #8ab4f8;
+      color: #202124;
+    }
+    
+    /* Retrying/Connecting state */
+    button.retrying {
+      background-color: #5f5034;
+      color: #fdd663;
+    }
+    button.retrying:hover {
+      background-color: #f28b82;
+      color: #202124;
+    }
+    button.retrying:hover .spinner {
+      border-color: rgba(32, 33, 36, 0.3);
+      border-top-color: #202124;
+    }
+    button.retrying:hover .button-text::after {
+      content: 'Disconnect';
+    }
+    button.retrying:hover .button-text {
+      font-size: 0;
+    }
+    
+    /* Connected state */
+    button.connected {
+      background-color: #2e4440;
+      color: #81c995;
+    }
+    button.connected:hover {
+      background-color: #f28b82;
+      color: #202124;
+    }
+    button.connected:hover .button-text::after {
+      content: 'Disconnect';
+    }
+    button.connected:hover .button-text {
+      font-size: 0;
+    }
+    
+    /* Spinner */
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(253, 214, 99, 0.3);
+      border-top-color: #fdd663;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    button.retrying .spinner {
+      display: block;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Button text with hover replacement */
+    .button-text::after {
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <div class="status disconnected" id="status">Disconnected</div>
-  <button id="button">Connect</button>
+  <button id="button" class="disconnected">
+    <span class="spinner"></span>
+    <span class="button-text">Connect</span>
+  </button>
   <script src="popup.js"></script>
 </body>
 </html>

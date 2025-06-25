@@ -37,30 +37,27 @@ document.getElementById('button').addEventListener('click', () => {
 
 // Update UI
 function updateUI(connected, status = 'disconnected') {
-  const statusEl = document.getElementById('status');
   const button = document.getElementById('button');
+  const buttonText = button.querySelector('.button-text');
+  
+  // Remove all state classes
+  button.classList.remove('connected', 'disconnected', 'retrying');
   
   switch (status) {
     case 'connected':
-      statusEl.textContent = 'Connected';
-      statusEl.className = 'status connected';
-      button.textContent = 'Disconnect';
-      button.disabled = false;
+      button.classList.add('connected');
+      buttonText.textContent = 'Connected';
       break;
     
     case 'retrying':
-      statusEl.textContent = 'Retrying...';
-      statusEl.className = 'status retrying';
-      button.textContent = 'Disconnect';
-      button.disabled = false;
+      button.classList.add('retrying');
+      buttonText.textContent = 'Connecting';
       break;
     
     case 'disconnected':
     default:
-      statusEl.textContent = 'Disconnected';
-      statusEl.className = 'status disconnected';
-      button.textContent = 'Connect';
-      button.disabled = false;
+      button.classList.add('disconnected');
+      buttonText.textContent = 'Connect';
       break;
   }
 }
