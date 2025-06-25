@@ -1,77 +1,10 @@
-// DevTools Panel UI with Real Connection and Mock Data
+// DevTools Panel UI with Real Connection and Data
 
 const tabId = chrome.devtools.inspectedWindow.tabId;
 let selectedMessageIndex = -1;
 let messages = [];
 let consoleLogCount = 0;
 let port = null;
-
-// Mock data for demonstration
-const mockMessages = [
-  {
-    id: '1',
-    type: 'command',
-    direction: 'outgoing',
-    data: { type: 'navigate', params: { url: 'https://example.com' } },
-    timestamp: new Date(Date.now() - 50000)
-  },
-  {
-    id: '2',
-    type: 'response',
-    direction: 'incoming',
-    data: { success: true, result: { url: 'https://example.com', title: 'Example Domain' } },
-    timestamp: new Date(Date.now() - 48000)
-  },
-  {
-    id: '3',
-    type: 'command',
-    direction: 'outgoing',
-    data: { type: 'click', params: { selector: 'button#submit' } },
-    timestamp: new Date(Date.now() - 40000)
-  },
-  {
-    id: '4',
-    type: 'response',
-    direction: 'incoming',
-    data: { success: true, result: { element: 'button#submit', clicked: true } },
-    timestamp: new Date(Date.now() - 39000)
-  },
-  {
-    id: '5',
-    type: 'command',
-    direction: 'outgoing',
-    data: { type: 'screenshot', params: { selector: '.header' } },
-    timestamp: new Date(Date.now() - 30000)
-  },
-  {
-    id: '6',
-    type: 'response',
-    direction: 'incoming',
-    data: { 
-      success: true, 
-      result: { 
-        screenshot: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-        element: '.header',
-        dimensions: { width: 1200, height: 100 }
-      } 
-    },
-    timestamp: new Date(Date.now() - 28000)
-  },
-  {
-    id: '7',
-    type: 'command',
-    direction: 'outgoing',
-    data: { type: 'evaluate', params: { expression: 'document.title' } },
-    timestamp: new Date(Date.now() - 20000)
-  },
-  {
-    id: '8',
-    type: 'response',
-    direction: 'incoming',
-    data: { success: true, result: 'Example Domain' },
-    timestamp: new Date(Date.now() - 19000)
-  }
-];
 
 // Initialize UI
 function initializeUI() {
@@ -82,19 +15,19 @@ function initializeUI() {
   port.onMessage.addListener((msg) => {
     if (msg.type === 'state' && msg.tabId === tabId) {
       updateUI(msg.connected, msg.status);
+    } else if (msg.type === 'messages' && msg.tabId === tabId) {
+      // Update messages from background
+      messages = msg.messages || [];
+      renderMessages();
+    } else if (msg.type === 'consoleCount' && msg.tabId === tabId) {
+      // Update console count from background
+      consoleLogCount = msg.count || 0;
+      updateConsoleCount();
     }
   });
   
   // Subscribe to state updates for this tab
   port.postMessage({ type: 'subscribe', tabId });
-  
-  // Add mock messages
-  messages = [...mockMessages];
-  renderMessages();
-  
-  // Set mock console count
-  consoleLogCount = 42;
-  updateConsoleCount();
   
   // Event listeners
   document.getElementById('toggle').addEventListener('change', handleToggleChange);
@@ -172,9 +105,8 @@ function renderMessages() {
     const arrow = msg.direction === 'outgoing' ? '↑' : '↓';
     const arrowClass = msg.direction === 'outgoing' ? 'outgoing' : 'incoming';
     
-    const dataText = msg.type === 'command' 
-      ? `${msg.data.type}(${JSON.stringify(msg.data.params || {}).slice(0, 50)}...)`
-      : `Response: ${JSON.stringify(msg.data).slice(0, 60)}...`;
+    // Show the raw JSON data
+    const dataText = JSON.stringify(msg.data);
     
     messageEl.innerHTML = `
       <div class="message-data">
@@ -245,8 +177,7 @@ function handleKeyDown(e) {
     e.preventDefault();
   } else if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     // Clear messages
-    messages = [];
-    renderMessages();
+    handleClearMessages();
     e.preventDefault();
   }
 }
@@ -270,8 +201,14 @@ function handleToggleChange(e) {
 
 // Handle clear logs
 function handleClearLogs() {
-  consoleLogCount = 0;
-  updateConsoleCount();
+  // Request background to clear console logs
+  port.postMessage({ type: 'clearConsoleLogs', tabId });
+}
+
+// Handle clear messages
+function handleClearMessages() {
+  // Request background to clear messages
+  port.postMessage({ type: 'clearMessages', tabId });
 }
 
 // Update console count
