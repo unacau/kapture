@@ -34,15 +34,18 @@ export class TabManager {
   }
 
   // WebSocket connection management
-  connect(tabId, url = 'ws://localhost:61822') {
+  async connect(tabId) {
     const tabState = this.getOrCreateTab(tabId);
     
     if (tabState.websocket && tabState.websocket.readyState === WebSocket.OPEN) {
       return { ok: true, message: 'Already connected' };
     }
 
+    // Get tab info from content script
+    const tabInfo = await chrome.tabs.sendMessage(tabId, { name: 'getTabInfo' });
+    tabState.updatePageMetadata(tabInfo);
+
     // Set up connection
-    tabState.connectionInfo.url = url;
     tabState.connectionInfo.userDisconnected = false;
     
     this._createConnection(tabState);
@@ -83,8 +86,13 @@ export class TabManager {
       tabState.connectionInfo.setConnected();
       this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
       
-      // Send registration message
-      this.sendMessage(tabState.tabId, { type: 'register' });
+      // Send registration message with metadata
+      const registerMessage = {
+        type: 'register',
+        ...tabState.pageMetadata
+      };
+      
+      this.sendMessage(tabState.tabId, registerMessage);
     };
 
     ws.onclose = () => {

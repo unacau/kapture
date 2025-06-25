@@ -2,14 +2,16 @@
 window.addEventListener('kapture-message', (event) => {
   chrome.runtime.sendMessage(event.detail);
 });
-
+let kaptureHelpers = {};
 function ready() {
+  kaptureHelpers = window.__kaptureHelpers;
+
   // Notify background script that content script is ready
   chrome.runtime.sendMessage({ type: 'contentScriptReady' });
 
   document.body.classList.add('kapture-loaded');
   window.dispatchEvent(new CustomEvent('kapture-loaded'));
-  
+
   // Check for auto-connect querystring parameter
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('kapture-connect') === 'true') {

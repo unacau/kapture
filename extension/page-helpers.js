@@ -1,5 +1,5 @@
 // page-helpers.js - Content script that provides helper functions
-window.__kaptureHelpers = {
+const kaptureHelpers = window.__kaptureHelpers = {
   getTabInfo: function() {
     return {
       url: window.location.href,
@@ -28,8 +28,8 @@ window.__kaptureHelpers = {
 
 // Listen for requests from the extension
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.name && window.__kaptureHelpers[request.name]) {
-    sendResponse(window.__kaptureHelpers[request.name](request.args));
+  if (request.name && kaptureHelpers[request.name]) {
+    sendResponse(kaptureHelpers[request.name](request.args));
     return false;
   }
 });

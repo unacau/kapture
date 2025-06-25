@@ -102,7 +102,7 @@ chrome.runtime.onConnect.addListener((port) => {
 });
 
 // Handle all messages
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   // Handle content script messages
   if (sender.tab) {
     if (request.type === 'contentScriptReady') {
@@ -112,9 +112,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     
     if (request.type === 'connect') {
-      const result = tabManager.connect(sender.tab.id);
+      const result = await tabManager.connect(sender.tab.id);
       sendResponse(result);
-      return false;
+      return true; // Keep message channel open for async response
     }
     
     if (request.type === 'disconnect') {
@@ -133,9 +133,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Handle messages from popup/panel (not from content scripts)
   if (!sender.tab) {
     if (request.type === 'connect' && request.tabId) {
-      const result = tabManager.connect(request.tabId);
+      const result = await tabManager.connect(request.tabId);
       sendResponse(result);
-      return false;
+      return true; // Keep message channel open for async response
     }
     
     if (request.type === 'disconnect' && request.tabId) {
