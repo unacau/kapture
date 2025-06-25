@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      width: 200px;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    .status {
+      margin-bottom: 10px;
+    }
+    .status.connected {
+      color: green;
+    }
+    .status.disconnected {
+      color: red;
+    }
+    .status.retrying {
+      color: orange;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="status disconnected" id="status">Disconnected</div>
+  <button id="button">Connect</button>
+  <script src="popup.js"></script>
+</body>
+</html>
