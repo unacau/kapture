@@ -14,6 +14,7 @@ function ready() {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('kapture-connect') === 'true') {
     chrome.runtime.sendMessage({ type: 'connect' });
+    chrome.runtime.sendMessage({ type: 'openPopup' });
   }
 }
 

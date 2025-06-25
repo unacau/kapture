@@ -72,6 +72,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         .catch(error => sendResponse({ error: error.message }));
       return true;
     }
+    
+    if (request.type === 'openPopup') {
+      chrome.action.openPopup();
+      sendResponse({ ok: true });
+      return false;
+    }
   }
   
   // Handle messages from popup/panel (not from content scripts)
