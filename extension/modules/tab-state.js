@@ -85,6 +85,7 @@ export class TabState {
     this.messages = [];
     this.consoleLogs = [];
     this.ports = new Set(); // Connected DevTools panels/popups
+    this.pageMetadata = {};
     this.createdAt = new Date();
     this.lastActivityAt = new Date();
   }
@@ -92,25 +93,21 @@ export class TabState {
   // WebSocket management
   setWebSocket(ws) {
     this.websocket = ws;
-    this.updateActivity();
   }
 
   clearWebSocket() {
     this.websocket = null;
-    this.updateActivity();
   }
 
   // Message management
   addMessage(direction, data) {
     const message = new Message(direction, data);
     this.messages.push(message);
-    this.updateActivity();
     return message;
   }
 
   clearMessages() {
     this.messages = [];
-    this.updateActivity();
   }
 
   getMessages(limit = null) {
@@ -124,13 +121,11 @@ export class TabState {
   addConsoleLog(level, args, stackTrace) {
     const log = new ConsoleLogEntry(level, args, stackTrace);
     this.consoleLogs.push(log);
-    this.updateActivity();
     return log;
   }
 
   clearConsoleLogs() {
     this.consoleLogs = [];
-    this.updateActivity();
   }
 
   getConsoleLogs(limit = null, level = null) {
@@ -153,12 +148,10 @@ export class TabState {
   // Port management
   addPort(port) {
     this.ports.add(port);
-    this.updateActivity();
   }
 
   removePort(port) {
     this.ports.delete(port);
-    this.updateActivity();
   }
 
   broadcastToPorts(message) {
@@ -182,8 +175,8 @@ export class TabState {
     };
   }
 
-  updateActivity() {
-    this.lastActivityAt = new Date();
+  updatePageMetadata(metadata) {
+    this.pageMetadata = metadata;
   }
 
   // Cleanup
