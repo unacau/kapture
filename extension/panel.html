@@ -1,40 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body {
-      background: #202124;
-      color: #e8eaed;
-      font-family: Arial, sans-serif;
-      padding: 10px;
-    }
-    .status {
-      margin-bottom: 10px;
-    }
-    .status.connected {
-      color: #4caf50;
-    }
-    .status.disconnected {
-      color: #f44336;
-    }
-    .status.retrying {
-      color: #ff9800;
-    }
-    button {
-      padding: 8px 16px;
-      cursor: pointer;
-      background: #3c4043;
-      color: #e8eaed;
-      border: 1px solid #5f6368;
-    }
-    button:hover {
-      background: #5f6368;
-    }
-  </style>
+  <link rel="stylesheet" href="panel.css">
 </head>
 <body>
-  <div class="status disconnected" id="status">Disconnected</div>
-  <button id="button">Connect</button>
+  <div class="panel-container">
+    <!-- Header -->
+    <div class="header">
+      <span class="tab-info" id="tab-info">Tab: Not connected</span>
+      <div class="connection-toggle">
+        <div class="status disconnected" id="status">
+          <span class="spinner"></span>
+          <span class="status-text">Disconnected</span>
+        </div>
+        <label class="toggle-container">
+          <input type="checkbox" class="toggle-input" id="toggle">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="messages-container">
+      <div class="messages-header">
+        <div class="messages-header-data">Data</div>
+        <div class="messages-header-time">Time</div>
+      </div>
+      
+      <div class="messages-list" id="messages-list">
+        <div class="empty-state" id="empty-state">No messages yet</div>
+      </div>
+
+      <!-- Detail View -->
+      <div class="detail-container" id="detail-container">
+        <div class="resize-handle" id="resize-handle"></div>
+        <div class="detail-content" id="detail-content"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span class="console-count" id="console-count">Console: 0</span>
+      <button class="clear-button" id="clear-logs">Clear Logs</button>
+    </div>
+  </div>
+
   <script src="panel.js"></script>
 </body>
 </html>
