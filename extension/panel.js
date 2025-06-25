@@ -47,6 +47,7 @@ function initializeUI() {
   // Event listeners
   document.getElementById('toggle').addEventListener('change', handleToggleChange);
   document.getElementById('clear-logs').addEventListener('click', handleClearLogs);
+  document.getElementById('clear-messages').addEventListener('click', handleClearMessages);
   document.getElementById('messages-list').addEventListener('click', handleMessageClick);
   document.addEventListener('keydown', handleKeyDown);
 
@@ -100,14 +101,15 @@ function updateUI(connected, status = 'disconnected') {
 // Render messages
 function renderMessages() {
   const messagesList = document.getElementById('messages-list');
-  const emptyState = document.getElementById('empty-state');
-
+  const messagesContainer = document.querySelector('.messages-container');
+  
+  // Toggle class based on whether we have messages
+  messagesContainer.classList.toggle('has-messages', messages.length > 0);
+  
   if (messages.length === 0) {
-    emptyState.style.display = 'flex';
     return;
   }
 
-  emptyState.style.display = 'none';
   messagesList.innerHTML = '';
 
   messages.forEach((msg, index) => {
@@ -141,7 +143,9 @@ function renderMessages() {
 
 // Format timestamp
 function formatTime(date) {
-  return date.toLocaleTimeString('en-US', {
+  // Convert string to Date if needed
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleTimeString('en-US', {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',

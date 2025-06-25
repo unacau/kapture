@@ -175,6 +175,28 @@ html, body {
 .messages-header-time {
   width: 80px;
   text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.clear-messages-button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.clear-messages-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
 }
 
 /* Messages List */
@@ -230,12 +252,28 @@ html, body {
 }
 
 .empty-state {
-  display: flex;
   align-items: center;
   justify-content: center;
   height: 200px;
   color: var(--text-secondary);
   font-style: italic;
+}
+
+/* Show/hide based on parent class */
+.messages-container .empty-state {
+  display: flex;
+}
+
+.messages-container .messages-list {
+  display: none;
+}
+
+.messages-container.has-messages .empty-state {
+  display: none;
+}
+
+.messages-container.has-messages .messages-list {
+  display: block;
 }
 
 /* Detail View */
