@@ -153,7 +153,8 @@ export class TabManager {
     try {
       // Send command to content script
       const result = await chrome.tabs.sendMessage(tabState.tabId, { command, params });
-      const response = { id, type: 'response', success: !result.error, result };
+      // `success: true` means we didn't throw an error. TODO: rename or remove it
+      const response = { id, type: 'response', success: true, result };
       this.sendMessage(tabState.tabId, response);
     }
     catch (error) {
