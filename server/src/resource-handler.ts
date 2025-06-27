@@ -54,13 +54,19 @@ export class ResourceHandler {
   }
 
   // Helper to create resource response
-  private createResourceResponse(uri: string, data: any): any {
+  private createResourceResponse(uri: string, content1: any, content2?: any): any {
     return {
+      isError: content1.error? true : undefined,
       contents: [
         {
-          uri: uri,
+          uri,
           mimeType: 'application/json',
-          text: JSON.stringify(data, null, 2)
+          text: JSON.stringify(content1, null, 2)
+        },
+        content2 && {
+          uri,
+          mimeType: content2.mimeType,
+          blob: content2.blob
         }
       ]
     };
@@ -69,10 +75,12 @@ export class ResourceHandler {
   // Helper to convert URLSearchParams to object with type conversion
   private paramsToObject(params: URLSearchParams): Record<string, any> {
     const obj: Record<string, any> = {};
+    const addLeadingZero = (str: String) =>str.replace(/^\./, '0.');
+
     params.forEach((value, key) => {
       // Try to parse as number
       const numValue = parseFloat(value);
-      if (!isNaN(numValue) && numValue.toString() === value) {
+      if (!isNaN(numValue) && numValue.toString() === addLeadingZero(value)) {
         obj[key] = numValue;
       }
       // Try to parse as boolean
@@ -94,17 +102,12 @@ export class ResourceHandler {
       const result = await this.toolHandler.callTool(toolName, args);
       const resultData = JSON.parse(result.content[0].text);
 
-      // In MCP, image data is in it's own content item
-      const c1 = result.content[1];
-      const dataUrl = c1 && c1.type === 'image'? `data:${c1.mimeType};base64,` + c1.data : undefined;
-
       return this.createResourceResponse(uri, {
         tabId: tab.tabId,
         url: tab.url,
         title: tab.title,
-        ...resultData,
-        dataUrl
-      });
+        ...resultData
+      }, result.content[1]);
     } catch (error) {
       throw new Error(`Failed to execute ${toolName}: ${error instanceof Error ? error.message : String(error)}`);
     }

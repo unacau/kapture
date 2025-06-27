@@ -125,20 +125,30 @@ const httpServer = createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'Not found' }));
         return;
       }
-      const result = await resourceHandler.readResource(kaptureUri);
+      const { isError, contents } = await resourceHandler.readResource(kaptureUri);
 
       // Special handling for screenshot/view endpoint
-      if (isScreenshotView) {
-        // Convert /screenshot/view to /screenshot for the resource handler
-        const content1 = result.contents[1];
-        const imageBuffer = Buffer.from(content1.data, 'base64');
+      if (!isError && isScreenshotView) {
+        // Send image instead of JSON
+        const content1 = contents[1];
+        const imageBuffer = Buffer.from(content1.blob, 'base64');
         res.writeHead(200, { 'Content-Type': content1.mimeType });
         res.end(imageBuffer);
       }
       else {
+        let result = contents[0].text;
+        if(!isError && kaptureUri.includes('/screenshot')) {
+          // move the image data to the first object
+          const reslutObj = JSON.parse(contents[0].text);
+          result = JSON.stringify({
+            ...reslutObj,
+            mimeType: contents[1].mimeType,
+            data: contents[1].blob
+          });
+        }
         // Regular resource endpoints
         res.writeHead(200, {'Content-Type': 'application/json'});
-        res.end(result.contents[0].text);
+        res.end(result);
       }
     } catch (error: any) {
       logger.error('Error handling HTTP endpoint:', error);

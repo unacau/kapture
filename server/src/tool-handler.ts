@@ -126,42 +126,37 @@ export class ToolHandler {
       }
 
       // Special handling for screenshot tool
-      if (name === 'screenshot' && result.dataUrl) {
-        const match = result.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-        if (match) {
-          const [, mimeType, base64Data] = match;
+      if (name === 'screenshot' && result.data) {
+        const params = new URLSearchParams();
+        const screenshotArgs = validatedArgs as any;
+        if (screenshotArgs?.selector) params.append('selector', String(screenshotArgs.selector));
+        if (screenshotArgs?.xpath) params.append('xpath', String(screenshotArgs.xpath));
+        if (screenshotArgs?.scale) params.append('scale', String(screenshotArgs.scale));
+        if (screenshotArgs?.format) params.append('format', String(screenshotArgs.format));
+        if (screenshotArgs?.quality) params.append('quality', String(screenshotArgs.quality));
 
-          const params = new URLSearchParams();
-          const screenshotArgs = validatedArgs as any;
-          if (screenshotArgs?.selector) params.append('selector', String(screenshotArgs.selector));
-          if (screenshotArgs?.xpath) params.append('xpath', String(screenshotArgs.xpath));
-          if (screenshotArgs?.scale) params.append('scale', String(screenshotArgs.scale));
-          if (screenshotArgs?.format) params.append('format', String(screenshotArgs.format));
-          if (screenshotArgs?.quality) params.append('quality', String(screenshotArgs.quality));
+        const queryString = params.toString();
+        const screenshotUrl = `http://localhost:61822/tab/${screenshotArgs?.tabId}/screenshot/view${queryString ? '?' + queryString : ''}`;
 
-          const queryString = params.toString();
-          const screenshotUrl = `http://localhost:61822/tab/${screenshotArgs?.tabId}/screenshot/view${queryString ? '?' + queryString : ''}`;
+        const enhancedResult = {
+          preview: screenshotUrl,
+          ...result,
+          dataUrl: undefined // Remove original dataUrl to avoid duplication
+        };
 
-          const enhancedResult = {
-            preview: screenshotUrl,
-            ...result,
-            dataUrl: undefined // Remove original dataUrl to avoid duplication
-          };
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(enhancedResult, null, 2)
-              },
-              {
-                type: 'image',
-                data: base64Data,
-                mimeType: mimeType
-              },
-            ]
-          };
-        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(enhancedResult, null, 2)
+            },
+            {
+              type: 'image',
+              mimeType: result.mimeType,
+              blob: result.data,
+            },
+          ]
+        };
       }
 
       return {
@@ -178,13 +173,13 @@ export class ToolHandler {
         throw new Error(issues);
       }
       return {
+        isError: true,
         content: [
           {
-            type: 'error',
+            type: 'text',
             text: JSON.stringify({error: { message: error.message }}, null, 2)
           }
-        ],
-        isError: true
+        ]
       };
     }
   }

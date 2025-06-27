@@ -1,4 +1,5 @@
-import { TabState, ConnectionStatus } from './tab-state.js';
+import { TabState } from './tab-state.js';
+import { backgroundCommands } from './background-commands.js';
 
 export class TabManager {
   constructor() {
@@ -151,10 +152,17 @@ export class TabManager {
 
   async _handleCommand(tabState, {command, params, id}) {
     try {
-      // Send command to content script
-      const result = await chrome.tabs.sendMessage(tabState.tabId, { command, params });
+      let result;
+      // some need to run with the background context
+      if (backgroundCommands[command]) {
+        result = await backgroundCommands[command](tabState.tabId, params);
+      }
+      // others we execute in the page context
+      else {
+        result = await chrome.tabs.sendMessage(tabState.tabId, {command, params});
+      }
       // `success: true` means we didn't throw an error. TODO: rename or remove it
-      const response = { id, type: 'response', success: true, result };
+      const response = {id, type: 'response', success: true, result};
       this.sendMessage(tabState.tabId, response);
     }
     catch (error) {

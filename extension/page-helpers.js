@@ -342,16 +342,23 @@ const helpers = window.__kaptureHelpers = {
     const elements = document.elementsFromPoint(x, y);
     return respondWith({ x, y, elements: elements.map(getElementData) });
   },
-  elements: ({selector, xpath, visible}) => {
+  elements: ({selector, xpath, visible = 'all'}) => {
     if (!selector && !xpath) return requireSelectorOrXpath();
     let elements = findAllElements(selector, xpath).map(getElementData);
 
     // Apply visibility filter
     if (visible !== 'all') {
-      const filterVisible = visible === 'true';
+      const filterVisible = String(visible) === 'true';
       elements = elements.filter(el => el.visible === filterVisible);
     }
-    return respondWith({ elements: elements }, selector, xpath);
+    return respondWith({elements: elements}, selector, xpath);
+  },
+  element: ({selector, xpath, visible = 'all'}) => {
+    const result = helpers.elements({selector, xpath, visible});
+    if (!result.elements.length) return elementNotFound(selector, xpath);
+    result.element = result.elements[0];
+    delete result.elements;
+    return result;
   },
   fill: ({selector, xpath, value}) => {
     if (!selector && !xpath) return requireSelectorOrXpath();
