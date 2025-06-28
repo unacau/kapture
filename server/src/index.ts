@@ -96,7 +96,7 @@ const httpServer = createServer(async (req, res) => {
   }
 
   // Serve test.html
-  if (req.url === '/test.html' && req.method === 'GET') {
+  if (req.url && req.url.startsWith('/test.html') && req.method === 'GET') {
     try {
       const testPath = join(__dirname, '..', 'test.html');
       const content = await readFile(testPath, 'utf-8');

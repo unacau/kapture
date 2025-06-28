@@ -55,20 +55,21 @@ export class ResourceHandler {
 
   // Helper to create resource response
   private createResourceResponse(uri: string, content1: any, content2?: any): any {
+    const contents = [{
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify(content1, null, 2)
+    }];
+    if (content2) {
+      contents.push({
+        uri,
+        mimeType: content2.mimeType,
+        blob: content2.data
+      } as any);
+    }
     return {
       isError: content1.error? true : undefined,
-      contents: [
-        {
-          uri,
-          mimeType: 'application/json',
-          text: JSON.stringify(content1, null, 2)
-        },
-        content2 && {
-          uri,
-          mimeType: content2.mimeType,
-          blob: content2.data
-        }
-      ]
+      contents
     };
   }
 

@@ -310,8 +310,20 @@ function requireSelectorOrXpath(selector, xpath) {
 const helpers = window.__kaptureHelpers = {
   getTabInfo,
   navigate: ({url}) => {
-    window.location.href = url;
-    return respondWith({});
+    // Set up a promise that resolves when navigation starts
+    return new Promise((resolve) => {
+      // Listen for beforeunload which fires when navigation starts
+      const handleBeforeUnload = () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        // Return the new URL we're navigating to
+        resolve(respondWith({ url }));
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      // Start navigation
+      window.location.href = url;
+    });
   },
   back: () => {
     window.history.back();
@@ -453,8 +465,9 @@ const helpers = window.__kaptureHelpers = {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (!request.command) return;
   if (helpers[request.command]) {
-    sendResponse(helpers[request.command](request.params));
-    return false;
+    const result = helpers[request.command](request.params);
+    Promise.resolve(result).then(sendResponse);
+    return true; // Keep channel open for async response
   }
   else {
     sendResponse(respondWith({
