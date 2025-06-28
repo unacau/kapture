@@ -73,6 +73,9 @@ export class ToolHandler {
         case 'focus':
           result = await this.commandHandler.focus(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
           break;
+        case 'blur':
+          result = await this.commandHandler.blur(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
+          break;
         case 'fill':
           result = await this.commandHandler.fill(validatedArgs.tabId, validatedArgs.value, validatedArgs.selector, validatedArgs.xpath);
           break;

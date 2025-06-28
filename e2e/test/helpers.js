@@ -18,3 +18,6 @@ export function expectValidTabInfo(data) {
   expect(data.pageVisibility).to.have.property('visible').that.is.a('boolean');
   expect(data.pageVisibility).to.have.property('visibilityState').that.is.a('string');
 }
+export function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

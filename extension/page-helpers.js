@@ -461,6 +461,29 @@ const helpers = window.__kaptureHelpers = {
     element.dispatchEvent(new Event('change', { bubbles: true }));
 
     return respondWith({ selected: true }, selector, xpath);
+  },
+  blur: ({selector, xpath}) => {
+    if (!selector && !xpath) return requireSelectorOrXpath();
+
+    let element;
+    try {
+      element = findAllElements(selector, xpath)[0];
+    } catch (e) {
+      const errorCode = selector ? 'INVALID_SELECTOR' : 'INVALID_XPATH';
+      return respondWithError(errorCode, e.message, selector, xpath);
+    }
+
+    if (!element) return elementNotFound(selector, xpath);
+
+    // Blur the element
+    element.blur();
+
+    // Also remove focus from document.activeElement if it's different
+    if (document.activeElement && document.activeElement !== element) {
+      document.activeElement.blur();
+    }
+
+    return respondWith({ blurred: true }, selector, xpath);
   }
 };
 

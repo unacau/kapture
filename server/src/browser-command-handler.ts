@@ -84,6 +84,13 @@ export class BrowserCommandHandler {
   }
 
   /**
+   * Blur (remove focus from) an element
+   */
+  async blur(tabId: string, selector?: string, xpath?: string): Promise<any> {
+    return this.executeCommand('blur', { tabId, selector, xpath });
+  }
+
+  /**
    * Fill an input field
    */
   async fill(tabId: string, value: string, selector?: string, xpath?: string): Promise<any> {
