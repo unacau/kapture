@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import { TabRegistry } from './tab-registry.js';
