@@ -33,22 +33,10 @@
             window.dispatchEvent(event);
         }
 
-        // Update status display
-        function updateStatus(text, className) {
-            const status = document.getElementById('status');
-            status.textContent = text;
-            status.className = className;
-        }
-
         // Auto-connect when Kapture is loaded
         window.addEventListener('kapture-loaded', () => {
             console.log('Kapture loaded! Auto-connecting...');
-            updateStatus('Kapture loaded, connecting...', 'connecting');
             connectKapture();
-
-            setTimeout(() => {
-                updateStatus('Connected! Check the extension badge.', 'connected');
-            }, 500);
         });
 
         // Test button handler
@@ -61,24 +49,24 @@
     <!-- E2E Test Elements -->
     <div style="border-top: 2px solid #ccc; margin-top: 30px; padding-top: 20px;">
         <h2>E2E Test Elements</h2>
-        
+
         <h3>Form Elements</h3>
         <div style="margin-bottom: 20px;">
             <div style="margin: 10px 0;">
                 <label for="text-input">Text Input:</label>
                 <input type="text" id="text-input" placeholder="Enter text here">
             </div>
-            
+
             <div style="margin: 10px 0;">
                 <label for="email-input">Email Input:</label>
                 <input type="email" id="email-input" placeholder="email@example.com">
             </div>
-            
+
             <div style="margin: 10px 0;">
                 <label for="password-input">Password Input:</label>
                 <input type="password" id="password-input" placeholder="Password">
             </div>
-            
+
             <div style="margin: 10px 0;">
                 <label for="select-input">Select:</label>
                 <select id="select-input">
@@ -88,12 +76,12 @@
                     <option value="option3">Option 3</option>
                 </select>
             </div>
-            
+
             <div style="margin: 10px 0;">
                 <label for="empty-select">Empty Select:</label>
                 <select id="empty-select"></select>
             </div>
-            
+
             <div style="margin: 10px 0;">
                 <label for="textarea-input">Textarea:</label><br>
                 <textarea id="textarea-input" rows="4" cols="50" placeholder="Multi-line text"></textarea>
