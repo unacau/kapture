@@ -364,6 +364,39 @@ const helpers = window.__kaptureHelpers = {
     delete result.elements;
     return result;
   },
+  focus: ({selector, xpath}) => {
+    if (!selector && !xpath) return requireSelectorOrXpath();
+
+    let element;
+    try {
+      element = findAllElements(selector, xpath)[0];
+    } catch (e) {
+      const errorCode = selector ? 'INVALID_SELECTOR' : 'INVALID_XPATH';
+      return respondWithError(errorCode, e.message, selector, xpath);
+    }
+
+    if (!element) return elementNotFound(selector, xpath);
+
+    // Focus the element
+    element.focus();
+
+    // Check if element is actually focusable
+    const focusableElements = ['input', 'textarea', 'select', 'button', 'a'];
+    const tagName = element.tagName.toLowerCase();
+    const isFocusable = focusableElements.includes(tagName) || 
+                       element.hasAttribute('tabindex') || 
+                       element.isContentEditable;
+
+    if (!isFocusable) {
+      // Still return success but with a warning
+      return respondWith({ 
+        focused: true, 
+        warning: 'Element may not be focusable' 
+      }, selector, xpath);
+    }
+
+    return respondWith({ focused: true }, selector, xpath);
+  },
   fill: ({selector, xpath, value}) => {
     if (!selector && !xpath) return requireSelectorOrXpath();
 

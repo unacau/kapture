@@ -77,6 +77,13 @@ export class BrowserCommandHandler {
   }
 
   /**
+   * Focus on an element
+   */
+  async focus(tabId: string, selector?: string, xpath?: string): Promise<any> {
+    return this.executeCommand('focus', { tabId, selector, xpath });
+  }
+
+  /**
    * Fill an input field
    */
   async fill(tabId: string, value: string, selector?: string, xpath?: string): Promise<any> {

@@ -70,6 +70,9 @@ export class ToolHandler {
         case 'hover':
           result = await this.commandHandler.hover(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
           break;
+        case 'focus':
+          result = await this.commandHandler.focus(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
+          break;
         case 'fill':
           result = await this.commandHandler.fill(validatedArgs.tabId, validatedArgs.value, validatedArgs.selector, validatedArgs.xpath);
           break;
