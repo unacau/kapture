@@ -428,28 +428,6 @@ const helpers = window.__kaptureHelpers = {
     element.dispatchEvent(new Event('change', { bubbles: true }));
 
     return respondWith({ selected: true }, selector, xpath);
-  },
-  evaluate: ({code}) => {
-    code = code || "undefined";
-
-    try {
-      // Try to execute as an expression first
-      const executeExpression = new Function('return (' + code + ')');
-      const result = executeExpression.call(window);
-      return respondWith({ selected: true, result: serializeValue(result)});
-    }
-    catch (expressionError) {
-      // If expression fails, try as statements
-      try {
-        const executeStatements = new Function(code);
-        const result = executeStatements.call(window);
-        return respondWith({ selected: true, result: serializeValue(result)});
-      }
-      catch (e) {
-        // Return the error details
-        return respondWithError('EVALUATION_ERROR', e.name + ': ' + e.message);
-      }
-    }
   }
 };
 
