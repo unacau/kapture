@@ -38,7 +38,8 @@ export class ToolHandler {
     }
 
     try {
-      const validatedArgs = tool.inputSchema.parse(args) as any;
+      // For tools without arguments, use empty object
+      const validatedArgs = tool.inputSchema.parse(args || {}) as any;
 
       // Call the appropriate convenience method based on tool name
       let result: any;

@@ -27,6 +27,9 @@ function preprocessToolDefinition(tool: any): ToolDefinition {
   // Move properties if they exist
   if (tool.properties && Object.keys(tool.properties).length > 0) {
     inputSchema.properties = tool.properties;
+  } else {
+    // If no properties, set to empty object to indicate no parameters
+    inputSchema.properties = {};
   }
 
   // Move required if it exists and is not empty
