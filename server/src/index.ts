@@ -8,6 +8,7 @@ import { logger } from './logger.js';
 import { ResourceHandler } from './resource-handler.js';
 import { PromptHandler } from './prompt-handler.js';
 import { ToolHandler } from './tool-handler.js';
+import { checkIfPortInUse } from './port-check.js';
 
 
 // ========================================================================
@@ -168,7 +169,9 @@ wss.on('connection', (ws, request) => {
 /**
  * Start the HTTP server and log available endpoints
  */
-function startServer() {
+async function startServer() {
+  await checkIfPortInUse(PORT);
+
   httpServer.listen(PORT, () => {
     logger.log('='.repeat(70));
     logger.log('Kapture MCP Server Started');
