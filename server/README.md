@@ -14,6 +14,14 @@ npx kapture-mcp-server
 
 The server automatically runs on port 61822.
 
+### Bridge mode (Alternative for stdio-based MCP clients)
+
+```bash
+npx kapture-mcp-server bridge
+```
+
+This starts the server and provides stdio-to-WebSocket translation using the built-in mcp2websocket bridge.
+
 ### Smart Server Detection
 
 When running `npx kapture-mcp-server`, it automatically detects if a server is already running:
@@ -26,7 +34,7 @@ This prevents port conflicts and provides helpful information about existing con
 
 ```bash
 npm install -g kapture-mcp-server
-kapture-server
+kapture-mcp-server
 ```
 
 ### Install locally in a project
@@ -37,26 +45,32 @@ npm install kapture-mcp-server
 
 ## Usage with Claude Desktop
 
-Add to your Claude Desktop configuration:
-
+### Recommended: Using the bridge command
+This single command starts the server and handles stdio communication:
 ```json
 {
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "args": ["kapture-mcp-server", "bridge"]
     }
   }
 }
 ```
 
-Or if you installed it globally:
+### Alternative: Direct WebSocket connection
+First start the server:
+```bash
+npx kapture-mcp-server
+```
 
+Then configure Claude Desktop to use WebSocket transport:
 ```json
 {
   "mcpServers": {
     "kapture": {
-      "command": "kapture-server"
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
@@ -64,7 +78,10 @@ Or if you installed it globally:
 
 ## Command Line Options
 
-None - the server always runs on port 61822
+- **No arguments**: Starts the server on port 61822
+- `bridge`: Starts the server and provides stdio-to-WebSocket bridge for MCP clients
+
+The server always runs on port 61822
 
 ## Running Multiple AI Assistants
 
@@ -85,8 +102,8 @@ Claude Desktop (claude_desktop_config.json):
 {
   "mcpServers": {
     "kapture": {
-      "transport": "websocket",
-      "url": "ws://localhost:61822/mcp"
+      "command": "npx",
+      "args": ["kapture-mcp-server", "bridge"]
     }
   }
 }
