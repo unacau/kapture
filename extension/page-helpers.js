@@ -308,35 +308,13 @@ function requireSelectorOrXpath(selector, xpath) {
 }
 
 const helpers = window.__kaptureHelpers = {
+  //called by the background script
+  _navigate: ({ url }) => {
+    window.location.href = url;
+  },
+
+  // tool calls
   getTabInfo,
-  navigate: ({url}) => {
-    // Set up a promise that resolves when navigation starts
-    return new Promise((resolve) => {
-      // Listen for beforeunload which fires when navigation starts
-      const handleBeforeUnload = () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-        // Return the new URL we're navigating to
-        resolve(respondWith({ url }));
-      };
-      
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      
-      // Start navigation
-      window.location.href = url;
-    });
-  },
-  back: () => {
-    window.history.back();
-    return respondWith({});
-  },
-  forward: () => {
-    window.history.forward();
-    return respondWith({});
-  },
-  reload: () => {
-    window.location.reload();
-    return respondWith({});
-  },
   dom: ({selector, xpath}) => {
     if (!selector && !xpath) {
       return respondWith({ html: document.body.outerHTML });
@@ -345,7 +323,7 @@ const helpers = window.__kaptureHelpers = {
     const element = findAllElements(selector, xpath)[0];
     if (!element) return elementNotFound(selector, xpath);
 
-    return respondWith({ html: element.outerHTML });
+    return respondWith({ html: element.outerHTML }, selector, xpath);
   },
   elementsFromPoint: ({x, y}) => {
     if (typeof x !== 'number' || typeof y !== 'number') {

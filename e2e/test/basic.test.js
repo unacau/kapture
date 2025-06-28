@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { TestFramework } from '../test-framework.js';
+import { expectValidTabInfo } from './helpers.js';
 
 describe('Kapture E2E Tests', function() {
   let framework;
@@ -65,9 +66,8 @@ describe('Kapture E2E Tests', function() {
       // Refresh the page to reset state by navigating to itself
       await framework.callTool('navigate', {
         tabId: testTab.tabId,
-        url: testTab.url
+        url: "http://localhost:61822/test.html"
       });
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for navigation
     });
 
     it('should navigate to a URL', async function() {
@@ -76,12 +76,10 @@ describe('Kapture E2E Tests', function() {
         url: 'http://localhost:61822/test.html?navigated=true'
       });
 
-      // Check that we got a response
+      // Check that we got a response with all common properties
       const resultData = JSON.parse(result.content[0].text);
-      expect(resultData).to.have.property('url');
-
-      // Wait a bit for navigation to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      expectValidTabInfo(resultData);
+      expect(resultData.url).to.equal('http://localhost:61822/test.html?navigated=true');
 
       // Verify navigation happened by checking current tab state
       const tabInfo = await framework.readResource(`kapture://tab/${testTab.tabId}`);
@@ -96,9 +94,99 @@ describe('Kapture E2E Tests', function() {
 
       expect(result.content).to.have.lengthOf(2);
       expect(result.content[0].type).to.equal('text');
+      
+      // Validate common properties in the text response
+      const resultData = JSON.parse(result.content[0].text);
+      expectValidTabInfo(resultData);
+      
       expect(result.content[1].type).to.equal('image');
       expect(result.content[1].mimeType).to.match(/^image\//);
       expect(result.content[1].data).to.be.a('string');
+    });
+
+    it.skip('should navigate back in history', async function() {
+      // First navigate to a new page to have history
+      await framework.callTool('navigate', {
+        tabId: testTab.tabId,
+        url: 'http://localhost:61822/test.html'
+      });
+
+      await framework.callTool('navigate', {
+        tabId: testTab.tabId,
+        url: 'http://lvh.me:61822/test.html'
+      });
+
+      // Now go back
+      const result = await framework.callTool('back', {
+        tabId: testTab.tabId
+      });
+
+      const resultData = JSON.parse(result.content[0].text);
+      expectValidTabInfo(resultData);
+
+      // Verify we're back at localhost
+      const tabInfo = await framework.readResource(`kapture://tab/${testTab.tabId}`);
+      const tab = JSON.parse(tabInfo.contents[0].text);
+      expect(tab.url).to.include('localhost:61822');
+    });
+
+    it.skip('should navigate forward in history', async function() {
+      // First set up history
+      await framework.callTool('navigate', {
+        tabId: testTab.tabId,
+        url: 'http://lvh.me:61822/test.html?page=1'
+      });
+
+      await framework.callTool('navigate', {
+        tabId: testTab.tabId,
+        url: 'http://lvh.me:61822/test.html?page=2'
+      });
+
+      // Go back to page=1
+      await framework.callTool('back', {
+        tabId: testTab.tabId
+      });
+
+      // Now go forward
+      const result = await framework.callTool('forward', {
+        tabId: testTab.tabId
+      });
+
+      const resultData = JSON.parse(result.content[0].text);
+      expectValidTabInfo(resultData);
+
+      // Verify we're back at page=2
+      const tabInfo = await framework.readResource(`kapture://tab/${testTab.tabId}`);
+      const tab = JSON.parse(tabInfo.contents[0].text);
+      expect(tab.url).to.include('page=2');
+    });
+
+    it('should block navigation to non-http(s) URLs', async function() {
+      const result = await framework.callTool('navigate', {
+        tabId: testTab.tabId,
+        url: 'file:///etc/passwd'
+      });
+
+      const resultData = JSON.parse(result.content[0].text);
+      expect(resultData).to.have.property('error');
+      expect(resultData.error.code).to.equal('NAVIGATION_BLOCKED');
+    });
+
+    it('should handle back with no history', async function() {
+      // First navigate to reset history
+      await framework.callTool('navigate', {
+        tabId: testTab.tabId,
+        url: 'http://lvh.me:61822/test.html'
+      });
+
+      // Try to go back when there's no history
+      const result = await framework.callTool('back', {
+        tabId: testTab.tabId
+      });
+
+      const resultData = JSON.parse(result.content[0].text);
+      expect(resultData).to.have.property('error');
+      expect(resultData.error.code).to.equal('NAVIGATION_FAILED');
     });
   });
 });

@@ -42,7 +42,7 @@ export class TestFramework {
       this.serverProcess.stdout.on('data', (data) => {
         const output = data.toString();
         console.log('Server:', output);
-        
+
         // Check if server is ready
         if (!serverReady && output.includes('WebSocket server listening')) {
           serverReady = true;
@@ -54,7 +54,7 @@ export class TestFramework {
       this.serverProcess.stderr.on('data', (data) => {
         const error = data.toString();
         console.error('Server Error:', error);
-        
+
         // Check for port in use error
         if (error.includes('EADDRINUSE')) {
           reject(new Error(`Port ${this.serverPort} is already in use. Kill the existing process or use a different port.`));
@@ -83,7 +83,7 @@ export class TestFramework {
 
   async connectMCP() {
     const transport = new WebSocketClientTransport(new URL(`ws://localhost:${this.serverPort}/mcp`));
-    
+
     this.mcpClient = new Client({
       name: 'kapture-e2e-test',
       version: '1.0.0'
@@ -92,10 +92,10 @@ export class TestFramework {
     });
 
     await this.mcpClient.connect(transport);
-    
+
     // Wait for initialization
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     return this.mcpClient;
   }
 
@@ -110,7 +110,7 @@ export class TestFramework {
     if (!this.mcpClient) {
       throw new Error('MCP client not connected');
     }
-    
+
     const response = await this.mcpClient.listResources();
     return response.resources;
   }
@@ -119,7 +119,7 @@ export class TestFramework {
     if (!this.mcpClient) {
       throw new Error('MCP client not connected');
     }
-    
+
     const response = await this.mcpClient.listTools();
     return response.tools;
   }
@@ -128,7 +128,7 @@ export class TestFramework {
     if (!this.mcpClient) {
       throw new Error('MCP client not connected');
     }
-    
+
     const response = await this.mcpClient.callTool({ name, arguments: args });
     return response;
   }
@@ -137,7 +137,7 @@ export class TestFramework {
     if (!this.mcpClient) {
       throw new Error('MCP client not connected');
     }
-    
+
     const response = await this.mcpClient.readResource({ uri });
     return response;
   }
@@ -160,37 +160,37 @@ export class TestFramework {
     // Launch Chrome with the test page
     const { exec } = await import('child_process');
     const testUrl = `http://localhost:${this.serverPort}/test.html?kapture-connect=true`;
-    
+
     // Try to open Chrome (different commands for different OS)
     const commands = [
       `open -a "Google Chrome" "${testUrl}"`, // macOS
       `google-chrome "${testUrl}"`, // Linux
       `start chrome "${testUrl}"` // Windows
     ];
-    
+
     for (const cmd of commands) {
       try {
         exec(cmd);
         console.log('Launched Chrome with test page');
         // Wait for Chrome to open and extension to connect
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 500));
         return;
       } catch (e) {
         // Try next command
       }
     }
-    
+
     throw new Error('Failed to launch Chrome. Please open test.html manually.');
   }
 
   async ensureTestTab() {
     const resources = await this.listResources();
     let testTab = await this.findTestTab(resources);
-    
+
     if (!testTab) {
       console.log('No test tab found, launching Chrome...');
       await this.openTestPage();
-      
+
       // Keep trying to find the test tab
       for (let i = 0; i < 10; i++) {
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -198,12 +198,12 @@ export class TestFramework {
         testTab = await this.findTestTab(updatedResources);
         if (testTab) break;
       }
-      
+
       if (!testTab) {
         throw new Error('Chrome launched but test tab not found. Make sure Kapture extension is installed.');
       }
     }
-    
+
     return testTab;
   }
 

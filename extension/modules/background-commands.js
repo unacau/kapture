@@ -23,7 +23,50 @@ const respondWithError = async (tabId, code, message, selector, xpath) => {
   return respondWith(tabId,{ error: { code, message } }, selector, xpath);
 }
 
+// Check if URL is allowed for extension
+const isAllowedUrl = (url) => !!url && (url.startsWith('http://') || url.startsWith('https://'));
+
+// Wait for content script to be ready
+async function waitForContentScriptReady(tabId, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      chrome.runtime.onMessage.removeListener(listener);
+      reject(new Error('Timeout waiting for content script'));
+    }, timeout);
+
+    const listener = (request, sender) => {
+      if (request.type === 'contentScriptReady' && sender.tab?.id === tabId) {
+        clearTimeout(timer);
+        chrome.runtime.onMessage.removeListener(listener);
+        resolve();
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(listener);
+  });
+}
+
+// Execute navigation and wait for content script
+async function executeNavigation(tabId, navigationFn) {
+  try {
+    await navigationFn();
+    await waitForContentScriptReady(tabId);
+    return await respondWith(tabId, {});
+  } catch (error) {
+    return respondWithError(tabId, 'NAVIGATION_FAILED', error.message);
+  }
+}
+
 export const backgroundCommands = {
+  navigate: async (tabId, { url }) => {
+    if (!isAllowedUrl(url)) {
+      return respondWithError(tabId, 'NAVIGATION_BLOCKED', `Navigation to ${url} is not allowed`);
+    }
+    return executeNavigation(tabId, async () => getFromContentScript(tabId, '_navigate', { url }));
+  },
+  back: async (tabId) => executeNavigation(tabId, () => chrome.tabs.goBack(tabId)),
+  forward: async (tabId) => executeNavigation(tabId, () => chrome.tabs.goForward(tabId)),
+
   screenshot: async (tabId, { scale = 0.5, quality = 0.5, format = 'webp', selector, xpath }) => {
     let elementResult;
     if (selector || xpath) {
@@ -47,15 +90,7 @@ export const backgroundCommands = {
       clip.scale = scale;
     }
 
-    let debuggerAttached = false;
-    try {
-      // Attach debugger to capture screenshot without making tab active
-      await chrome.debugger.attach({ tabId }, '1.3');
-      debuggerAttached = true;
-
-      // Enable the Page domain
-      await chrome.debugger.sendCommand({ tabId }, 'Page.enable');
-
+    return attachDebugger(tabId, async () => {
       const screenshot = await chrome.debugger.sendCommand({ tabId }, 'Page.captureScreenshot', {
         format,
         quality: Math.round(quality * 100), // Chrome needs an integer percentage,
@@ -69,19 +104,29 @@ export const backgroundCommands = {
         mimeType: `image/${format}`,
         data: screenshot.data,
       };
-    } catch (error) {
-      console.error(error);
-      console.log(bounds);
-      return respondWithError(tabId,'SCREENSHOT_ERROR', error.message, null, null);
-    } finally {
-      // Always detach debugger if attached
-      if (debuggerAttached) {
-        try {
-          await chrome.debugger.detach({ tabId: tabId });
-        } catch (detachError) {
-          console.error('Failed to detach debugger after screenshot:', detachError);
-        }
-      }
+    })
+    .catch((err) => {
+      return respondWithError(tabId,'SCREENSHOT_ERROR', err.message, null, null);
+    });
+  }
+}
+async function attachDebugger(tabId, action) {
+  let debuggerAttached = false;
+  try {
+    // Attach debugger to capture screenshot without making tab active
+    await chrome.debugger.attach({tabId}, '1.3');
+    debuggerAttached = true;
+
+    // Enable the Page domain
+    await chrome.debugger.sendCommand({tabId}, 'Page.enable');
+
+    return await action();
+  }
+  finally {
+    // Always detach debugger if attached
+    try {
+      if (debuggerAttached) await chrome.debugger.detach({tabId: tabId});
     }
+    catch (e) { }
   }
 }
