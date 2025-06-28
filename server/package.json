@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "kapture-mcp-server": "dist/cli.js"
+    "kapture-mcp-server": "dist/index.js",
+    "bridge": "dist/bridge.js"
   },
   "files": [
     "dist/**/*",
@@ -27,7 +28,7 @@
     "directory": "server"
   },
   "scripts": {
-    "build": "tsc && cp src/*.yaml dist/ && chmod +x dist/cli.js",
+    "build": "tsc && cp src/*.yaml dist/ && chmod +x dist/index.js dist/bridge.js",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "debug": "KAPTURE_DEBUG=1 node dist/index.js",
@@ -36,6 +37,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.3",
     "js-yaml": "^4.1.0",
+    "mcp2websocket": "^2.0.0",
     "ws": "^8.18.0",
     "zod": "^3.22.4"
   },
