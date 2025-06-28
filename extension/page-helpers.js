@@ -163,13 +163,20 @@ function getTabInfo() {
   };
 }
 function findAllElements(selector, xpath) {
-  if (selector) return Array.from(document.querySelectorAll(selector));
+  if (selector) {
+    try {
+      return Array.from(document.querySelectorAll(selector));
+    } catch (e) {
+      throw new Error(`Invalid selector: ${e.message}`);
+    }
+  }
   try {
     const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
     return Array.from({length: result.snapshotLength}, (_, i) => result.snapshotItem(i));
   }
-  catch (e) { /*Invalid XPath expression*/ }
-  return [];
+  catch (e) {
+    throw new Error(`Invalid XPath: ${e.message}`);
+  }
 }
 function getElementData(element) {
   const rect = element.getBoundingClientRect();
@@ -334,14 +341,21 @@ const helpers = window.__kaptureHelpers = {
   },
   elements: ({selector, xpath, visible = 'all'}) => {
     if (!selector && !xpath) return requireSelectorOrXpath();
-    let elements = findAllElements(selector, xpath).map(getElementData);
+    
+    let elements;
+    try {
+      elements = findAllElements(selector, xpath).map(getElementData);
+    } catch (e) {
+      const errorCode = selector ? 'INVALID_SELECTOR' : 'INVALID_XPATH';
+      return respondWithError(errorCode, e.message, selector, xpath);
+    }
 
     // Apply visibility filter
     if (visible !== 'all') {
       const filterVisible = String(visible) === 'true';
       elements = elements.filter(el => el.visible === filterVisible);
     }
-    return respondWith({elements: elements}, selector, xpath);
+    return respondWith({elements: elements, visible: visible !== 'all' ? visible : undefined}, selector, xpath);
   },
   element: ({selector, xpath, visible = 'all'}) => {
     const result = helpers.elements({selector, xpath, visible});

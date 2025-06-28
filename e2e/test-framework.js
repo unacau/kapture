@@ -133,6 +133,11 @@ export class TestFramework {
     return response;
   }
 
+  async callToolAndParse(name, args) {
+    const result = await this.callTool(name, args);
+    return JSON.parse(result.content[0].text);
+  }
+
   async readResource(uri) {
     if (!this.mcpClient) {
       throw new Error('MCP client not connected');
