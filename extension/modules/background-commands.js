@@ -23,7 +23,7 @@ const respondWithError = async (tabId, code, message, selector, xpath) => {
   return respondWith(tabId,{ error: { code, message } }, selector, xpath);
 }
 
-export const commands = {
+export const backgroundCommands = {
   screenshot: async (tabId, { scale = 0.5, quality = 0.5, format = 'webp', selector, xpath }) => {
     let elementResult;
     if (selector || xpath) {

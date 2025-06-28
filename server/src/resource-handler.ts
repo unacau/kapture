@@ -66,7 +66,7 @@ export class ResourceHandler {
         content2 && {
           uri,
           mimeType: content2.mimeType,
-          blob: content2.blob
+          blob: content2.data
         }
       ]
     };

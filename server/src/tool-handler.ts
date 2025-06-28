@@ -154,7 +154,7 @@ export class ToolHandler {
             {
               type: 'image',
               mimeType: result.mimeType,
-              blob: result.data,
+              data: result.data,
             },
           ]
         };
