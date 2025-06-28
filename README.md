@@ -75,25 +75,32 @@ npm start
 
 Add to your Claude Desktop config:
 
-### Option 1: Using npx (Recommended - No installation required)
+### Option 1: Using the bridge command (Recommended)
+This single command starts the server and handles stdio-to-WebSocket translation:
 ```json
 {
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "args": ["kapture-mcp-server", "bridge"]
     }
   }
 }
 ```
 
-### Option 2: Local installation
+### Option 2: Direct WebSocket connection
+First start the server manually:
+```bash
+npx kapture-mcp-server
+```
+
+Then configure Claude Desktop to connect via WebSocket:
 ```json
 {
   "mcpServers": {
     "kapture": {
-      "command": "node",
-      "args": ["/path/to/kapture/server/dist/index.js"]
+      "transport": "websocket",
+      "url": "ws://localhost:61822/mcp"
     }
   }
 }
@@ -117,13 +124,13 @@ This prevents errors and confusion when multiple clients try to start servers.
 
 ### Setting Up Multiple Clients
 
-**Claude Desktop** (via STDIO to WebSocket bridge):
+**Claude Desktop** (use bridge command):
 ```json
 {
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "args": ["kapture-mcp-server", "bridge"]
     }
   }
 }
