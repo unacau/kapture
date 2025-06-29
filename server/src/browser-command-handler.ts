@@ -1,6 +1,7 @@
 import { BrowserWebSocketManager } from './browser-websocket-manager.js';
 import { TabRegistry } from './tab-registry.js';
 import { logger } from './logger.js';
+import { exec } from 'child_process';
 
 interface CommandRequest {
   id: string;
@@ -264,6 +265,59 @@ export class BrowserCommandHandler {
       logger.log(`Rejecting command ${response.id} with error: ${response.error?.message}`);
       pending.reject(new Error(response.error?.message || 'Command failed'));
     }
+  }
+
+  /**
+   * Open a new tab with the Kapture MCP usage documentation
+   */
+  async newTab(): Promise<{ tabId: string; url: string }> {
+    // Generate a unique session ID for this tab
+    const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const targetUrl = `https://williamkapke.github.io/kapture/MCP_USAGE.html?kapture-connect=true&session=${sessionId}`;
+    
+    // Open the browser with the URL using system command
+    const platform = process.platform;
+    
+    let command: string;
+    if (platform === 'darwin') {
+      // macOS
+      command = `open -a "Google Chrome" "${targetUrl}"`;
+    } else if (platform === 'win32') {
+      // Windows
+      command = `start chrome "${targetUrl}"`;
+    } else {
+      // Linux
+      command = `google-chrome "${targetUrl}"`;
+    }
+    
+    // Execute the command to open the browser
+    exec(command, (error) => {
+      if (error) {
+        logger.error('Failed to open browser:', error);
+      }
+    });
+    
+    // Wait for the new tab to connect
+    const maxWaitTime = 15000; // 15 seconds
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < maxWaitTime) {
+      // Check if a tab with this specific session ID has connected
+      const tabs = this.tabRegistry.getAll();
+      const newTab = tabs.find(tab => tab.url && tab.url.includes(`session=${sessionId}`));
+      
+      if (newTab && newTab.url) {
+        return {
+          tabId: newTab.tabId,
+          url: newTab.url
+        };
+      }
+      
+      // Wait a bit before checking again
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    throw new Error('New tab failed to connect within timeout. Make sure the Kapture extension is installed.');
   }
 
   cleanup(): void {

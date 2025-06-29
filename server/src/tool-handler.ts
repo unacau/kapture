@@ -128,6 +128,9 @@ export class ToolHandler {
             validatedArgs.level
           );
           break;
+        case 'new_tab':
+          result = await this.commandHandler.newTab();
+          break;
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
