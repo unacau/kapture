@@ -62,6 +62,12 @@ export class TabManager {
 
     tabState.connectionInfo.setDisconnected(true);
 
+    // Clear keepalive interval
+    if (tabState.keepaliveInterval) {
+      clearInterval(tabState.keepaliveInterval);
+      tabState.keepaliveInterval = null;
+    }
+
     if (tabState.websocket) {
       tabState.websocket.close();
       tabState.clearWebSocket();
@@ -83,6 +89,12 @@ export class TabManager {
     const ws = new WebSocket(tabState.connectionInfo.url);
     tabState.setWebSocket(ws);
 
+    // Clear any existing keepalive interval
+    if (tabState.keepaliveInterval) {
+      clearInterval(tabState.keepaliveInterval);
+      tabState.keepaliveInterval = null;
+    }
+
     ws.onopen = () => {
       tabState.connectionInfo.setConnected();
       this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
@@ -94,9 +106,26 @@ export class TabManager {
       };
 
       this.sendMessage(tabState.tabId, registerMessage);
+
+      // Set up keepalive ping every 30 seconds
+      tabState.keepaliveInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+          } catch (e) {
+            console.error('Failed to send keepalive ping:', e);
+          }
+        }
+      }, 30000);
     };
 
     ws.onclose = () => {
+      // Clear keepalive interval
+      if (tabState.keepaliveInterval) {
+        clearInterval(tabState.keepaliveInterval);
+        tabState.keepaliveInterval = null;
+      }
+
       tabState.clearWebSocket();
 
       if (!tabState.connectionInfo.userDisconnected) {
@@ -110,20 +139,28 @@ export class TabManager {
     };
 
     ws.onerror = (error) => {
+      console.error(`WebSocket error for tab ${tabState.tabId}:`, error);
       tabState.connectionInfo.setError(error);
-      tabState.clearWebSocket();
+      // Don't clear WebSocket here - let onclose handle cleanup and reconnection
       this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
     };
 
     ws.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
-        const message = tabState.addMessage('incoming', data);
-        this.notifyListeners(tabState.tabId, 'messageReceived', tabState, message);
+        
+        // Don't track pong messages
+        if (data.type !== 'pong') {
+          const message = tabState.addMessage('incoming', data);
+          this.notifyListeners(tabState.tabId, 'messageReceived', tabState, message);
+        }
 
         // Handle commands
         if (data.type === 'command' && data.command && data.id) {
           await this._handleCommand(tabState, data);
+        } else if (data.type === 'pong') {
+          // Pong received - connection is healthy
+          tabState.lastPongTime = Date.now();
         }
       } catch (e) {
         console.error('Failed to parse WebSocket message:', e);
@@ -132,14 +169,23 @@ export class TabManager {
   }
 
   _scheduleReconnect(tabState) {
+    // Clear any existing reconnect timer
+    if (tabState.connectionInfo.reconnectTimer) {
+      clearTimeout(tabState.connectionInfo.reconnectTimer);
+      tabState.connectionInfo.reconnectTimer = null;
+    }
+
     const attemptNumber = tabState.connectionInfo.reconnectAttempts;
     const backoffMs = this._getBackoffMs(attemptNumber);
+
+    console.log(`Scheduling reconnect for tab ${tabState.tabId} in ${backoffMs}ms (attempt ${attemptNumber + 1})`);
 
     tabState.connectionInfo.setRetrying(attemptNumber + 1, backoffMs);
     this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
 
     tabState.connectionInfo.reconnectTimer = setTimeout(() => {
       if (!tabState.connectionInfo.userDisconnected) {
+        console.log(`Attempting reconnect for tab ${tabState.tabId}`);
         this._createConnection(tabState);
       }
     }, backoffMs);

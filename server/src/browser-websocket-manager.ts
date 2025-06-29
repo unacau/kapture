@@ -191,6 +191,14 @@ export class BrowserWebSocketManager {
         }
         break;
 
+      case 'ping':
+        // Handle keepalive ping from extension - just send pong back
+        ws.send(JSON.stringify({
+          type: 'pong',
+          timestamp: message.timestamp || Date.now()
+        }));
+        break;
+
       default:
         logger.warn('Unknown message type:', message.type);
         ws.send(JSON.stringify({
