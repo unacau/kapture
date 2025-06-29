@@ -86,6 +86,7 @@ export class TabState {
     this.consoleLogs = [];
     this.ports = new Set(); // Connected DevTools panels/popups
     this.pageMetadata = {};
+    this.mousePosition = { x: 0, y: 0 }; // Track current mouse position
     this.createdAt = new Date();
     this.lastActivityAt = new Date();
   }
@@ -177,6 +178,16 @@ export class TabState {
 
   updatePageMetadata(metadata) {
     this.pageMetadata = metadata;
+  }
+
+  // Mouse position tracking
+  setMousePosition(position) {
+    this.mousePosition = { ...position };
+    this.lastActivityAt = new Date();
+  }
+
+  getMousePosition() {
+    return { ...this.mousePosition };
   }
 
   // Cleanup

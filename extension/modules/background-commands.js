@@ -58,17 +58,18 @@ async function executeNavigation(tabId, navigationFn) {
 }
 
 import { keypress } from './background-keypress.js';
+import { click } from './background-click.js';
 
 export const backgroundCommands = {
-  navigate: async (tabId, { url }) => {
+  navigate: async ({tabId}, { url }) => {
     if (!isAllowedUrl(url)) {
       return respondWithError(tabId, 'NAVIGATION_BLOCKED', `Navigation to ${url} is not allowed`);
     }
     return executeNavigation(tabId, async () => getFromContentScript(tabId, '_navigate', { url }));
   },
-  back: async (tabId) => executeNavigation(tabId, () => chrome.tabs.goBack(tabId)),
-  forward: async (tabId) => executeNavigation(tabId, () => chrome.tabs.goForward(tabId)),
-  close: async (tabId) => {
+  back: async ({tabId}) => executeNavigation(tabId, () => chrome.tabs.goBack(tabId)),
+  forward: async ({tabId}) => executeNavigation(tabId, () => chrome.tabs.goForward(tabId)),
+  close: async ({tabId}) => {
     try {
       await chrome.tabs.remove(tabId);
       return { success: true, closed: true };
@@ -76,8 +77,9 @@ export const backgroundCommands = {
       return { success: false, error: { code: 'CLOSE_FAILED', message: error.message } };
     }
   },
+  click,
   keypress,
-  screenshot: async (tabId, { scale = 0.5, quality = 0.5, format = 'webp', selector, xpath }) => {
+  screenshot: async ({tabId}, { scale = 0.5, quality = 0.5, format = 'webp', selector, xpath }) => {
     let elementResult;
     if (selector || xpath) {
       elementResult = await getElement(tabId, selector, xpath, true);

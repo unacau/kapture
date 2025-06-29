@@ -485,8 +485,92 @@ const helpers = window.__kaptureHelpers = {
     }
 
     return respondWith({ blurred: true }, selector, xpath);
+  },
+  _cursor: ({show}) => {
+    const cursorId = 'kapture-cursor';
+    let cursor = document.getElementById(cursorId);
+    
+    try {
+      if (show === false) {
+        // Hide cursor
+        if (cursor) {
+          cursor.style.display = 'none';
+        }
+        return respondWith({ visible: false });
+      }
+      
+      // Show cursor - create if doesn't exist
+      if (!cursor) {
+        cursor = document.createElement('div');
+        cursor.id = cursorId;
+        
+        // Create cursor SVG
+        cursor.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 0 L0 16 L4.5 12.5 L7.5 20 L10 19 L7 11.5 L12 11 Z" 
+                  fill="white" 
+                  stroke="black" 
+                  stroke-width="1"/>
+          </svg>
+        `;
+        
+        // Style the cursor container
+        cursor.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 20px;
+          height: 20px;
+          z-index: 2147483647;
+          pointer-events: none;
+          transform: translate(-2px, -2px);
+          transition: none;
+          will-change: transform;
+        `;
+        
+        document.body.appendChild(cursor);
+      }
+      
+      cursor.style.display = 'block';
+      return respondWith({ visible: true });
+    } catch (e) {
+      return respondWithError('CURSOR_ERROR', e.message);
+    }
+  },
+  _moveMouseSVG: ({x, y}) => {
+    if (typeof x !== 'number' || typeof y !== 'number') {
+      return respondWithError('XY_REQUIRED', 'Both x and y coordinates are required');
+    }
+    
+    try {
+      const cursor = document.getElementById('kapture-cursor');
+      if (!cursor) {
+        return respondWithError('CURSOR_NOT_FOUND', 'Cursor element not found. Call _cursor with show=true first');
+      }
+      
+      cursor.style.transform = `translate(${x - 2}px, ${y - 2}px)`;
+      return respondWith({ moved: true, x, y });
+    } catch (e) {
+      return respondWithError('MOVE_MOUSE_SVG_ERROR', e.message);
+    }
   }
 };
+
+// Mouse position tracking with throttling
+let lastMouseSendTime = 0;
+const MOUSE_THROTTLE_MS = 50; // Throttle to 20 updates per second
+
+document.addEventListener('mousemove', (event) => {
+  const now = Date.now();
+  if (now - lastMouseSendTime < MOUSE_THROTTLE_MS) return;
+  
+  lastMouseSendTime = now;
+  chrome.runtime.sendMessage({
+    type: 'mousePosition',
+    x: event.clientX,
+    y: event.clientY
+  });
+});
 
 // Listen for requests from the extension
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

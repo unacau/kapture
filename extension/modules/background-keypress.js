@@ -5,7 +5,7 @@ import { getFromContentScript, respondWith, respondWithError, attachDebugger } f
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Send keypress event
-export async function keypress(tabId, params) {
+export async function keypress({tabId}, params) {
   const { key, selector, xpath, delay = 50 } = params;
 
   if (!key) {

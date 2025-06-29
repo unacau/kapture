@@ -218,7 +218,7 @@ export class TabManager {
       let result;
       // some need to run with the background context
       if (backgroundCommands[command]) {
-        result = await backgroundCommands[command](tabState.tabId, params);
+        result = await backgroundCommands[command](tabState, params);
       }
       // others we execute in the page context
       else {
