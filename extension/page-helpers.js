@@ -342,7 +342,7 @@ const helpers = window.__kaptureHelpers = {
   },
   elements: ({selector, xpath, visible = 'all'}) => {
     if (!selector && !xpath) return requireSelectorOrXpath();
-    
+
     let elements;
     try {
       elements = findAllElements(selector, xpath).map(getElementData);
@@ -360,6 +360,7 @@ const helpers = window.__kaptureHelpers = {
   },
   element: ({selector, xpath, visible = 'all'}) => {
     const result = helpers.elements({selector, xpath, visible});
+    if (result.error) return result;
     if (!result.elements.length) return elementNotFound(selector, xpath);
     result.element = result.elements[0];
     delete result.elements;
@@ -384,15 +385,15 @@ const helpers = window.__kaptureHelpers = {
     // Check if element is actually focusable
     const focusableElements = ['input', 'textarea', 'select', 'button', 'a'];
     const tagName = element.tagName.toLowerCase();
-    const isFocusable = focusableElements.includes(tagName) || 
-                       element.hasAttribute('tabindex') || 
+    const isFocusable = focusableElements.includes(tagName) ||
+                       element.hasAttribute('tabindex') ||
                        element.isContentEditable;
 
     if (!isFocusable) {
       // Still return success but with a warning
-      return respondWith({ 
-        focused: true, 
-        warning: 'Element may not be focusable' 
+      return respondWith({
+        focused: true,
+        warning: 'Element may not be focusable'
       }, selector, xpath);
     }
 
@@ -489,7 +490,7 @@ const helpers = window.__kaptureHelpers = {
   _cursor: ({show}) => {
     const cursorId = 'kapture-cursor';
     let cursor = document.getElementById(cursorId);
-    
+
     try {
       if (show === false) {
         // Hide cursor
@@ -498,12 +499,12 @@ const helpers = window.__kaptureHelpers = {
         }
         return respondWith({ visible: false });
       }
-      
+
       // Show cursor - create if doesn't exist
       if (!cursor) {
         cursor = document.createElement('div');
         cursor.id = cursorId;
-        
+
         // Create cursor SVG
         cursor.innerHTML = `
           <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -513,7 +514,7 @@ const helpers = window.__kaptureHelpers = {
                   stroke-width="1"/>
           </svg>
         `;
-        
+
         // Style the cursor container
         cursor.style.cssText = `
           position: fixed;
@@ -527,10 +528,10 @@ const helpers = window.__kaptureHelpers = {
           transition: none;
           will-change: transform;
         `;
-        
+
         document.body.appendChild(cursor);
       }
-      
+
       cursor.style.display = 'block';
       return respondWith({ visible: true });
     } catch (e) {
@@ -541,13 +542,13 @@ const helpers = window.__kaptureHelpers = {
     if (typeof x !== 'number' || typeof y !== 'number') {
       return respondWithError('XY_REQUIRED', 'Both x and y coordinates are required');
     }
-    
+
     try {
       const cursor = document.getElementById('kapture-cursor');
       if (!cursor) {
         return respondWithError('CURSOR_NOT_FOUND', 'Cursor element not found. Call _cursor with show=true first');
       }
-      
+
       cursor.style.transform = `translate(${x - 2}px, ${y - 2}px)`;
       return respondWith({ moved: true, x, y });
     } catch (e) {
@@ -563,7 +564,7 @@ const MOUSE_THROTTLE_MS = 50; // Throttle to 20 updates per second
 document.addEventListener('mousemove', (event) => {
   const now = Date.now();
   if (now - lastMouseSendTime < MOUSE_THROTTLE_MS) return;
-  
+
   lastMouseSendTime = now;
   chrome.runtime.sendMessage({
     type: 'mousePosition',

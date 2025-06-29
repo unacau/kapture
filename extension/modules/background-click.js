@@ -27,12 +27,12 @@ export async function click({tabId, mousePosition}, { selector, xpath }) {
   try {
     // Show cursor
     await getFromContentScript(tabId, '_cursor', { show: true });
-    
+
     // Set initial cursor position
     await getFromContentScript(tabId, '_moveMouseSVG', { x: currentPosition.x, y: currentPosition.y });
 
     // Calculate animation based on pixels per second
-    const pixelsPerSecond = 500; // Adjust for desired speed
+    const pixelsPerSecond = 1000; // Adjust for desired speed
     const distance = Math.sqrt(Math.pow(targetX - currentPosition.x, 2) + Math.pow(targetY - currentPosition.y, 2));
     const duration = Math.min(1000, (distance / pixelsPerSecond) * 1000); // Cap at 1s for very long distances
     const frameInterval = 16; // ~60fps
