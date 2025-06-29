@@ -2,6 +2,7 @@ import { keypress } from './background-keypress.js';
 import { click, hover } from './background-click.js';
 import { navigate, back, forward, close } from './background-navigate.js';
 import { screenshot } from './background-screenshot.js';
+import { getLogs } from './background-console.js';
 
 export const getFromContentScript = async (tabId, command, params, ) => {
   return await chrome.tabs.sendMessage(tabId, { command, params });
@@ -55,5 +56,6 @@ export const backgroundCommands = {
   click,
   hover,
   keypress,
-  screenshot
+  screenshot,
+  getLogs
 }

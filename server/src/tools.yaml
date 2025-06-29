@@ -248,7 +248,7 @@ tools:
         description: Y coordinate relative to the viewport
 
   console_logs:
-    description: Get console logs from a browser tab
+    description: Get console logs from a browser tab (requires Chrome DevTools to be open)
     required: [tabId]
     properties:
       tabId: *tabId
@@ -263,8 +263,8 @@ tools:
         maximum: 500
       level:
         type: string
-        description: Filter logs by level
-        enum: ["log", "info", "warn", "error"]
+        description: Filter logs by level (log, info, warn, error, debug, trace, table, group, groupCollapsed, groupEnd)
+        enum: ["log", "info", "warn", "error", "debug", "trace", "table", "group", "groupCollapsed", "groupEnd"]
 
   new_tab:
     description: >-

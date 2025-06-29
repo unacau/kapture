@@ -129,11 +129,18 @@ export class TabState {
     this.consoleLogs = [];
   }
 
-  getConsoleLogs(limit = null, level = null) {
+  getConsoleLogs(limit = null, level = null, before = null) {
     let logs = this.consoleLogs;
     
     if (level) {
       logs = logs.filter(log => log.level === level);
+    }
+    
+    if (before) {
+      const beforeTimestamp = new Date(before).getTime();
+      logs = logs.filter(log => 
+        new Date(log.timestamp).getTime() < beforeTimestamp
+      );
     }
     
     if (limit === null) {

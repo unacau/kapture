@@ -137,6 +137,21 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       }
       return false;
     }
+
+    if (request.type === 'consoleLog') {
+      // Handle console log from content script
+      const tabState = tabManager.getTab(sender.tab.id);
+      if (tabState) {
+        if (request.level === 'clear') {
+          // Clear console logs
+          tabManager.clearConsoleLogs(sender.tab.id);
+        } else {
+          // Add console log
+          tabManager.addConsoleLog(sender.tab.id, request.level, request.args, request.stack);
+        }
+      }
+      return false;
+    }
   }
 
   // Handle messages from popup/panel (not from content scripts)

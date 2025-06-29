@@ -128,6 +128,48 @@
             counter.dataset.hoverCount = count;
             display.textContent = count;
         }
+        
+        // Console log test functions
+        function testConsoleLogs() {
+            console.log('This is a regular log message');
+            console.info('This is an info message');
+            console.warn('This is a warning message');
+            console.error('This is an error message');
+            console.debug('This is a debug message');
+            
+            // Test with objects
+            console.log('Object test:', { name: 'Test', value: 123, nested: { a: 1, b: 2 } });
+            
+            // Test with arrays
+            console.log('Array test:', [1, 2, 3, 'four', { five: 5 }]);
+            
+            // Test with functions
+            console.log('Function test:', function testFunc() { return 'test'; });
+            
+            // Test circular reference
+            const circular = { name: 'circular' };
+            circular.self = circular;
+            console.log('Circular reference test:', circular);
+            
+            // Test table
+            console.table([{ a: 1, b: 2 }, { a: 3, b: 4 }]);
+            
+            // Test group
+            console.group('Grouped logs');
+            console.log('Inside group 1');
+            console.log('Inside group 2');
+            console.groupEnd();
+            
+            // Test trace
+            console.trace('Trace example');
+        }
+        
+        // Run console tests on page load
+        setTimeout(() => {
+            console.log('=== Starting Console Log Tests ===');
+            testConsoleLogs();
+            console.log('=== Console Log Tests Complete ===');
+        }, 1000);
     </script>
 
     <!-- E2E Test Elements -->
@@ -139,6 +181,13 @@
             <div id="visible-element">This element is visible</div>
             <div id="hidden-element" style="display: none;">This element is hidden</div>
             <div id="zero-height" style="height: 0; overflow: hidden;">This element has zero height</div>
+        </div>
+
+        <h3>Console Log Tests</h3>
+        <div style="margin-bottom: 20px;">
+            <button onclick="testConsoleLogs()">Generate Console Logs</button>
+            <button onclick="console.clear()">Clear Console</button>
+            <p style="font-size: 0.9em; color: #666;">Note: DevTools must be open to capture console logs</p>
         </div>
 
         <h3>Form Elements</h3>
