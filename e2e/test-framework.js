@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
 import WebSocket from 'ws';
@@ -6,79 +6,18 @@ import WebSocket from 'ws';
 // Make WebSocket available globally for the MCP SDK
 globalThis.WebSocket = WebSocket;
 
-export class TestFramework {
+class TestFramework {
   constructor() {
-    this.serverProcess = null;
     this.mcpClient = null;
     this.serverPort = 61822;
-  }
-
-  async checkServerRunning() {
-    try {
-      const response = await fetch(`http://localhost:${this.serverPort}/`);
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
+    this.testTab = null; // Store the test tab for the entire test run
   }
 
   async startServer() {
-    // Check if server is already running
-    const isRunning = await this.checkServerRunning();
-    if (isRunning) {
-      console.log('Server is already running on port', this.serverPort);
-      return;
-    }
-
-    return new Promise((resolve, reject) => {
-      // Start the server
-      this.serverProcess = spawn('npm', ['start'], {
-        cwd: '../server',
-        env: { ...process.env, KAPTURE_DEBUG: '1' }
-      });
-
-      let serverReady = false;
-
-      this.serverProcess.stdout.on('data', (data) => {
-        const output = data.toString();
-        console.log('Server:', output);
-
-        // Check if server is ready
-        if (!serverReady && output.includes('WebSocket server listening')) {
-          serverReady = true;
-          // Give it a moment to fully initialize
-          setTimeout(() => resolve(), 1000);
-        }
-      });
-
-      this.serverProcess.stderr.on('data', (data) => {
-        const error = data.toString();
-        console.error('Server Error:', error);
-
-        // Check for port in use error
-        if (error.includes('EADDRINUSE')) {
-          reject(new Error(`Port ${this.serverPort} is already in use. Kill the existing process or use a different port.`));
-        }
-      });
-
-      this.serverProcess.on('error', (error) => {
-        reject(new Error(`Failed to start server: ${error.message}`));
-      });
-
-      // Timeout if server doesn't start
-      setTimeout(() => {
-        if (!serverReady) {
-          reject(new Error('Server failed to start within timeout'));
-        }
-      }, 10000);
+    spawn('npm', ['start'], {
+      cwd: '../server',
+      env: { ...process.env, KAPTURE_DEBUG: '1' }
     });
-  }
-
-  async stopServer() {
-    if (this.serverProcess) {
-      this.serverProcess.kill();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
   }
 
   async connectMCP() {
@@ -97,13 +36,6 @@ export class TestFramework {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     return this.mcpClient;
-  }
-
-  async disconnectMCP() {
-    if (this.mcpClient) {
-      await this.mcpClient.close();
-      this.mcpClient = null;
-    }
   }
 
   async listResources() {
@@ -129,8 +61,10 @@ export class TestFramework {
       throw new Error('MCP client not connected');
     }
 
-    const response = await this.mcpClient.callTool({ name, arguments: args });
-    return response;
+    if (name !== 'list_tabs') {
+      args.tabId = this.testTab.tabId;
+    }
+    return await this.mcpClient.callTool({ name, arguments: args});
   }
 
   async callToolAndParse(name, args) {
@@ -143,28 +77,15 @@ export class TestFramework {
       throw new Error('MCP client not connected');
     }
 
-    const response = await this.mcpClient.readResource({ uri });
-    return response;
+    return await this.mcpClient.readResource({ uri });
   }
 
-  async findTestTab(resources) {
-    // Look for a tab running test.html
-    const tabsResource = resources.find(r => r.uri === 'kapture://tabs');
-    if (!tabsResource) {
-      throw new Error('No tabs resource found');
-    }
-
-    const tabsResponse = await this.readResource('kapture://tabs');
-    const tabs = JSON.parse(tabsResponse.contents[0].text);
-
-    // Find test.html tab
-    return tabs.find(tab => tab.url && tab.url.includes('test.html'));
-  }
 
   async openTestPage() {
     // Launch Chrome with the test page
-    const { exec } = await import('child_process');
-    const testUrl = `http://localhost:${this.serverPort}/test.html?kapture-connect=true`;
+    // const { exec } = await import('child_process');
+    const id = Date.now().toString();
+    const testUrl = `http://localhost:${this.serverPort}/test.html?id=${id}`;
 
     // Try to open Chrome (different commands for different OS)
     const commands = [
@@ -179,7 +100,7 @@ export class TestFramework {
         console.log('Launched Chrome with test page');
         // Wait for Chrome to open and extension to connect
         await new Promise(resolve => setTimeout(resolve, 500));
-        return;
+        return id;
       } catch (e) {
         // Try next command
       }
@@ -189,31 +110,46 @@ export class TestFramework {
   }
 
   async ensureTestTab() {
-    const resources = await this.listResources();
-    let testTab = await this.findTestTab(resources);
-
-    if (!testTab) {
-      console.log('No test tab found, launching Chrome...');
-      await this.openTestPage();
-
-      // Keep trying to find the test tab
-      for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const updatedResources = await this.listResources();
-        testTab = await this.findTestTab(updatedResources);
-        if (testTab) break;
-      }
-
-      if (!testTab) {
-        throw new Error('Chrome launched but test tab not found. Make sure Kapture extension is installed.');
-      }
+    // If we already have a test tab for this test run, use it
+    if (this.testTab) {
+      return this.testTab;
     }
 
-    return testTab;
-  }
+    // Open a new tab for this test run
+    console.log('Opening new test tab...');
+    const id = await this.openTestPage();
 
+    // Keep trying to find the test tab
+    for (let i = 0; i < 10; i++) {
+      const tabs = (await this.callToolAndParse('list_tabs', {})).tabs;
+      for (const tab of tabs) {
+        if (tab.url.includes('/test.html?id=') && tab.url.includes(id)) {
+          this.testTab = tab; // Store for reuse
+          return;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    throw new Error('Chrome launched but test tab not found. Make sure Kapture extension is installed.');
+  }
   async cleanup() {
-    await this.disconnectMCP();
-    await this.stopServer();
+    if (this.mcpClient) {
+      await this.mcpClient.close();
+      this.mcpClient = null;
+    }
   }
 }
+
+// Create a single instance to be shared across all test files
+export const framework = new TestFramework();
+
+// Start server
+console.log('Starting server...');
+await framework.startServer();
+
+// Connect MCP client
+console.log('Connecting MCP client...');
+await framework.connectMCP();
+
+await framework.ensureTestTab();

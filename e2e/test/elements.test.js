@@ -1,40 +1,17 @@
 import { expect } from 'chai';
-import { TestFramework } from '../test-framework.js';
+import { framework } from '../test-framework.js';
 import { expectValidTabInfo } from './helpers.js';
 
 describe('Elements Tool Tests', function() {
-  let framework;
-  let testTab;
-
-  before(async function() {
-    framework = new TestFramework();
-
-    // Start server
-    console.log('Starting server...');
-    await framework.startServer();
-
-    // Connect MCP client
-    console.log('Connecting MCP client...');
-    await framework.connectMCP();
-  });
-
-  after(async function() {
-    await framework.cleanup();
-  });
-
   beforeEach(async function() {
-    testTab = await framework.ensureTestTab();
-
     // Navigate to test page to ensure clean state
     await framework.callTool('navigate', {
-      tabId: testTab.tabId,
       url: "http://localhost:61822/test.html"
     });
   });
 
   it('should get elements by CSS selector', async function() {
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       selector: 'h1'
     });
 
@@ -55,7 +32,6 @@ describe('Elements Tool Tests', function() {
   it('should get multiple elements', async function() {
     // Test page has multiple p elements
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       selector: 'p'
     });
 
@@ -63,7 +39,7 @@ describe('Elements Tool Tests', function() {
     expectValidTabInfo(resultData);
     expect(resultData.elements).to.be.an('array');
     expect(resultData.elements.length).to.be.greaterThan(1);
-    
+
     // Check that we got multiple p elements
     resultData.elements.forEach((element) => {
       expect(element).to.have.property('tagName').that.equals('p');
@@ -73,7 +49,6 @@ describe('Elements Tool Tests', function() {
 
   it('should get elements by XPath', async function() {
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       xpath: '//h1'
     });
 
@@ -90,7 +65,6 @@ describe('Elements Tool Tests', function() {
     // Test page has visible and hidden elements
     // Get all div elements in the visibility test section
     const allResult = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       selector: '#visible-element, #hidden-element, #zero-height'
     });
 
@@ -99,7 +73,6 @@ describe('Elements Tool Tests', function() {
 
     // Get only visible elements
     const visibleResult = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       selector: '#visible-element, #hidden-element, #zero-height',
       visible: 'true'
     });
@@ -114,7 +87,6 @@ describe('Elements Tool Tests', function() {
 
   it('should return empty array when no elements match', async function() {
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       selector: '.non-existent-class'
     });
 
@@ -127,7 +99,6 @@ describe('Elements Tool Tests', function() {
   it('should handle complex CSS selectors', async function() {
     // Test page has form elements with specific attributes
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       selector: 'input[type="text"]'
     });
 
@@ -141,14 +112,13 @@ describe('Elements Tool Tests', function() {
   it('should handle complex XPath expressions', async function() {
     // Find buttons that are not disabled
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       xpath: '//button[not(@disabled)]'
     });
 
     const resultData = JSON.parse(result.content[0].text);
     expectValidTabInfo(resultData);
     expect(resultData.elements.length).to.be.greaterThan(0);
-    
+
     // Verify we got buttons
     resultData.elements.forEach(element => {
       expect(element).to.have.property('tagName').that.equals('button');
@@ -157,7 +127,6 @@ describe('Elements Tool Tests', function() {
 
   it('should handle invalid CSS selector', async function() {
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       selector: '!!!invalid>>>'
     });
 
@@ -168,7 +137,6 @@ describe('Elements Tool Tests', function() {
 
   it('should handle invalid XPath', async function() {
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId,
       xpath: '//[invalid'
     });
 
@@ -179,7 +147,6 @@ describe('Elements Tool Tests', function() {
 
   it('should require either selector or xpath', async function() {
     const result = await framework.callTool('elements', {
-      tabId: testTab.tabId
     });
 
     const resultData = JSON.parse(result.content[0].text);

@@ -1,25 +1,8 @@
 import { expect } from 'chai';
-import { TestFramework } from '../test-framework.js';
+import { framework } from '../test-framework.js';
 import { expectValidTabInfo } from './helpers.js';
 
 describe('Kapture E2E Tests', function() {
-  let framework;
-
-  before(async function() {
-    framework = new TestFramework();
-
-    // Start server
-    console.log('Starting server...');
-    await framework.startServer();
-
-    // Connect MCP client
-    console.log('Connecting MCP client...');
-    await framework.connectMCP();
-  });
-
-  after(async function() {
-    await framework.cleanup();
-  });
 
   describe('Basic Functionality', function() {
     it('should list available resources', async function() {

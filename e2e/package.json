@@ -4,7 +4,7 @@
   "description": "End-to-end tests for Kapture MCP Browser Automation",
   "type": "module",
   "scripts": {
-    "test": "mocha --timeout 30000"
+    "test": "mocha"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",

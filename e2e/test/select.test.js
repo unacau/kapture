@@ -1,40 +1,17 @@
 import { expect } from 'chai';
-import { TestFramework } from '../test-framework.js';
+import { framework } from '../test-framework.js';
 import { expectValidTabInfo } from './helpers.js';
 
 describe('Select Tool Tests', function() {
-  let framework;
-  let testTab;
-
-  before(async function() {
-    framework = new TestFramework();
-
-    // Start server
-    console.log('Starting server...');
-    await framework.startServer();
-
-    // Connect MCP client
-    console.log('Connecting MCP client...');
-    await framework.connectMCP();
-  });
-
-  after(async function() {
-    await framework.cleanup();
-  });
-
   beforeEach(async function() {
-    testTab = await framework.ensureTestTab();
-
     // Navigate to test page to ensure clean state
     await framework.callTool('navigate', {
-      tabId: testTab.tabId,
       url: "http://localhost:61822/test.html"
     });
   });
 
   it('should select option by value', async function() {
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#select-input',
       value: 'option2'
     });
@@ -42,10 +19,9 @@ describe('Select Tool Tests', function() {
     expectValidTabInfo(resultData);
     expect(resultData).to.have.property('selector').that.equals('#select-input');
     expect(resultData).to.have.property('selected').that.equals(true);
-    
+
     // Verify the value was actually selected
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#select-input'
     });
     expect(elementData.elements[0].value).to.equal('option2');
@@ -54,14 +30,12 @@ describe('Select Tool Tests', function() {
   it('should select first option when value is empty string', async function() {
     // First select a non-empty option
     await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#select-input',
       value: 'option3'
     });
 
     // Then select empty value (first option)
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#select-input',
       value: ''
     });
@@ -72,7 +46,6 @@ describe('Select Tool Tests', function() {
 
   it('should select using XPath selector', async function() {
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       xpath: '//select[@id="select-input"]',
       value: 'option1'
     });
@@ -86,18 +59,17 @@ describe('Select Tool Tests', function() {
   it('should return all options when getting select element', async function() {
     // Get all options using elements tool
     const resultData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#select-input'
     });
 
     expectValidTabInfo(resultData);
     expect(resultData).to.have.property('elements').that.is.an('array');
     expect(resultData.elements).to.have.lengthOf(1);
-    
+
     const selectElement = resultData.elements[0];
     expect(selectElement).to.have.property('options').that.is.an('array');
     expect(selectElement.options).to.have.lengthOf(4);
-    
+
     // Check each option (they include index property)
     const options = selectElement.options;
     expect(options[0]).to.include({ index: 0, value: '', text: 'Choose an option', selected: true, disabled: false });
@@ -108,7 +80,6 @@ describe('Select Tool Tests', function() {
 
   it('should handle element not found', async function() {
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#non-existent-select',
       value: 'option1'
     });
@@ -121,7 +92,6 @@ describe('Select Tool Tests', function() {
   it('should handle non-select elements', async function() {
     // Try to select on a non-select element
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: 'option1'
     });
@@ -133,7 +103,6 @@ describe('Select Tool Tests', function() {
 
   it('should handle invalid option value', async function() {
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#select-input',
       value: 'non-existent-option'
     });
@@ -147,7 +116,6 @@ describe('Select Tool Tests', function() {
   it('should not select option by text (only by value)', async function() {
     // Select only works with value, not text
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#select-input',
       value: 'Option 3'
     });
@@ -160,24 +128,21 @@ describe('Select Tool Tests', function() {
   it('should trigger change event', async function() {
     // First select an option to ensure a change will occur
     await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#select-input',
       value: 'option1'
     });
 
     // Now select a different option
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#select-input',
       value: 'option2'
     });
 
     expectValidTabInfo(resultData);
     expect(resultData).to.have.property('selected').that.equals(true);
-    
+
     // Verify the value changed
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#select-input'
     });
     expect(elementData.elements[0].value).to.equal('option2');
@@ -185,7 +150,6 @@ describe('Select Tool Tests', function() {
 
   it('should require either selector or xpath', async function() {
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       value: 'option1'
     });
 
@@ -196,7 +160,6 @@ describe('Select Tool Tests', function() {
   it('should handle select with no options', async function() {
     // Test with the empty select that's already on the page
     const resultData = await framework.callToolAndParse('select', {
-      tabId: testTab.tabId,
       selector: '#empty-select',
       value: 'any'
     });

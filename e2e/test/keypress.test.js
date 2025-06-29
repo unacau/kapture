@@ -1,39 +1,16 @@
 import { expect } from 'chai';
-import { TestFramework } from '../test-framework.js';
+import { framework } from '../test-framework.js';
 import { expectValidTabInfo } from './helpers.js';
 
 describe('Keypress Tool Tests', function() {
-  let framework;
-  let testTab;
-
-  before(async function() {
-    framework = new TestFramework();
-
-    // Start server
-    console.log('Starting server...');
-    await framework.startServer();
-
-    // Connect MCP client
-    console.log('Connecting MCP client...');
-    await framework.connectMCP();
-  });
-
-  after(async function() {
-    await framework.cleanup();
-  });
-
   beforeEach(async function() {
-    testTab = await framework.ensureTestTab();
-
     // Navigate to test page to ensure clean state and get updated HTML
     await framework.callTool('navigate', {
-      tabId: testTab.tabId,
       url: "http://localhost:61822/test.html?t=" + Date.now() // Force reload
     });
 
     // Clear any existing input values
     await framework.callTool('fill', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: ''
     });
@@ -41,7 +18,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should type single character', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'a',
       selector: '#text-input'
     });
@@ -54,7 +30,6 @@ describe('Keypress Tool Tests', function() {
 
     // Verify the character was typed
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
     expect(elementData.elements[0].value).to.equal('a');
@@ -65,7 +40,6 @@ describe('Keypress Tool Tests', function() {
     const keys = ['h', 'e', 'l', 'l', 'o'];
     for (const key of keys) {
       await framework.callToolAndParse('keypress', {
-        tabId: testTab.tabId,
         key: key,
         selector: '#text-input'
       });
@@ -73,7 +47,6 @@ describe('Keypress Tool Tests', function() {
 
     // Verify the word was typed
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
     expect(elementData.elements[0].value).to.equal('hello');
@@ -82,14 +55,12 @@ describe('Keypress Tool Tests', function() {
   it('should handle special keys - Enter', async function() {
     // First type some text
     await framework.callToolAndParse('fill', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: 'test'
     });
 
     // Press Enter
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Enter',
       selector: '#text-input'
     });
@@ -101,7 +72,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should handle special keys - Tab', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Tab',
       selector: '#text-input'
     });
@@ -114,21 +84,18 @@ describe('Keypress Tool Tests', function() {
   it('should handle Backspace key', async function() {
     // First type some text
     await framework.callToolAndParse('fill', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: 'test'
     });
 
     // Press Backspace
     await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Backspace',
       selector: '#text-input'
     });
 
     // Verify one character was deleted
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
     expect(elementData.elements[0].value).to.equal('tes');
@@ -137,14 +104,12 @@ describe('Keypress Tool Tests', function() {
   it('should handle modifier keys - Ctrl+A', async function() {
     // First type some text
     await framework.callToolAndParse('fill', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: 'test text'
     });
 
     // Press Ctrl+A to select all
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Ctrl+a',
       selector: '#text-input'
     });
@@ -158,7 +123,6 @@ describe('Keypress Tool Tests', function() {
     // Page now has scrollable content, scroll down a bit first
     // Use PageDown to get to a middle position
     const pageDownResult = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'PageDown'
     });
 
@@ -169,7 +133,6 @@ describe('Keypress Tool Tests', function() {
 
     // Test ArrowDown (should scroll down when not in input)
     let resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'ArrowDown'
     });
     expectValidTabInfo(resultData);
@@ -178,7 +141,6 @@ describe('Keypress Tool Tests', function() {
 
     // Test ArrowUp (should scroll up)
     resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'ArrowUp'
     });
     expectValidTabInfo(resultData);
@@ -188,7 +150,6 @@ describe('Keypress Tool Tests', function() {
     // Test arrow keys in input field (should NOT scroll)
     // Focus the input (this will scroll to top of page where input is)
     const focusResult = await framework.callToolAndParse('focus', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
 
@@ -199,7 +160,6 @@ describe('Keypress Tool Tests', function() {
     // Arrow keys in input should not scroll the page
     for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) {
       resultData = await framework.callToolAndParse('keypress', {
-        tabId: testTab.tabId,
         key: key,
         selector: '#text-input'
       });
@@ -215,7 +175,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should handle function keys', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'F5'
     });
 
@@ -227,28 +186,24 @@ describe('Keypress Tool Tests', function() {
   it('should handle Space key', async function() {
     // Test 1: Space in input field
     await framework.callToolAndParse('fill', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: 'hello'
     });
 
     // Press Space in input
     await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Space',
       selector: '#text-input'
     });
 
     // Type more text
     await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'w',
       selector: '#text-input'
     });
 
     // Verify space was inserted
     let elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
     expect(elementData.elements[0].value).to.equal('hello w');
@@ -256,13 +211,11 @@ describe('Keypress Tool Tests', function() {
     // Test 2: Space key scrolls page when not in input
     // First blur the input to remove focus
     await framework.callTool('blur', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
 
     // Scroll down a bit so we're not at the top
     const scrollDownResult = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'PageDown'
     });
 
@@ -272,7 +225,6 @@ describe('Keypress Tool Tests', function() {
 
     // Press Space without selector (should scroll page further down)
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Space'
     });
 
@@ -285,7 +237,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should handle custom delay', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'a',
       selector: '#text-input',
       delay: 200
@@ -298,7 +249,6 @@ describe('Keypress Tool Tests', function() {
   it('should handle auto-repeat for long delays', async function() {
     // Press and hold 'a' for 600ms (should trigger auto-repeat)
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'a',
       selector: '#text-input',
       delay: 600
@@ -311,7 +261,6 @@ describe('Keypress Tool Tests', function() {
 
     // Verify multiple characters were typed
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
     expect(elementData.elements[0].value.length).to.be.greaterThan(1);
@@ -319,7 +268,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should work without selector (global keypress)', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Escape'
     });
 
@@ -332,7 +280,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should work with xpath selector', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'x',
       xpath: '//input[@id="text-input"]'
     });
@@ -344,7 +291,6 @@ describe('Keypress Tool Tests', function() {
 
     // Verify the character was typed
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       xpath: '//input[@id="text-input"]'
     });
     expect(elementData.elements[0].value).to.equal('x');
@@ -353,15 +299,12 @@ describe('Keypress Tool Tests', function() {
   it('should handle PageDown and PageUp', async function() {
     // The test page now has a 3000px tall element, so we can test scrolling
     // Get initial scroll position (should be at top)
-    let tabInfo = await framework.callToolAndParse('tab_detail', {
-      tabId: testTab.tabId
-    });
+    let tabInfo = await framework.callToolAndParse('tab_detail', {});
     const initialScrollY = tabInfo.scrollPosition.y;
     expect(initialScrollY).to.equal(0);
 
     // Test PageDown
     let resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'PageDown'
     });
 
@@ -375,7 +318,6 @@ describe('Keypress Tool Tests', function() {
 
     // Test PageUp
     resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'PageUp'
     });
 
@@ -390,14 +332,12 @@ describe('Keypress Tool Tests', function() {
   it('should handle Home and End keys', async function() {
     // First add some text
     await framework.callToolAndParse('fill', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: 'test text here'
     });
 
     // Press Home
     let resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Home',
       selector: '#text-input'
     });
@@ -407,7 +347,6 @@ describe('Keypress Tool Tests', function() {
 
     // Press End
     resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'End',
       selector: '#text-input'
     });
@@ -419,28 +358,24 @@ describe('Keypress Tool Tests', function() {
   it('should handle Delete key', async function() {
     // First type some text
     await framework.callToolAndParse('fill', {
-      tabId: testTab.tabId,
       selector: '#text-input',
       value: 'test'
     });
 
     // Move cursor to beginning
     await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Home',
       selector: '#text-input'
     });
 
     // Press Delete
     await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Delete',
       selector: '#text-input'
     });
 
     // Verify first character was deleted
     const elementData = await framework.callToolAndParse('elements', {
-      tabId: testTab.tabId,
       selector: '#text-input'
     });
     expect(elementData.elements[0].value).to.equal('est');
@@ -449,7 +384,6 @@ describe('Keypress Tool Tests', function() {
   it('should handle Shift modifier', async function() {
     // Type uppercase letter with Shift
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Shift+a',
       selector: '#text-input'
     });
@@ -466,7 +400,6 @@ describe('Keypress Tool Tests', function() {
 
     // Test a large delay that's still within limits
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'a',
       selector: '#text-input',
       delay: 2000 // 2 seconds (well within limits but triggers auto-repeat)
@@ -482,7 +415,6 @@ describe('Keypress Tool Tests', function() {
     // Try to use a delay beyond the 60-second limit
     try {
       await framework.callToolAndParse('keypress', {
-        tabId: testTab.tabId,
         key: 'a',
         selector: '#text-input',
         delay: 70000 // 70 seconds
@@ -497,7 +429,6 @@ describe('Keypress Tool Tests', function() {
     // Key is a required parameter, so this should throw a validation error
     try {
       await framework.callToolAndParse('keypress', {
-        tabId: testTab.tabId,
         selector: '#text-input'
       });
       expect.fail('Should have thrown an error');
@@ -508,7 +439,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should handle element not found', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'a',
       selector: '#non-existent-input'
     });
@@ -519,7 +449,6 @@ describe('Keypress Tool Tests', function() {
 
   it('should handle multiple modifier keys', async function() {
     const resultData = await framework.callToolAndParse('keypress', {
-      tabId: testTab.tabId,
       key: 'Ctrl+Shift+a',
       selector: '#text-input'
     });

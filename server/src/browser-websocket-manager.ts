@@ -76,7 +76,7 @@ export class BrowserWebSocketManager {
         if (ws.readyState === WebSocket.OPEN) {
           ws.ping();
         }
-      }, 30000);
+      }, 10000);
 
       ws.on('message', (data: Buffer) => {
         try {
@@ -101,7 +101,8 @@ export class BrowserWebSocketManager {
         }
       });
 
-      ws.on('close', () => {
+      ws.on('close', (e) => {
+        console.log('Connection closed', e);
         clearInterval(pingInterval);
         const connection = this.tabRegistry.findByWebSocket(ws);
         if (connection) {

@@ -1,33 +1,11 @@
 import { expect } from 'chai';
-import { TestFramework } from '../test-framework.js';
+import { framework } from '../test-framework.js';
 import { expectValidTabInfo } from './helpers.js';
 
 describe('DOM Tool Tests', function() {
-  let framework;
-  let testTab;
-
-  before(async function() {
-    framework = new TestFramework();
-
-    // Start server
-    console.log('Starting server...');
-    await framework.startServer();
-
-    // Connect MCP client
-    console.log('Connecting MCP client...');
-    await framework.connectMCP();
-  });
-
-  after(async function() {
-    await framework.cleanup();
-  });
-
   beforeEach(async function() {
-    testTab = await framework.ensureTestTab();
-
     // Navigate to test page to ensure clean state
     await framework.callTool('navigate', {
-      tabId: testTab.tabId,
       url: "http://localhost:61822/test.html"
     });
   });
@@ -35,7 +13,6 @@ describe('DOM Tool Tests', function() {
   it('should get DOM HTML', async function() {
     // Get full body HTML
     const result = await framework.callTool('dom', {
-      tabId: testTab.tabId
     });
 
     const resultData = JSON.parse(result.content[0].text);
@@ -48,7 +25,6 @@ describe('DOM Tool Tests', function() {
   it('should get DOM HTML for specific element', async function() {
     // Get HTML for h1 element
     const result = await framework.callTool('dom', {
-      tabId: testTab.tabId,
       selector: 'h1'
     });
 
@@ -62,7 +38,6 @@ describe('DOM Tool Tests', function() {
   it('should get DOM HTML using XPath', async function() {
     // Get HTML for h1 element using XPath
     const result = await framework.callTool('dom', {
-      tabId: testTab.tabId,
       xpath: '//h1'
     });
 
@@ -76,7 +51,6 @@ describe('DOM Tool Tests', function() {
 
   it('should handle DOM element not found', async function() {
     const result = await framework.callTool('dom', {
-      tabId: testTab.tabId,
       selector: '#non-existent-element'
     });
 
@@ -88,7 +62,6 @@ describe('DOM Tool Tests', function() {
 
   it('should handle XPath element not found', async function() {
     const result = await framework.callTool('dom', {
-      tabId: testTab.tabId,
       xpath: '//div[@id="non-existent"]'
     });
 
