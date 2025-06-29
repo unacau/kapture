@@ -2,6 +2,7 @@ import { spawn, exec } from 'child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
 import WebSocket from 'ws';
+import {delay} from "./test/helpers.js";
 
 // Make WebSocket available globally for the MCP SDK
 globalThis.WebSocket = WebSocket;
@@ -14,12 +15,16 @@ class TestFramework {
   }
 
   async startServer() {
-    spawn('npm', ['start'], {
+    console.log('Starting server...');
+    const serverProcess = spawn('npm', ['start'], {
       cwd: '../server',
-      env: { ...process.env, KAPTURE_DEBUG: '1' }
+      env: { ...process.env, KAPTURE_DEBUG: '1' },
+      detached: true,  // Run independently of parent
+      stdio: 'ignore'  // Don't inherit stdio
     });
-  }
 
+    serverProcess.unref(); // Allow parent to exit without killing child
+  }
   async connectMCP() {
     const transport = new WebSocketClientTransport(new URL(`ws://localhost:${this.serverPort}/mcp`));
 
@@ -145,8 +150,8 @@ class TestFramework {
 export const framework = new TestFramework();
 
 // Start server
-console.log('Starting server...');
 await framework.startServer();
+await delay(1000); // Wait for server to start
 
 // Connect MCP client
 console.log('Connecting MCP client...');
