@@ -52,11 +52,6 @@ export async function keypress(tabId, params) {
       // Send keydown event
       await sendKeyEvent('keyDown', false);
 
-      // For character keys, send char event
-      if (keyData.text) {
-        await sendKeyEvent('char', false, keyData.text);
-      }
-
       // If delay > 500ms, simulate key repeat
       if (keypressDelay > 500) {
         // Calculate number of repeat events based on delay
@@ -70,11 +65,6 @@ export async function keypress(tabId, params) {
         // Send repeated keydown events
         for (let i = 0; i < repeatCount; i++) {
           await sendKeyEvent('keyDown', true);
-
-          // For character keys, also repeat the char event
-          if (keyData.text) {
-            await sendKeyEvent('char', false, keyData.text);
-          }
 
           // Wait between repeat events
           if (i < repeatCount - 1) {
