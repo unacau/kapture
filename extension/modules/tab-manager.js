@@ -1,5 +1,5 @@
 import { TabState } from './tab-state.js';
-import { backgroundCommands, getTabInfo } from './background-commands.js';
+import { backgroundCommands, getTabInfo, detectBrowser } from './background-commands.js';
 
 export class TabManager {
   constructor() {
@@ -112,6 +112,7 @@ export class TabManager {
       const registerMessage = {
         type: 'register',
         requestedTabId: tabState.tabId.toString(), // Chrome tab ID
+        browser: detectBrowser(), // Add browser type
         ...tabState.pageMetadata
       };
 

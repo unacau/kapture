@@ -6,6 +6,7 @@ export interface TabConnection {
   ws: WebSocket;
   url?: string;
   title?: string;
+  browser?: string;
   connectedAt: number;
   lastPing?: number;
   domSize?: number;
@@ -90,6 +91,7 @@ export class TabRegistry {
   updateTabInfo(tabId: string, info: {
     url?: string;
     title?: string;
+    browser?: string;
     domSize?: number;
     fullPageDimensions?: { width: number; height: number };
     viewportDimensions?: { width: number; height: number };
@@ -100,6 +102,7 @@ export class TabRegistry {
     if (connection) {
       const hadChange = (info.url !== undefined && connection.url !== info.url) ||
                        (info.title !== undefined && connection.title !== info.title) ||
+                       (info.browser !== undefined && connection.browser !== info.browser) ||
                        (info.domSize !== undefined && connection.domSize !== info.domSize) ||
                        (info.fullPageDimensions !== undefined) ||
                        (info.viewportDimensions !== undefined) ||
@@ -108,6 +111,7 @@ export class TabRegistry {
 
       if (info.url !== undefined) connection.url = info.url;
       if (info.title !== undefined) connection.title = info.title;
+      if (info.browser !== undefined) connection.browser = info.browser;
       if (info.domSize !== undefined) connection.domSize = info.domSize;
       if (info.fullPageDimensions !== undefined) connection.fullPageDimensions = info.fullPageDimensions;
       if (info.viewportDimensions !== undefined) connection.viewportDimensions = info.viewportDimensions;

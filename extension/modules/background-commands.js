@@ -8,6 +8,31 @@ export const getFromContentScript = async (tabId, command, params, ) => {
   return await chrome.tabs.sendMessage(tabId, { command, params });
 }
 
+// Detect browser type from user agent
+export const detectBrowser = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  
+  // Check for Chromium-based browsers that support Chrome extensions
+  if (userAgent.includes('edg/')) {
+    return 'edge';
+  } else if (userAgent.includes('opr/') || userAgent.includes('opera/')) {
+    return 'opera';
+  } else if (userAgent.includes('vivaldi/')) {
+    return 'vivaldi';
+  } else if (userAgent.includes('brave/')) {
+    return 'brave';
+  } else if (userAgent.includes('chrome/')) {
+    // Additional check for Brave which doesn't always include 'brave' in UA
+    if (navigator.brave && navigator.brave.isBrave) {
+      return 'brave';
+    }
+    return 'chrome';
+  } else {
+    // Default to chromium for any other Chromium-based browser
+    return 'chromium';
+  }
+};
+
 export const getTabInfo = async(tabId) => await getFromContentScript(tabId, 'getTabInfo');
 export const getElement = async (tabId, selector, xpath, visible) => {
   return await getFromContentScript(tabId, 'element', { selector, xpath, visible });

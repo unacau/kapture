@@ -13,6 +13,7 @@ export class ToolHandler {
       tabId: tab.tabId,
       url: tab.url,
       title: tab.title,
+      browser: tab.browser,
       connectedAt: tab.connectedAt,
       lastPing: tab.lastPing,
       domSize: tab.domSize,

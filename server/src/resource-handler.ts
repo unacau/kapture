@@ -107,6 +107,7 @@ export class ResourceHandler {
         tabId: tab.tabId,
         url: tab.url,
         title: tab.title,
+        browser: tab.browser,
         ...resultData
       }, result.content[1]);
     } catch (error) {

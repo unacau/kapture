@@ -12,6 +12,7 @@ interface RegisterMessage extends Message {
   requestedTabId?: string;  // Optional - client can request to reuse a tab ID
   url?: string;
   title?: string;
+  browser?: string;
   domSize?: number;
   fullPageDimensions?: { width: number; height: number };
   viewportDimensions?: { width: number; height: number };
@@ -221,7 +222,7 @@ export class BrowserWebSocketManager {
    * 5. Triggers connect/update callbacks for notifications
    */
   private handleTabRegistration(ws: WebSocket, message: RegisterMessage): void {
-    const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions,
+    const { requestedTabId, url, title, browser, domSize, fullPageDimensions, viewportDimensions,
             scrollPosition, pageVisibility } = message;
 
     // Tab ID is required - extension must provide its Chrome tab ID
@@ -253,11 +254,12 @@ export class BrowserWebSocketManager {
     this.tabRegistry.registerWithoutCallback(tabId, ws);
 
     // Update tab info if provided
-    if (url || title || domSize || fullPageDimensions || viewportDimensions ||
+    if (url || title || browser || domSize || fullPageDimensions || viewportDimensions ||
         scrollPosition || pageVisibility) {
       this.tabRegistry.updateTabInfo(tabId, {
         url,
         title,
+        browser,
         domSize,
         fullPageDimensions,
         viewportDimensions,
