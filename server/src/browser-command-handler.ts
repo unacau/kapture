@@ -268,6 +268,13 @@ export class BrowserCommandHandler {
   }
 
   /**
+   * Close a browser tab
+   */
+  async close(tabId: string): Promise<any> {
+    return this.executeCommand('close', { tabId });
+  }
+
+  /**
    * Open a new tab with the Kapture MCP usage documentation
    */
   async newTab(): Promise<{ tabId: string; url: string }> {

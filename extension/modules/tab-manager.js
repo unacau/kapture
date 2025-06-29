@@ -99,9 +99,10 @@ export class TabManager {
       tabState.connectionInfo.setConnected();
       this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
 
-      // Send registration message with metadata
+      // Send registration message with Chrome tab ID and metadata
       const registerMessage = {
         type: 'register',
+        requestedTabId: tabState.tabId.toString(), // Chrome tab ID
         ...tabState.pageMetadata
       };
 

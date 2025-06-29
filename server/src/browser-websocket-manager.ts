@@ -224,27 +224,38 @@ export class BrowserWebSocketManager {
     const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions,
             scrollPosition, pageVisibility } = message;
 
-    // Server assigns the tab ID
-    const assignedTabId = this.tabRegistry.assignTabId(requestedTabId);
-
-    // Check if we need to close an old connection with the same ID
-    if (requestedTabId && requestedTabId === assignedTabId) {
-      const existing = this.tabRegistry.get(assignedTabId);
-      if (existing && existing.ws !== ws) {
-        // Terminate the old connection immediately
-        existing.ws.terminate();
-        // Immediately unregister to free up the tab ID
-        this.tabRegistry.unregister(assignedTabId);
-      }
+    // Tab ID is required - extension must provide its Chrome tab ID
+    if (!requestedTabId) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        error: {
+          message: 'Tab ID is required for registration',
+          code: 'TAB_ID_REQUIRED'
+        }
+      }));
+      ws.close();
+      return;
     }
 
-    // Register the new connection with the assigned ID (without triggering callback yet)
-    this.tabRegistry.registerWithoutCallback(assignedTabId, ws);
+    const tabId = requestedTabId;
+
+    // Check if there's an existing connection with this tab ID
+    const existing = this.tabRegistry.get(tabId);
+    if (existing && existing.ws !== ws) {
+      logger.log(`Terminating existing connection for tab ${tabId} to allow new connection`);
+      // Terminate the old connection immediately
+      existing.ws.terminate();
+      // Immediately unregister to free up the tab ID
+      this.tabRegistry.unregister(tabId);
+    }
+
+    // Register the new connection with the tab ID (without triggering callback yet)
+    this.tabRegistry.registerWithoutCallback(tabId, ws);
 
     // Update tab info if provided
     if (url || title || domSize || fullPageDimensions || viewportDimensions ||
         scrollPosition || pageVisibility) {
-      this.tabRegistry.updateTabInfo(assignedTabId, {
+      this.tabRegistry.updateTabInfo(tabId, {
         url,
         title,
         domSize,
@@ -256,12 +267,12 @@ export class BrowserWebSocketManager {
     }
 
     // Now trigger the connect callback after tab info is set
-    this.tabRegistry.triggerConnectCallback(assignedTabId);
+    this.tabRegistry.triggerConnectCallback(tabId);
 
-    // Send acknowledgment with the assigned tab ID and MCP client info
+    // Send acknowledgment with the tab ID and MCP client info
     const registeredMessage: any = {
       type: 'registered',
-      tabId: assignedTabId,
+      tabId: tabId,
       message: 'Successfully registered'
     };
 
@@ -278,7 +289,7 @@ export class BrowserWebSocketManager {
       action: 'update-tab-info'
     }));
 
-    logger.log(`Tab ${assignedTabId} registered${requestedTabId && requestedTabId !== assignedTabId ? ` (requested: ${requestedTabId})` : ''}. Active tabs: ${this.tabRegistry.getActiveTabCount()}`);
+    logger.log(`Tab ${tabId} registered. Active tabs: ${this.tabRegistry.getActiveTabCount()}`);
 
     // Log all currently registered tabs
     const allTabs = this.tabRegistry.getAll();

@@ -66,7 +66,7 @@ class TestFramework {
       throw new Error('MCP client not connected');
     }
 
-    if (name !== 'list_tabs') {
+    if (name !== 'list_tabs' && !args.tabId) {
       args.tabId = this.testTab.tabId;
     }
     return await this.mcpClient.callTool({ name, arguments: args});

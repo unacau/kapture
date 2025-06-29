@@ -68,6 +68,14 @@ export const backgroundCommands = {
   },
   back: async (tabId) => executeNavigation(tabId, () => chrome.tabs.goBack(tabId)),
   forward: async (tabId) => executeNavigation(tabId, () => chrome.tabs.goForward(tabId)),
+  close: async (tabId) => {
+    try {
+      await chrome.tabs.remove(tabId);
+      return { success: true, closed: true };
+    } catch (error) {
+      return { success: false, error: { code: 'CLOSE_FAILED', message: error.message } };
+    }
+  },
   keypress,
   screenshot: async (tabId, { scale = 0.5, quality = 0.5, format = 'webp', selector, xpath }) => {
     let elementResult;

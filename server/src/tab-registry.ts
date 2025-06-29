@@ -17,40 +17,9 @@ export interface TabConnection {
 
 export class TabRegistry {
   private tabs: Map<string, TabConnection> = new Map();
-  private nextTabId: number = 1;
   private disconnectCallback?: (tabId: string) => Promise<void>;
   private connectCallback?: (tabId: string) => Promise<void>;
   private updateCallback?: (tabId: string) => Promise<void>;
-
-  // Assign a new tab ID or validate requested ID
-  assignTabId(requestedId?: string): string {
-    // If no ID requested, assign a new one
-    if (!requestedId) {
-      const newId = this.nextTabId.toString();
-      this.nextTabId++;
-      return newId;
-    }
-
-    // If requested ID is already in use by an active connection, assign a new one
-    if (this.tabs.has(requestedId)) {
-      const existing = this.tabs.get(requestedId)!;
-      if (existing.ws.readyState === WebSocket.OPEN) {
-        // Tab ID is in use, assign a new one
-        const newId = this.nextTabId.toString();
-        this.nextTabId++;
-        return newId;
-      }
-    }
-
-    // Requested ID is available, use it
-    // Update nextTabId if necessary to avoid conflicts
-    const requestedNum = parseInt(requestedId);
-    if (!isNaN(requestedNum) && requestedNum >= this.nextTabId) {
-      this.nextTabId = requestedNum + 1;
-    }
-
-    return requestedId;
-  }
 
   register(tabId: string, ws: WebSocket): void {
     const connection: TabConnection = {

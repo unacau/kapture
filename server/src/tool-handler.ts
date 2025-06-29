@@ -131,6 +131,9 @@ export class ToolHandler {
         case 'new_tab':
           result = await this.commandHandler.newTab();
           break;
+        case 'close':
+          result = await this.commandHandler.close(validatedArgs.tabId);
+          break;
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
