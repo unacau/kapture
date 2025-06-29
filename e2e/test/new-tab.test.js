@@ -11,8 +11,8 @@ describe('New Tab Tool Tests', function() {
 
     expect(resultData).to.have.property('tabId');
     expect(resultData).to.have.property('url');
-    expect(resultData.url).to.include('MCP_USAGE.html');
-    expect(resultData.url).to.include('kapture-connect=true');
+    expect(resultData.url).to.include('how-to.html');
+    expect(resultData.url).to.include('#session=');
 
     // Verify the tab is in the tabs list
     const tabsResult = await framework.callTool('list_tabs', {});
