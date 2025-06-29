@@ -65,3 +65,6 @@ extension-build/
 /extension/KaptureDevToolsPanel.jpg
 /extension/ScreenshotWithExtensionPanel.jpg
 /kapture-extension.zip
+
+# Mocks folder
+mocks/
