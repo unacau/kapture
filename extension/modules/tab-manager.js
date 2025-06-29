@@ -49,7 +49,7 @@ export class TabManager {
     // Set up connection
     tabState.connectionInfo.userDisconnected = false;
 
-    this._createConnection(tabState);
+    await this._createConnection(tabState);
 
     return { ok: true };
   }
@@ -85,7 +85,16 @@ export class TabManager {
   }
 
   // Private connection methods
-  _createConnection(tabState) {
+  async _createConnection(tabState) {
+    // First check if tab still exists
+    try {
+      await chrome.tabs.get(tabState.tabId);
+    } catch (error) {
+      console.log(`Tab ${tabState.tabId} no longer exists, aborting connection`);
+      this.removeTab(tabState.tabId);
+      return;
+    }
+
     const ws = new WebSocket(tabState.connectionInfo.url);
     tabState.setWebSocket(ws);
 
@@ -184,10 +193,17 @@ export class TabManager {
     tabState.connectionInfo.setRetrying(attemptNumber + 1, backoffMs);
     this.notifyListeners(tabState.tabId, 'stateChanged', tabState);
 
-    tabState.connectionInfo.reconnectTimer = setTimeout(() => {
+    tabState.connectionInfo.reconnectTimer = setTimeout(async () => {
       if (!tabState.connectionInfo.userDisconnected) {
-        console.log(`Attempting reconnect for tab ${tabState.tabId}`);
-        this._createConnection(tabState);
+        // Check if tab still exists before attempting reconnect
+        try {
+          await chrome.tabs.get(tabState.tabId);
+          console.log(`Attempting reconnect for tab ${tabState.tabId}`);
+          this._createConnection(tabState);
+        } catch (error) {
+          console.log(`Tab ${tabState.tabId} no longer exists, removing from manager`);
+          this.removeTab(tabState.tabId);
+        }
       }
     }, backoffMs);
   }
