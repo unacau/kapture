@@ -102,10 +102,10 @@ function updateUI(connected, status = 'disconnected') {
 function renderMessages() {
   const messagesList = document.getElementById('messages-list');
   const messagesContainer = document.querySelector('.messages-container');
-  
+
   // Toggle class based on whether we have messages
   messagesContainer.classList.toggle('has-messages', messages.length > 0);
-  
+
   if (messages.length === 0) {
     return;
   }
@@ -119,7 +119,7 @@ function renderMessages() {
       messageEl.classList.add('selected');
     }
 
-    const arrow = msg.direction === 'outgoing' ? '↑' : '↓';
+    const arrow = msg.direction === 'outgoing' ? '&#x2B06' : '&#x2B07'; // Up arrow for outgoing, down arrow for incoming
     const arrowClass = msg.direction === 'outgoing' ? 'outgoing' : 'incoming';
 
     // Show the raw JSON data
@@ -179,8 +179,8 @@ function selectMessage(index) {
     detailContainer.classList.add('visible');
     const message = messages[index];
 
-    // Format JSON with syntax highlighting (simplified)
-    detailContent.textContent = JSON.stringify(message, null, 2);
+    // Show only the actual message data, not the wrapper
+    detailContent.textContent = JSON.stringify(message.data, null, 2);
   } else {
     detailContainer.classList.remove('visible');
   }
