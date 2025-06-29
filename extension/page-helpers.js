@@ -315,7 +315,7 @@ function requireSelectorOrXpath(selector, xpath) {
   return respondWithError('SELECTOR_OR_XPATH_REQUIRED', 'Selector or XPath parameter required', selector, xpath);
 }
 
-const helpers = window.__kaptureHelpers = {
+const helpers = {
   //called by the background script
   _navigate: ({ url }) => {
     window.location.href = url;

@@ -2,10 +2,7 @@
 window.addEventListener('kapture-message', (event) => {
   chrome.runtime.sendMessage(event.detail);
 });
-let kaptureHelpers = {};
 function ready() {
-  kaptureHelpers = window.__kaptureHelpers;
-
   // Notify background script that content script is ready
   chrome.runtime.sendMessage({ type: 'contentScriptReady' });
 

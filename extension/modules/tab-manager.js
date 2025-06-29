@@ -1,5 +1,5 @@
 import { TabState } from './tab-state.js';
-import { backgroundCommands } from './background-commands.js';
+import { backgroundCommands, getTabInfo } from './background-commands.js';
 
 export class TabManager {
   constructor() {
@@ -43,7 +43,7 @@ export class TabManager {
     }
 
     // Get tab info from content script
-    const tabInfo = await chrome.tabs.sendMessage(tabId, { command: 'getTabInfo' });
+    const tabInfo = await getTabInfo(tabId);
     tabState.updatePageMetadata(tabInfo);
 
     // Set up connection
@@ -158,7 +158,7 @@ export class TabManager {
     ws.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         // Don't track pong messages
         if (data.type !== 'pong') {
           const message = tabState.addMessage('incoming', data);

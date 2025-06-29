@@ -1,10 +1,5 @@
 // Import helper functions from background-commands
-import { getFromContentScript, respondWith, respondWithError, attachDebugger } from './background-commands.js';
-
-// Helper to get element with visible filtering
-const getElement = async (tabId, selector, xpath, visible) => {
-  return await getFromContentScript(tabId, 'element', { selector, xpath, visible });
-}
+import { getFromContentScript, respondWith, respondWithError, attachDebugger, getElement } from './background-commands.js';
 
 export async function click({tabId, mousePosition}, { selector, xpath }) {
   return await hover({ tabId, mousePosition }, { selector, xpath }, true);

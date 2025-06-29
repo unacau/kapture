@@ -1,18 +1,18 @@
 import { keypress } from './background-keypress.js';
 import { click, hover } from './background-click.js';
+import { navigate, back, forward, close } from './background-navigate.js';
 
-// const getTabInfo = async(tabId) => await chrome.tabs.sendMessage(tabId, { command: 'getTabInfo' });
 export const getFromContentScript = async (tabId, command, params, ) => {
   return await chrome.tabs.sendMessage(tabId, { command, params });
 }
 
-const getTabInfo = async(tabId) => await getFromContentScript(tabId, 'getTabInfo');
-const getElement = async (tabId, selector, xpath, visible) => {
+export const getTabInfo = async(tabId) => await getFromContentScript(tabId, 'getTabInfo');
+export const getElement = async (tabId, selector, xpath, visible) => {
   return await getFromContentScript(tabId, 'element', { selector, xpath, visible });
 }
 
 export const respondWith = async (tabId, obj, selector, xpath) => {
-  const info = await chrome.tabs.sendMessage(tabId, { command: 'getTabInfo' });
+  const info = await getTabInfo(tabId);
   return {
     success: !obj.error,
     selector,
@@ -25,57 +25,12 @@ export const respondWithError = async (tabId, code, message, selector, xpath) =>
   return respondWith(tabId,{ error: { code, message } }, selector, xpath);
 }
 
-// Check if URL is allowed for extension
-const isAllowedUrl = (url) => !!url && (url.startsWith('http://') || url.startsWith('https://'));
-
-// Wait for content script to be ready
-async function waitForContentScriptReady(tabId, timeout = 5000) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      chrome.runtime.onMessage.removeListener(listener);
-      reject(new Error('Timeout waiting for content script'));
-    }, timeout);
-
-    const listener = (request, sender) => {
-      if (request.type === 'contentScriptReady' && sender.tab?.id === tabId) {
-        clearTimeout(timer);
-        chrome.runtime.onMessage.removeListener(listener);
-        resolve();
-      }
-    };
-
-    chrome.runtime.onMessage.addListener(listener);
-  });
-}
-
-// Execute navigation and wait for content script
-async function executeNavigation(tabId, navigationFn) {
-  try {
-    await navigationFn();
-    await waitForContentScriptReady(tabId);
-    return await respondWith(tabId, {});
-  } catch (error) {
-    return respondWithError(tabId, 'NAVIGATION_FAILED', error.message);
-  }
-}
 
 export const backgroundCommands = {
-  navigate: async ({tabId}, { url }) => {
-    if (!isAllowedUrl(url)) {
-      return respondWithError(tabId, 'NAVIGATION_BLOCKED', `Navigation to ${url} is not allowed`);
-    }
-    return executeNavigation(tabId, async () => getFromContentScript(tabId, '_navigate', { url }));
-  },
-  back: async ({tabId}) => executeNavigation(tabId, () => chrome.tabs.goBack(tabId)),
-  forward: async ({tabId}) => executeNavigation(tabId, () => chrome.tabs.goForward(tabId)),
-  close: async ({tabId}) => {
-    try {
-      await chrome.tabs.remove(tabId);
-      return { success: true, closed: true };
-    } catch (error) {
-      return { success: false, error: { code: 'CLOSE_FAILED', message: error.message } };
-    }
-  },
+  navigate,
+  back,
+  forward,
+  close,
   click,
   hover,
   keypress,

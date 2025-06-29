@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { framework } from '../test-framework.js';
 import { expectValidTabInfo, delay } from './helpers.js';
 
-describe.only('Hover Tool Tests', function() {
+describe('Hover Tool Tests', function() {
   beforeEach(async function() {
     // Navigate to test page to ensure clean state
     await framework.callTool('navigate', {
