@@ -25,6 +25,8 @@ setTimeout(() => {
   try {
     const bridge = new MCPWebSocketBridge('ws://localhost:61822/mcp', {});
     bridge.start();
+    // Keep the process alive
+    process.stdin.resume();
   } catch (error) {
     console.error('Failed to start bridge:', error);
     process.exit(1);
