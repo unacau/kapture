@@ -47,6 +47,9 @@ export class ToolHandler {
         case 'list_tabs':
           const tabs = this.tabRegistry.getAll().map(tab => this.formatTabDetail(tab));
           result = { tabs };
+          if (tabs.length === 0) {
+            result.hint = 'There currently are no tabs connected. Use the new_tab tool to create one!';
+          }
           break;
         case 'tab_detail':
           const tab = this.tabRegistry.get(validatedArgs.tabId);
