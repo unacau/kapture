@@ -25,18 +25,6 @@ export const respondWith = async (tabId, obj, selector, xpath) => {
 export const respondWithError = async (tabId, code, message, selector, xpath) => {
   return respondWith(tabId,{ error: { code, message } }, selector, xpath);
 }
-
-
-export const backgroundCommands = {
-  navigate,
-  back,
-  forward,
-  close,
-  click,
-  hover,
-  keypress,
-  screenshot
-}
 export async function attachDebugger(tabId, action) {
   let debuggerAttached = false;
   try {
@@ -56,4 +44,16 @@ export async function attachDebugger(tabId, action) {
     }
     catch (e) { }
   }
+}
+
+
+export const backgroundCommands = {
+  navigate,
+  back,
+  forward,
+  close,
+  click,
+  hover,
+  keypress,
+  screenshot
 }
