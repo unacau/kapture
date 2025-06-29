@@ -11,6 +11,80 @@
             margin: 50px auto;
             padding: 20px;
         }
+        
+        /* Hover effects for testing */
+        .hover-box {
+            padding: 20px;
+            margin: 10px 0;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .hover-box:hover {
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
+            transform: scale(1.05);
+        }
+        
+        #hover-counter {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        #hover-tooltip {
+            position: relative;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        #hover-tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        #hover-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        #hover-image {
+            width: 200px;
+            height: 150px;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        #hover-image:hover {
+            background-color: #ffc107;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
@@ -44,11 +118,28 @@
             const result = document.getElementById('click-result');
             result.textContent = `Test button clicked at ${new Date().toLocaleTimeString()}`;
         }
+        
+        // Hover counter handler
+        function updateHoverCount() {
+            const counter = document.getElementById('hover-counter');
+            const display = document.getElementById('hover-count-display');
+            let count = parseInt(counter.dataset.hoverCount) || 0;
+            count++;
+            counter.dataset.hoverCount = count;
+            display.textContent = count;
+        }
     </script>
 
     <!-- E2E Test Elements -->
     <div style="border-top: 2px solid #ccc; margin-top: 30px; padding-top: 20px;">
         <h2>E2E Test Elements</h2>
+
+        <h3>Visibility Tests</h3>
+        <div style="margin-bottom: 20px;">
+            <div id="visible-element">This element is visible</div>
+            <div id="hidden-element" style="display: none;">This element is hidden</div>
+            <div id="zero-height" style="height: 0; overflow: hidden;">This element has zero height</div>
+        </div>
 
         <h3>Form Elements</h3>
         <div style="margin-bottom: 20px;">
@@ -96,11 +187,24 @@
             <div id="click-result" style="margin-top: 10px; color: green;"></div>
         </div>
 
-        <h3>Visibility Tests</h3>
+        <h3>Hover Tests</h3>
         <div style="margin-bottom: 20px;">
-            <div id="visible-element">This element is visible</div>
-            <div id="hidden-element" style="display: none;">This element is hidden</div>
-            <div id="zero-height" style="height: 0; overflow: hidden;">This element has zero height</div>
+            <div id="hover-box-1" class="hover-box">
+                Hover over me to change color
+            </div>
+            
+            <div id="hover-counter" onmouseenter="updateHoverCount()" data-hover-count="0">
+                Hover Count: <span id="hover-count-display">0</span>
+            </div>
+            
+            <div id="hover-tooltip">
+                Hover for tooltip
+                <span class="tooltip-text">This is a tooltip that appears on hover!</span>
+            </div>
+            
+            <div id="hover-image">
+                <span>Hover to highlight</span>
+            </div>
         </div>
 
         <h3>Scrollable Area</h3>

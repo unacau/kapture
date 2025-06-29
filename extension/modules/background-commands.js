@@ -1,3 +1,5 @@
+import { keypress } from './background-keypress.js';
+import { click, hover } from './background-click.js';
 
 // const getTabInfo = async(tabId) => await chrome.tabs.sendMessage(tabId, { command: 'getTabInfo' });
 export const getFromContentScript = async (tabId, command, params, ) => {
@@ -57,9 +59,6 @@ async function executeNavigation(tabId, navigationFn) {
   }
 }
 
-import { keypress } from './background-keypress.js';
-import { click } from './background-click.js';
-
 export const backgroundCommands = {
   navigate: async ({tabId}, { url }) => {
     if (!isAllowedUrl(url)) {
@@ -78,6 +77,7 @@ export const backgroundCommands = {
     }
   },
   click,
+  hover,
   keypress,
   screenshot: async ({tabId}, { scale = 0.5, quality = 0.5, format = 'webp', selector, xpath }) => {
     let elementResult;

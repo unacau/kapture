@@ -6,8 +6,11 @@ const getElement = async (tabId, selector, xpath, visible) => {
   return await getFromContentScript(tabId, 'element', { selector, xpath, visible });
 }
 
-// Click implementation with visual cursor animation
 export async function click({tabId, mousePosition}, { selector, xpath }) {
+  return await hover({ tabId, mousePosition }, { selector, xpath }, true);
+}
+
+export async function hover({tabId, mousePosition}, { selector, xpath }, click = false) {
   // Validate that either selector or xpath is provided
   if (!selector && !xpath) {
     return respondWithError(tabId, 'SELECTOR_OR_XPATH_REQUIRED', 'Either selector or xpath is required');
@@ -62,9 +65,10 @@ export async function click({tabId, mousePosition}, { selector, xpath }) {
         await new Promise(resolve => setTimeout(resolve, frameInterval));
       }
 
-      // Click sequence
-      await dispatchMouseEvent({ type: 'mousePressed', x: targetX, y: targetY, button: 'left', clickCount: 1 });
-      await dispatchMouseEvent({ type: 'mouseReleased', x: targetX, y: targetY, button: 'left', clickCount: 1 });
+      if (click) {
+        await dispatchMouseEvent({type: 'mousePressed', x: targetX, y: targetY, button: 'left', clickCount: 1});
+        await dispatchMouseEvent({type: 'mouseReleased', x: targetX, y: targetY, button: 'left', clickCount: 1});
+      }
     });
 
     // Hide cursor after 1 second
@@ -72,7 +76,7 @@ export async function click({tabId, mousePosition}, { selector, xpath }) {
       await getFromContentScript(tabId, '_cursor', { show: false });
     }, 1000);
 
-    return respondWith(tabId, { clicked: true }, selector, xpath);
+    return respondWith(tabId, click ? { clicked: true } : { hovered: true }, selector, xpath);
   } catch (error) {
     // Make sure cursor is hidden on error
     await getFromContentScript(tabId, '_cursor', { show: false });
