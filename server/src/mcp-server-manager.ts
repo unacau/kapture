@@ -11,7 +11,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { WebSocket } from 'ws';
 import { logger } from './logger.js';
-import {TabConnection, TabRegistry} from './tab-registry.js';
+import { TabRegistry } from './tab-registry.js';
 import { BrowserWebSocketManager } from './browser-websocket-manager.js';
 import { BrowserCommandHandler } from './browser-command-handler.js';
 import { baseResources, createTabResources, prompts } from './yaml-loader.js';

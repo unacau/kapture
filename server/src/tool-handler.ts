@@ -41,7 +41,7 @@ export class ToolHandler {
       // For tools without arguments, use empty object
       const validatedArgs = tool.inputSchema.parse(args || {}) as any;
 
-      // Call the appropriate convenience method based on tool name
+      // Handle special cases that don't go through the command handler
       let result: any;
       switch (name) {
         case 'list_tabs':
@@ -58,87 +58,18 @@ export class ToolHandler {
           }
           result = this.formatTabDetail(tab);
           break;
-        case 'navigate':
-          result = await this.commandHandler.navigate(validatedArgs.tabId, validatedArgs.url, validatedArgs.timeout);
-          break;
-        case 'back':
-          result = await this.commandHandler.goBack(validatedArgs.tabId);
-          break;
-        case 'forward':
-          result = await this.commandHandler.goForward(validatedArgs.tabId);
-          break;
-        case 'click':
-          result = await this.commandHandler.click(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
-          break;
-        case 'hover':
-          result = await this.commandHandler.hover(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
-          break;
-        case 'focus':
-          result = await this.commandHandler.focus(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
-          break;
-        case 'blur':
-          result = await this.commandHandler.blur(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
-          break;
-        case 'fill':
-          result = await this.commandHandler.fill(validatedArgs.tabId, validatedArgs.value, validatedArgs.selector, validatedArgs.xpath);
-          break;
-        case 'select':
-          result = await this.commandHandler.select(validatedArgs.tabId, validatedArgs.value, validatedArgs.selector, validatedArgs.xpath);
-          break;
         case 'keypress':
           // Automatically adjust timeout based on delay
           if (validatedArgs.delay && !validatedArgs.timeout) {
             // Add 2 seconds to the delay for processing overhead
             validatedArgs.timeout = Math.max(5000, validatedArgs.delay + 2000);
           }
-          result = await this.commandHandler.keypress(validatedArgs.tabId, validatedArgs.key, {
-            selector: validatedArgs.selector,
-            xpath: validatedArgs.xpath,
-            delay: validatedArgs.delay,
-            timeout: validatedArgs.timeout
-          });
-          break;
-        case 'screenshot':
-          result = await this.commandHandler.screenshot(validatedArgs.tabId, {
-            selector: validatedArgs.selector,
-            xpath: validatedArgs.xpath,
-            scale: validatedArgs.scale,
-            format: validatedArgs.format,
-            quality: validatedArgs.quality
-          });
-          break;
-        case 'evaluate':
-          result = await this.commandHandler.evaluate(validatedArgs.tabId, validatedArgs.code);
-          break;
-        case 'dom':
-          result = await this.commandHandler.getDom(validatedArgs.tabId, validatedArgs.selector, validatedArgs.xpath);
-          break;
-        case 'elements':
-          result = await this.commandHandler.getElements(validatedArgs.tabId, {
-            selector: validatedArgs.selector,
-            xpath: validatedArgs.xpath,
-            visible: validatedArgs.visible
-          });
-          break;
-        case 'elementsFromPoint':
-          result = await this.commandHandler.getElementsFromPoint(validatedArgs.tabId, validatedArgs.x, validatedArgs.y);
-          break;
-        case 'console_logs':
-          result = await this.commandHandler.getConsoleLogs(
-            validatedArgs.tabId,
-            validatedArgs.before,
-            validatedArgs.limit || 100,
-            validatedArgs.level
-          );
-          break;
-        case 'new_tab':
-          result = await this.commandHandler.newTab();
-          break;
-        case 'close':
-          result = await this.commandHandler.close(validatedArgs.tabId);
+          result = await this.commandHandler.callTool(name, validatedArgs);
           break;
         default:
-          throw new Error(`Unknown tool: ${name}`);
+          // All other tools go through the generic callTool method
+          result = await this.commandHandler.callTool(name, validatedArgs);
+          break;
       }
 
       // Special handling for screenshot tool
