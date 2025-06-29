@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapture Window Events Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kapture Window Events Test</h1>
+
+    <script>
+        function connectKapture() {
+            console.log('Dispatching connect event...');
+            const event = new CustomEvent('kapture-message', {
+                detail: { type: 'connect' }
+            });
+            window.dispatchEvent(event);
+        }
+
+        function disconnectKapture() {
+            console.log('Dispatching disconnect event...');
+            const event = new CustomEvent('kapture-message', {
+                detail: { type: 'disconnect' }
+            });
+            window.dispatchEvent(event);
+        }
+
+        // Auto-connect when Kapture is loaded
+        window.addEventListener('kapture-loaded', () => {
+            console.log('Kapture loaded! Auto-connecting...');
+            connectKapture();
+        });
+
+        // Test button handler
+        function handleTestClick() {
+            const result = document.getElementById('click-result');
+            result.textContent = `Test button clicked at ${new Date().toLocaleTimeString()}`;
+        }
+    </script>
+
+    <!-- E2E Test Elements -->
+    <div style="border-top: 2px solid #ccc; margin-top: 30px; padding-top: 20px;">
+        <h2>E2E Test Elements</h2>
+
+        <h3>Form Elements</h3>
+        <div style="margin-bottom: 20px;">
+            <div style="margin: 10px 0;">
+                <label for="text-input">Text Input:</label>
+                <input type="text" id="text-input" placeholder="Enter text here">
+            </div>
+
+            <div style="margin: 10px 0;">
+                <label for="email-input">Email Input:</label>
+                <input type="email" id="email-input" placeholder="email@example.com">
+            </div>
+
+            <div style="margin: 10px 0;">
+                <label for="password-input">Password Input:</label>
+                <input type="password" id="password-input" placeholder="Password">
+            </div>
+
+            <div style="margin: 10px 0;">
+                <label for="select-input">Select:</label>
+                <select id="select-input">
+                    <option value="">Choose an option</option>
+                    <option value="option1">Option 1</option>
+                    <option value="option2">Option 2</option>
+                    <option value="option3">Option 3</option>
+                </select>
+            </div>
+
+            <div style="margin: 10px 0;">
+                <label for="empty-select">Empty Select:</label>
+                <select id="empty-select"></select>
+            </div>
+
+            <div style="margin: 10px 0;">
+                <label for="textarea-input">Textarea:</label><br>
+                <textarea id="textarea-input" rows="4" cols="50" placeholder="Multi-line text"></textarea>
+            </div>
+        </div>
+
+        <h3>Buttons & Links</h3>
+        <div style="margin-bottom: 20px;">
+            <button id="test-button" onclick="handleTestClick()">Test Button</button>
+            <button id="disabled-button" disabled>Disabled Button</button>
+            <a href="#anchor1" id="test-link">Test Link</a>
+            <div id="click-result" style="margin-top: 10px; color: green;"></div>
+        </div>
+
+        <h3>Visibility Tests</h3>
+        <div style="margin-bottom: 20px;">
+            <div id="visible-element">This element is visible</div>
+            <div id="hidden-element" style="display: none;">This element is hidden</div>
+            <div id="zero-height" style="height: 0; overflow: hidden;">This element has zero height</div>
+        </div>
+
+        <h3>Scrollable Area</h3>
+        <div id="scrollable-area" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
+            <p>Start of scrollable content</p>
+            <p>Line 1</p><p>Line 2</p><p>Line 3</p><p>Line 4</p><p>Line 5</p>
+            <p>Line 6</p><p>Line 7</p><p>Line 8</p><p>Line 9</p><p>Line 10</p>
+            <p id="scroll-target" style="background-color: yellow;">Target element for scrolling</p>
+            <p>Line 12</p><p>Line 13</p><p>Line 14</p><p>Line 15</p>
+            <p>End of scrollable content</p>
+        </div>
+
+        <div id="anchor1" style="margin-top: 20px; padding: 10px; background-color: #f0f0f0;">
+            <h4>Anchor Section 1</h4>
+            <p>This is the target of the test link above.</p>
+        </div>
+        
+        <!-- Large content area for scroll testing -->
+        <div id="scroll-test-content" style="margin-top: 50px;">
+            <h3>Scroll Test Content</h3>
+            <div style="height: 3000px; background: linear-gradient(to bottom, #ffffff, #f0f0f0, #e0e0e0, #d0d0d0, #c0c0c0);">
+                <p style="padding-top: 20px;">Top of scroll area</p>
+                <p style="position: absolute; top: 500px;">500px down</p>
+                <p style="position: absolute; top: 1000px;">1000px down</p>
+                <p style="position: absolute; top: 1500px;">1500px down</p>
+                <p style="position: absolute; top: 2000px;">2000px down</p>
+                <p style="position: absolute; top: 2500px;">2500px down</p>
+                <p style="position: absolute; top: 2900px;">Bottom of scroll area</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

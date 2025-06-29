@@ -2,6 +2,10 @@
 
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { TabRegistry } from './tab-registry.js';
 import { BrowserWebSocketManager } from './browser-websocket-manager.js';
 import { BrowserCommandHandler } from './browser-command-handler.js';
@@ -22,6 +26,10 @@ process.title = 'Kapture MCP Server';
 
 // Fixed port for all connections
 const PORT = 61822;
+
+// Get directory path for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ========================================================================
 // Core Component Initialization
@@ -87,6 +95,21 @@ const httpServer = createServer(async (req, res) => {
     return;
   }
 
+  // Serve test.html
+  if (req.url && req.url.startsWith('/test.html') && req.method === 'GET') {
+    try {
+      const testPath = join(__dirname, '..', 'test.html');
+      const content = await readFile(testPath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(content);
+    } catch (error) {
+      logger.error('Error serving test.html:', error);
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('test.html not found');
+    }
+    return;
+  }
+
   // All other endpoints delegate to resource handler
   if (req.url && req.method === 'GET') {
     try {
@@ -105,20 +128,30 @@ const httpServer = createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'Not found' }));
         return;
       }
-      const result = await resourceHandler.readResource(kaptureUri);
+      const { isError, contents } = await resourceHandler.readResource(kaptureUri);
 
       // Special handling for screenshot/view endpoint
-      if (isScreenshotView) {
-        // Convert /screenshot/view to /screenshot for the resource handler
-        const content1 = result.contents[1];
-        const imageBuffer = Buffer.from(content1.data, 'base64');
+      if (!isError && isScreenshotView) {
+        // Send image instead of JSON
+        const content1 = contents[1];
+        const imageBuffer = Buffer.from(content1.blob, 'base64');
         res.writeHead(200, { 'Content-Type': content1.mimeType });
         res.end(imageBuffer);
       }
       else {
+        let result = contents[0].text;
+        if(!isError && kaptureUri.includes('/screenshot')) {
+          // move the image data to the first object
+          const reslutObj = JSON.parse(contents[0].text);
+          result = JSON.stringify({
+            ...reslutObj,
+            mimeType: contents[1].mimeType,
+            data: contents[1].blob
+          });
+        }
         // Regular resource endpoints
         res.writeHead(200, {'Content-Type': 'application/json'});
-        res.end(result.contents[0].text);
+        res.end(result);
       }
     } catch (error: any) {
       logger.error('Error handling HTTP endpoint:', error);

@@ -48,10 +48,10 @@ export class BrowserWebSocketManager {
   setConsoleLogHandler(handler: (tabId: string, logEntry: any) => void): void {
     this.consoleLogHandler = handler;
   }
-  
+
   setMcpClientInfo(info: { name?: string; version?: string }): void {
     this.mcpClientInfo = info;
-    
+
     // Notify all connected tabs about the MCP client
     for (const tab of this.tabRegistry.getAll()) {
       tab.ws.send(JSON.stringify({
@@ -64,19 +64,19 @@ export class BrowserWebSocketManager {
   private setupWebSocketServer(): void {
     this.wss.on('connection', (ws: WebSocket, request) => {
       logger.log(`New WebSocket connection: ${request.url}`);
-      
+
       // Skip MCP connections - they're handled at the HTTP server level
       if (request.url === '/mcp') {
         return;
       }
-      
+
       // Regular browser tab connection
       // Set up ping/pong for connection health
       const pingInterval = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.ping();
         }
-      }, 30000);
+      }, 10000);
 
       ws.on('message', (data: Buffer) => {
         try {
@@ -101,7 +101,8 @@ export class BrowserWebSocketManager {
         }
       });
 
-      ws.on('close', () => {
+      ws.on('close', (e) => {
+        console.log('Connection closed', e);
         clearInterval(pingInterval);
         const connection = this.tabRegistry.findByWebSocket(ws);
         if (connection) {
@@ -133,17 +134,10 @@ export class BrowserWebSocketManager {
       case 'register':
         this.handleTabRegistration(ws, message as RegisterMessage);
         break;
-      
+
       case 'response':
         // Handle command responses from extensions
         logger.log('Received response:', JSON.stringify(message));
-        logger.log('Response details:', {
-          id: message.id,
-          success: (message as ResponseMessage).success,
-          result: (message as ResponseMessage).result,
-          hasResult: 'result' in message,
-          resultType: typeof (message as ResponseMessage).result
-        });
         if (this.responseHandler) {
           logger.log('Calling response handler with message id:', message.id);
           this.responseHandler(message as ResponseMessage);
@@ -151,7 +145,7 @@ export class BrowserWebSocketManager {
           logger.warn('No response handler set');
         }
         break;
-      
+
       case 'tab-info':
         // Handle tab info updates
         const connection = this.tabRegistry.findByWebSocket(ws);
@@ -168,7 +162,7 @@ export class BrowserWebSocketManager {
           logger.log(`Tab ${connection.tabId} info updated: ${message.url}`);
         }
         break;
-      
+
       case 'console-log':
         // Handle console log updates - forward to MCP notification handler
         const logConnection = this.tabRegistry.findByWebSocket(ws);
@@ -180,7 +174,7 @@ export class BrowserWebSocketManager {
           }
         }
         break;
-      
+
       case 'console-clear':
         // Handle console clear
         const clearConnection = this.tabRegistry.findByWebSocket(ws);
@@ -196,7 +190,7 @@ export class BrowserWebSocketManager {
           }
         }
         break;
-      
+
       default:
         logger.warn('Unknown message type:', message.type);
         ws.send(JSON.stringify({
@@ -219,12 +213,12 @@ export class BrowserWebSocketManager {
    * 5. Triggers connect/update callbacks for notifications
    */
   private handleTabRegistration(ws: WebSocket, message: RegisterMessage): void {
-    const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions, 
+    const { requestedTabId, url, title, domSize, fullPageDimensions, viewportDimensions,
             scrollPosition, pageVisibility } = message;
-    
+
     // Server assigns the tab ID
     const assignedTabId = this.tabRegistry.assignTabId(requestedTabId);
-    
+
     // Check if we need to close an old connection with the same ID
     if (requestedTabId && requestedTabId === assignedTabId) {
       const existing = this.tabRegistry.get(assignedTabId);
@@ -240,10 +234,10 @@ export class BrowserWebSocketManager {
     this.tabRegistry.registerWithoutCallback(assignedTabId, ws);
 
     // Update tab info if provided
-    if (url || title || domSize || fullPageDimensions || viewportDimensions || 
+    if (url || title || domSize || fullPageDimensions || viewportDimensions ||
         scrollPosition || pageVisibility) {
-      this.tabRegistry.updateTabInfo(assignedTabId, { 
-        url, 
+      this.tabRegistry.updateTabInfo(assignedTabId, {
+        url,
         title,
         domSize,
         fullPageDimensions,
@@ -252,7 +246,7 @@ export class BrowserWebSocketManager {
         pageVisibility
       });
     }
-    
+
     // Now trigger the connect callback after tab info is set
     this.tabRegistry.triggerConnectCallback(assignedTabId);
 
@@ -262,12 +256,12 @@ export class BrowserWebSocketManager {
       tabId: assignedTabId,
       message: 'Successfully registered'
     };
-    
+
     // Include MCP client info if available
     if (this.mcpClientInfo && this.mcpClientInfo.name) {
       registeredMessage.mcpClient = this.mcpClientInfo;
     }
-    
+
     ws.send(JSON.stringify(registeredMessage));
 
     // Request tab info update
@@ -277,7 +271,7 @@ export class BrowserWebSocketManager {
     }));
 
     logger.log(`Tab ${assignedTabId} registered${requestedTabId && requestedTabId !== assignedTabId ? ` (requested: ${requestedTabId})` : ''}. Active tabs: ${this.tabRegistry.getActiveTabCount()}`);
-    
+
     // Log all currently registered tabs
     const allTabs = this.tabRegistry.getAll();
     logger.log(`Current tabs in registry: ${allTabs.map(t => `${t.tabId}(${t.ws.readyState === WebSocket.OPEN ? 'open' : 'closed'})`).join(', ')}`);

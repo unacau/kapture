@@ -77,6 +77,30 @@ tools:
       tabId: *tabId
       <<: *selectorAndXpath
 
+  focus:
+    description: >-
+      Set focus on a page element using CSS selector or XPath. Only the first 
+      matching element will be focused. Returns the unique selector of the 
+      focused element. Useful for form inputs, buttons, and other interactive 
+      elements.
+    required: [tabId]
+    <<: *oneOfSelectorOrXpath
+    properties:
+      tabId: *tabId
+      <<: *selectorAndXpath
+
+  blur:
+    description: >-
+      Remove focus (blur) from a page element using CSS selector or XPath. Only 
+      the first matching element will be blurred. Returns the unique selector of 
+      the blurred element. Also removes focus from document.activeElement if 
+      different.
+    required: [tabId]
+    <<: *oneOfSelectorOrXpath
+    properties:
+      tabId: *tabId
+      <<: *selectorAndXpath
+
   fill:
     description: >-
       Fill an input field with a value using CSS selector or XPath. Only the 
