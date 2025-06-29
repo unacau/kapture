@@ -74,7 +74,7 @@ export class BrowserCommandHandler {
   async newTab(): Promise<{ tabId: string; url: string }> {
     // Generate a unique session ID for this tab
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const targetUrl = `https://williamkapke.github.io/kapture/MCP_USAGE.html?kapture-connect=true&session=${sessionId}`;
+    const targetUrl = `https://williamkapke.github.io/kapture/how-to.html#session=${sessionId}`;
 
     // Open the browser with the URL using system command
     const platform = process.platform;
