@@ -59,3 +59,7 @@ export async function close({tabId}) {
     return { success: false, error: { code: 'CLOSE_FAILED', message: error.message } };
   }
 }
+
+export async function reload({tabId}) {
+  return executeNavigation(tabId, () => chrome.tabs.reload(tabId));
+}

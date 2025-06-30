@@ -273,3 +273,11 @@ tools:
     required: [tabId]
     properties:
       tabId: *tabId
+
+  reload:
+    description: >-
+      Reloads the current page in the browser tab. Performs a standard page 
+      reload similar to pressing F5 or clicking the browser's refresh button.
+    required: [tabId]
+    properties:
+      tabId: *tabId

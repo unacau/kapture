@@ -1,6 +1,6 @@
 import { keypress } from './background-keypress.js';
 import { click, hover } from './background-click.js';
-import { navigate, back, forward, close } from './background-navigate.js';
+import { navigate, back, forward, close, reload } from './background-navigate.js';
 import { screenshot } from './background-screenshot.js';
 import { getLogs } from './background-console.js';
 
@@ -78,6 +78,7 @@ export const backgroundCommands = {
   back,
   forward,
   close,
+  reload,
   click,
   hover,
   keypress,

@@ -175,6 +175,7 @@ Then ask Claude to interact with web pages:
 - `navigate` - Navigate to URL
 - `back` - Browser back button
 - `forward` - Browser forward button
+- `reload` - Reload the current page (similar to pressing F5)
 - `click` - Click elements (uses first matching element, returns unique selector)
 - `hover` - Hover over elements (uses first matching element, returns unique selector)
 - `fill` - Fill input fields (uses first matching element, returns unique selector)
