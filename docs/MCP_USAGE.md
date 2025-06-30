@@ -119,7 +119,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "args": ["kapture-mcp-server", "bridge"]
     }
   }
 }
@@ -147,7 +147,7 @@ Add to your VS Code settings:
   "cline.mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server"]
+      "args": ["kapture-mcp-server", "bridge"]
     }
   }
 }
