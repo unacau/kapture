@@ -1,6 +1,7 @@
 import { BrowserCommandHandler } from './browser-command-handler.js';
 import { TabRegistry } from './tab-registry.js';
 import { allTools } from './yaml-loader.js';
+import { formatTabDetail } from './tab-utils.js';
 
 export class ToolHandler {
   constructor(
@@ -8,21 +9,6 @@ export class ToolHandler {
     private tabRegistry: TabRegistry
   ) {}
 
-  private formatTabDetail(tab: any): any {
-    return {
-      tabId: tab.tabId,
-      url: tab.url,
-      title: tab.title,
-      browser: tab.browser,
-      connectedAt: tab.connectedAt,
-      lastPing: tab.lastPing,
-      domSize: tab.domSize,
-      fullPageDimensions: tab.fullPageDimensions,
-      viewportDimensions: tab.viewportDimensions,
-      scrollPosition: tab.scrollPosition,
-      pageVisibility: tab.pageVisibility
-    };
-  }
 
   public getTools() {
     return allTools.map(tool => ({
@@ -46,7 +32,7 @@ export class ToolHandler {
       let result: any;
       switch (name) {
         case 'list_tabs':
-          const tabs = this.tabRegistry.getAll().map(tab => this.formatTabDetail(tab));
+          const tabs = this.tabRegistry.getAll().map(tab => formatTabDetail(tab));
           result = { tabs };
           if (tabs.length === 0) {
             result.hint = 'There currently are no tabs connected. Use the new_tab tool to create one!';
@@ -57,7 +43,7 @@ export class ToolHandler {
           if (!tab) {
             throw new Error(`Tab ${validatedArgs.tabId} not found`);
           }
-          result = this.formatTabDetail(tab);
+          result = formatTabDetail(tab);
           break;
         case 'keypress':
           // Automatically adjust timeout based on delay

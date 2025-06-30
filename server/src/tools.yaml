@@ -271,7 +271,13 @@ tools:
       Opens a new browser tab with the Kapture MCP usage documentation page. 
       The page will automatically connect to the Kapture server. Returns the 
       tab ID of the newly opened tab once it connects.
-    properties: {}
+    properties:
+      browser:
+        type: string
+        description: >-
+          Optional browser to use. Supported values: chrome, edge, brave, opera, vivaldi.
+          If not specified, uses the system default browser.
+        enum: ["chrome", "edge", "brave", "opera", "vivaldi"]
 
   close:
     description: >-

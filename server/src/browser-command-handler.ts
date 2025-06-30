@@ -2,6 +2,7 @@ import { BrowserWebSocketManager } from './browser-websocket-manager.js';
 import { TabRegistry } from './tab-registry.js';
 import { logger } from './logger.js';
 import { exec } from 'child_process';
+import { formatTabDetail } from './tab-utils.js';
 
 interface CommandRequest {
   id: string;
@@ -55,7 +56,7 @@ export class BrowserCommandHandler {
   async callTool(toolName: string, args: any): Promise<any> {
     // Handle special cases that don't go through executeCommand
     if (toolName === 'new_tab') {
-      return this.newTab();
+      return this.newTab(args?.browser);
     }
     
     // Map tool names to command names (most are the same)
@@ -71,7 +72,7 @@ export class BrowserCommandHandler {
   // Special Commands
   // ========================================================================
 
-  async newTab(): Promise<{ tabId: string; url: string }> {
+  async newTab(browser?: string): Promise<any> {
     // Generate a unique session ID for this tab
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const targetUrl = `https://williamkapke.github.io/kapture/how-to.html#session=${sessionId}`;
@@ -82,13 +83,61 @@ export class BrowserCommandHandler {
     let command: string;
     if (platform === 'darwin') {
       // macOS
-      command = `open -a "Google Chrome" "${targetUrl}"`;
+      if (browser) {
+        const browserMap: { [key: string]: string } = {
+          'chrome': 'Google Chrome',
+          'edge': 'Microsoft Edge',
+          'brave': 'Brave Browser',
+          'opera': 'Opera',
+          'vivaldi': 'Vivaldi'
+        };
+        const appName = browserMap[browser.toLowerCase()];
+        if (!appName) {
+          throw new Error(`Unsupported browser: ${browser}. Supported browsers: chrome, edge, brave, opera, vivaldi`);
+        }
+        command = `open -a "${appName}" "${targetUrl}"`;
+      } else {
+        // Use system default browser
+        command = `open "${targetUrl}"`;
+      }
     } else if (platform === 'win32') {
       // Windows
-      command = `start chrome "${targetUrl}"`;
+      if (browser) {
+        const browserMap: { [key: string]: string } = {
+          'chrome': 'chrome',
+          'edge': 'msedge',
+          'brave': 'brave',
+          'opera': 'opera',
+          'vivaldi': 'vivaldi'
+        };
+        const exeName = browserMap[browser.toLowerCase()];
+        if (!exeName) {
+          throw new Error(`Unsupported browser: ${browser}. Supported browsers: chrome, edge, brave, opera, vivaldi`);
+        }
+        command = `start ${exeName} "${targetUrl}"`;
+      } else {
+        // Use system default browser
+        command = `start "${targetUrl}"`;
+      }
     } else {
       // Linux
-      command = `google-chrome "${targetUrl}"`;
+      if (browser) {
+        const browserMap: { [key: string]: string } = {
+          'chrome': 'google-chrome',
+          'edge': 'microsoft-edge',
+          'brave': 'brave-browser',
+          'opera': 'opera',
+          'vivaldi': 'vivaldi'
+        };
+        const exeName = browserMap[browser.toLowerCase()];
+        if (!exeName) {
+          throw new Error(`Unsupported browser: ${browser}. Supported browsers: chrome, edge, brave, opera, vivaldi`);
+        }
+        command = `${exeName} "${targetUrl}"`;
+      } else {
+        // Use system default browser
+        command = `xdg-open "${targetUrl}"`;
+      }
     }
 
     // Execute the command to open the browser
@@ -108,9 +157,10 @@ export class BrowserCommandHandler {
       const newTab = tabs.find(tab => tab.url && tab.url.includes(`session=${sessionId}`));
 
       if (newTab && newTab.url) {
+        // Return full tab info to match other commands
         return {
-          tabId: newTab.tabId,
-          url: newTab.url
+          ...formatTabDetail(newTab),
+          success: true
         };
       }
 
