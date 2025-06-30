@@ -4,7 +4,7 @@ Kapture is a Chrome DevTools Extension that enables browser automation through t
 
 **✨ Key Feature**: Multiple AI clients can connect to the same server! Claude Desktop, Cline, and other MCP clients can all control browser tabs through a single server instance.
 
-![Kapture DevTools Extension Panel](extension/ScreenshotWithExtensionPanel.webp)
+![Kapture DevTools Extension Panel](docs/assets/images/ScreenshotWithExtensionPanel.webp)
 
 ## Overview
 
@@ -88,13 +88,15 @@ This single command starts the server and handles stdio-to-WebSocket translation
 }
 ```
 
-### Option 2: Direct WebSocket connection
-First start the server manually:
+### Option 2: Direct WebSocket connection (Advanced)
+For advanced use cases where you need manual server control:
+
+1. Start the server manually:
 ```bash
 npx kapture-mcp-server
 ```
 
-Then configure Claude Desktop to connect via WebSocket:
+2. Configure Claude Desktop to connect via WebSocket:
 ```json
 {
   "mcpServers": {
@@ -105,6 +107,8 @@ Then configure Claude Desktop to connect via WebSocket:
   }
 }
 ```
+
+**Note**: This approach requires manually managing the server lifecycle. Use Option 1 (bridge command) for most use cases.
 
 ## 🚀 Run Multiple AI Assistants Simultaneously
 
@@ -124,7 +128,9 @@ This prevents errors and confusion when multiple clients try to start servers.
 
 ### Setting Up Multiple Clients
 
-**Claude Desktop** (use bridge command):
+Each client should use the same bridge command configuration:
+
+**Claude Desktop**:
 ```json
 {
   "mcpServers": {
@@ -136,24 +142,22 @@ This prevents errors and confusion when multiple clients try to start servers.
 }
 ```
 
-**Start the server manually:**
-```bash
-npx kapture-mcp-server
-```
-
-**Cline/VS Code** (via WebSocket):
+**Cline/VS Code**:
 ```json
 {
   "cline.mcpServers": {
     "kapture": {
-      "transport": "websocket",
-      "url": "ws://localhost:61822/mcp"
+      "command": "npx",
+      "args": ["kapture-mcp-server", "bridge"]
     }
   }
 }
 ```
 
-[See the complete multi-assistant guide →](docs/MULTI_ASSISTANT_GUIDE.md)
+**Other MCP Clients**:
+Use the same configuration pattern with `"command": "npx"` and `"args": ["kapture-mcp-server", "bridge"]`.
+
+[See the complete multi-assistant guide →](https://williamkapke.github.io/kapture/MULTI_ASSISTANT_GUIDE.html)
 
 ### Benefits of Multiple AI Assistants:
 - **Parallel Workflows**: Have Claude Desktop research while Cline develops code
@@ -236,7 +240,6 @@ Examples:
 ```bash
 cd server
 npm run dev    # Development with hot-reload
-npm run debug  # With debug logging (KAPTURE_DEBUG=1)
 ```
 
 ### Test App
@@ -284,7 +287,7 @@ After making changes:
 - If no servers are found, verify the server is running
 - Check the server dropdown to see which servers were discovered
 - Check browser console for errors
-- Enable MCP Server debug logging: `KAPTURE_DEBUG=1 npm start`
+- Check server logs in the terminal
 
 ### Extension Not Showing
 - Ensure extension is loaded and enabled

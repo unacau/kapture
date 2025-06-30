@@ -252,8 +252,7 @@ ipcMain.handle('mcp-connect', async () => {
     mcpProcess = spawn('node', nodeArgs, {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
-        ...process.env,
-        KAPTURE_DEBUG: '1'  // Enable debug logging to stderr
+        ...process.env
       }
     });
 

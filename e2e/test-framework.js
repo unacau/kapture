@@ -18,7 +18,7 @@ class TestFramework {
     console.log('Starting server...');
     const serverProcess = spawn('npm', ['start'], {
       cwd: '../server',
-      env: { ...process.env, KAPTURE_DEBUG: '1' },
+      env: { ...process.env },
       detached: true,  // Run independently of parent
       stdio: 'ignore'  // Don't inherit stdio
     });
