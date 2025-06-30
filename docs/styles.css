@@ -211,7 +211,8 @@ body {
 
 .showcase-main {
     position: relative;
-    margin-bottom: 80px;
+    width: 70%;
+    margin: 0 auto 80px;
 }
 
 .browser-frame {
@@ -871,7 +872,7 @@ code {
     .showcase-features {
         grid-template-columns: 1fr;
     }
-    
+
     /* Stack tools and resources on mobile */
     .tools-resources-grid {
         grid-template-columns: 1fr !important;
@@ -882,20 +883,20 @@ code {
     .install-steps {
         padding: 24px;
     }
-    
+
     .step {
         flex-direction: column;
     }
-    
+
     .step-number {
         margin-bottom: 12px;
     }
-    
+
     .button-group {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .button-group .btn {
         width: 100%;
         max-width: 300px;

@@ -178,9 +178,39 @@ function selectMessage(index) {
   if (index >= 0 && index < messages.length) {
     detailContainer.classList.add('visible');
     const message = messages[index];
+    const data = message.data;
 
-    // Show only the actual message data, not the wrapper
-    detailContent.textContent = JSON.stringify(message.data, null, 2);
+    // Check if this is a screenshot response
+    if (data.type === 'response' && data.success && data.result && data.result.data && 
+        data.result.mimeType && data.result.mimeType.startsWith('image/')) {
+      // Create image preview for screenshot
+      const img = document.createElement('img');
+      img.src = `data:${data.result.mimeType};base64,${data.result.data}`;
+      img.style.cssText = 'max-width: 100%; height: auto; cursor: pointer; display: block; border: 1px solid #e0e0e0; border-radius: 4px;';
+      img.title = 'Click to open in new tab';
+      
+      // Open in new tab on click
+      img.addEventListener('click', () => {
+        window.open(img.src, '_blank');
+      });
+
+      // Show image and data
+      detailContent.innerHTML = '';
+      detailContent.appendChild(img);
+      
+      // Add the rest of the data below the image
+      const dataInfo = document.createElement('pre');
+      dataInfo.textContent = JSON.stringify(data.result, null, 2);
+      dataInfo.style.cssText = 'margin-top: 10px; font-size: 12px; overflow: auto;';
+      detailContent.appendChild(dataInfo);
+    } else {
+      // Show only the actual message data, not the wrapper
+      detailContent.innerHTML = '';
+      const pre = document.createElement('pre');
+      pre.style.cssText = 'margin: 0; font-size: 12px; overflow: auto;';
+      pre.textContent = JSON.stringify(message.data, null, 2);
+      detailContent.appendChild(pre);
+    }
   } else {
     detailContainer.classList.remove('visible');
   }

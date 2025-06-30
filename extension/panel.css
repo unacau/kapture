@@ -306,8 +306,16 @@ html, body {
   background: var(--bg-secondary);
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
   font-size: 12px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+}
+
+.detail-content pre {
+  margin: 0;
+  white-space: pre;
+}
+
+.detail-content img {
+  max-width: 100%;
+  height: auto;
 }
 
 /* Footer */
