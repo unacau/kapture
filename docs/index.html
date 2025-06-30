@@ -60,12 +60,9 @@
         </div>
 
         <div class="hero-buttons">
-            <a href="#" class="btn btn-primary" style="opacity: 0.8; cursor: not-allowed;" onclick="return false;">
+            <a href="install.html" class="btn btn-primary">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
-                <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
-                    Download Extension
-                    <small style="font-size: 0.75em; opacity: 0.8;">(coming soon)</small>
-                </span>
+                Install Extension
             </a>
             <a href="https://github.com/williamkapke/kapture" class="btn btn-secondary">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.91 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"/></svg>
@@ -93,7 +90,7 @@
                         </div>
                     </div>
                     <div class="screenshot-container">
-                        <img src="assets/images/ScreenshotWithExtensionPanel.webp" alt="Kapture DevTools Panel showing command execution and real-time response monitoring">
+                        <img src="assets/images/ScreenshotWithExtensionPanel.webp" alt="Kapture DevTools Panel showing screenshot preview, command execution, and real-time response monitoring">
                     </div>
                 </div>
             </div>
@@ -112,7 +109,22 @@
                 <div class="showcase-feature">
                     <div class="showcase-feature-icon">🖼️</div>
                     <h3>Visual Response Preview</h3>
-                    <p>Screenshots and results displayed directly in the DevTools panel</p>
+                    <p>Screenshots displayed as clickable images with full JSON data in DevTools panel</p>
+                </div>
+                <div class="showcase-feature">
+                    <div class="showcase-feature-icon">🌐</div>
+                    <h3>Browser Detection</h3>
+                    <p>Automatically detects Chrome, Edge, Brave, Opera, and Vivaldi browsers</p>
+                </div>
+                <div class="showcase-feature">
+                    <div class="showcase-feature-icon">⚡</div>
+                    <h3>XPath Support</h3>
+                    <p>All element tools support both CSS selectors and XPath expressions</p>
+                </div>
+                <div class="showcase-feature">
+                    <div class="showcase-feature-icon">🚀</div>
+                    <h3>Browser Selection</h3>
+                    <p>Open new tabs in specific browsers or use system default</p>
                 </div>
             </div>
 
@@ -122,7 +134,7 @@
     <section class="tools-section" id="tools">
         <div class="container">
             <div class="section-header">
-                <h2>MCP Capabilities</h2>
+                <h2>MCP Tools & Resources</h2>
                 <p>Complete browser automation through Model Context Protocol</p>
             </div>
 
@@ -133,18 +145,30 @@
                     <div class="mcp-card-header">
                         <div class="mcp-card-icon">🧭</div>
                         <div class="mcp-card-title">
-                            <h4>Navigation</h4>
-                            <p>Control browser navigation</p>
+                            <h4>Navigation & Tab Management</h4>
+                            <p>Control browser navigation and tabs</p>
                         </div>
                     </div>
                     <div class="mcp-item">navigate
-                        <div class="mcp-item-description">Navigate to any URL</div>
+                        <div class="mcp-item-description">Navigate to any URL with timeout support</div>
                     </div>
                     <div class="mcp-item">back
                         <div class="mcp-item-description">Go back in browser history</div>
                     </div>
                     <div class="mcp-item">forward
                         <div class="mcp-item-description">Go forward in browser history</div>
+                    </div>
+                    <div class="mcp-item">list_tabs
+                        <div class="mcp-item-description">List all connected browser tabs</div>
+                    </div>
+                    <div class="mcp-item">tab_detail
+                        <div class="mcp-item-description">Get detailed information about a tab</div>
+                    </div>
+                    <div class="mcp-item">new_tab
+                        <div class="mcp-item-description">Open new tab with browser selection</div>
+                    </div>
+                    <div class="mcp-item">close
+                        <div class="mcp-item-description">Close a browser tab</div>
                     </div>
                 </div>
 
@@ -157,32 +181,50 @@
                         </div>
                     </div>
                     <div class="mcp-item">click
-                        <div class="mcp-item-description">Click on any element</div>
+                        <div class="mcp-item-description">Click elements using CSS selector or XPath</div>
                     </div>
                     <div class="mcp-item">hover
-                        <div class="mcp-item-description">Hover over elements</div>
+                        <div class="mcp-item-description">Hover over elements to trigger effects</div>
                     </div>
                     <div class="mcp-item">fill
-                        <div class="mcp-item-description">Fill form inputs with text</div>
+                        <div class="mcp-item-description">Fill form inputs with text values</div>
                     </div>
                     <div class="mcp-item">select
-                        <div class="mcp-item-description">Select dropdown options</div>
+                        <div class="mcp-item-description">Select options from HTML dropdowns</div>
+                    </div>
+                    <div class="mcp-item">keypress
+                        <div class="mcp-item-description">Send keyboard events with modifier support</div>
+                    </div>
+                    <div class="mcp-item">focus
+                        <div class="mcp-item-description">Set focus on form elements</div>
+                    </div>
+                    <div class="mcp-item">blur
+                        <div class="mcp-item-description">Remove focus from elements</div>
                     </div>
                 </div>
 
                 <div class="mcp-card">
                     <div class="mcp-card-header">
-                        <div class="mcp-card-icon">⚡</div>
+                        <div class="mcp-card-icon">📊</div>
                         <div class="mcp-card-title">
-                            <h4>Advanced</h4>
-                            <p>Query and inspect elements</p>
+                            <h4>Information</h4>
+                            <p>Extract data from pages</p>
                         </div>
                     </div>
+                    <div class="mcp-item">screenshot
+                        <div class="mcp-item-description">Capture page or element screenshots</div>
+                    </div>
+                    <div class="mcp-item">dom
+                        <div class="mcp-item-description">Get HTML content of page or elements</div>
+                    </div>
                     <div class="mcp-item">elements
-                        <div class="mcp-item-description">Query elements by CSS selector or XPath with visibility filtering</div>
+                        <div class="mcp-item-description">Query elements with visibility filtering</div>
+                    </div>
+                    <div class="mcp-item">console_logs
+                        <div class="mcp-item-description">Retrieve browser console messages</div>
                     </div>
                     <div class="mcp-item">elementsFromPoint
-                        <div class="mcp-item-description">Get all elements at specific coordinates</div>
+                        <div class="mcp-item-description">Get elements at specific coordinates</div>
                     </div>
                 </div>
             </div>
@@ -287,144 +329,66 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- Notifications Section -->
-            <div class="mcp-section-header" style="margin-top: 40px;">🔔 MCP Notifications</div>
-            <div class="mcp-grid">
-                <div class="mcp-card">
-                    <div class="mcp-card-header">
-                        <div class="mcp-card-icon">📱</div>
-                        <div class="mcp-card-title">
-                            <h4>Tab Events</h4>
-                            <p>Browser tab lifecycle events</p>
-                        </div>
-                    </div>
-                    <div class="mcp-item">kapturemcp/tabs_changed
-                        <div class="mcp-item-description">Fired when tabs connect, disconnect, or update</div>
-                    </div>
-                    <div class="mcp-item">kapturemcp/tab_disconnected
-                        <div class="mcp-item-description">Fired when a specific tab disconnects</div>
-                    </div>
-                </div>
-
-                <div class="mcp-card">
-                    <div class="mcp-card-header">
-                        <div class="mcp-card-icon">📝</div>
-                        <div class="mcp-card-title">
-                            <h4>Real-time Updates</h4>
-                            <p>Live data streams</p>
-                        </div>
-                    </div>
-                    <div class="mcp-item">kapturemcp/console_log
-                        <div class="mcp-item-description">Real-time console log events from browser tabs</div>
-                    </div>
-                </div>
-
-                <div class="mcp-card">
-                    <div class="mcp-card-header">
-                        <div class="mcp-card-icon">🔄</div>
-                        <div class="mcp-card-title">
-                            <h4>Resource Updates</h4>
-                            <p>MCP protocol events</p>
-                        </div>
-                    </div>
-                    <div class="mcp-item">resources/list_changed
-                        <div class="mcp-item-description">Standard MCP notification when resources change</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Prompts Section -->
-            <div class="mcp-section-header" style="margin-top: 40px;">💬 MCP Prompts</div>
-            <div class="mcp-grid">
-                <div class="mcp-card">
-                    <div class="mcp-card-header">
-                        <div class="mcp-card-icon">📋</div>
-                        <div class="mcp-card-title">
-                            <h4>list-tabs</h4>
-                            <p>Quick tab overview</p>
-                        </div>
-                    </div>
-                    <div class="mcp-item">Get a list of all browser tabs connected to Kapture
-                        <div class="mcp-item-description">Returns tab IDs, URLs, titles, and connection status for all active tabs</div>
-                    </div>
-                </div>
-
-                <div class="mcp-card">
-                    <div class="mcp-card-header">
-                        <div class="mcp-card-icon">🔍</div>
-                        <div class="mcp-card-title">
-                            <h4>tab-details</h4>
-                            <p>Detailed tab information</p>
-                        </div>
-                    </div>
-                    <div class="mcp-item">Get detailed information about a specific browser tab
-                        <div class="mcp-item-description">Provides comprehensive data including DOM size, dimensions, scroll position, and performance metrics</div>
-                    </div>
-                </div>
-
-                <div class="mcp-card">
-                    <div class="mcp-card-header">
-                        <div class="mcp-card-icon">🌐</div>
-                        <div class="mcp-card-title">
-                            <h4>navigate-to-url</h4>
-                            <p>Browser navigation</p>
-                        </div>
-                    </div>
-                    <div class="mcp-item">Navigate a browser tab to a specific URL
-                        <div class="mcp-item-description">Accepts tab ID and URL parameters to navigate any connected tab to a new page</div>
-                    </div>
-                </div>
-
-                <div class="mcp-card">
-                    <div class="mcp-card-header">
-                        <div class="mcp-card-icon">📸</div>
-                        <div class="mcp-card-title">
-                            <h4>take-screenshot</h4>
-                            <p>Capture screenshots</p>
-                        </div>
-                    </div>
-                    <div class="mcp-item">Capture a screenshot of a browser tab or specific element
-                        <div class="mcp-item-description">Supports element selectors, scaling, and multiple formats (PNG, JPEG, WebP)</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- HTTP Endpoints Section -->
-            <div style="margin-top: 60px; text-align: center;">
-                <h3 style="margin-bottom: 20px; color: #2d3748;">Direct HTTP Endpoints</h3>
-                <p style="color: #718096; margin-bottom: 10px;">Access data and images directly via HTTP for debugging and integration</p>
-                <p style="color: #718096; margin-bottom: 30px; font-size: 0.9rem;">
-                    Base URL: <code>http://localhost:61822/</code><br>
-                    Extension automatically connects to server on port 61822
+    <!-- HTTP Endpoints Section -->
+    <section class="endpoints-section" style="background: #f7fafc; padding: 60px 20px;">
+        <div class="container">
+            <div class="section-header">
+                <h2>Direct HTTP Endpoints</h2>
+                <p>Access data and images directly via HTTP for debugging and integration</p>
+                <p style="margin-top: 10px; font-size: 0.9rem;">
+                    Base URL: <code style="padding: 4px 8px; background: white; border-radius: 4px;">http://localhost:61822/</code><br>
+                    <span style="color: #718096;">Extension automatically connects to server on port 61822</span>
                 </p>
-                <div class="tools-showcase" style="max-width: 800px; margin: 0 auto;">
-                    <div class="tool-categories">
-                        <div class="tool-category">
+            </div>
+            
+            <div class="mcp-grid" style="max-width: 900px; margin: 0 auto;">
+                <div class="mcp-card">
+                    <div class="mcp-card-header">
+                        <div class="mcp-card-icon">📊</div>
+                        <div class="mcp-card-title">
                             <h4>Data Endpoints</h4>
-                            <div class="tool-list">
-                                <span class="tool-item">GET /</span>
-                                <span class="tool-item">GET /tabs</span>
-                                <span class="tool-item">GET /tab/{tabId}</span>
-                                <span class="tool-item">GET /tab/{tabId}/console</span>
-                                <span class="tool-item">GET /tab/{tabId}/screenshot</span>
-                                <span class="tool-item">GET /tab/{tabId}/elementsFromPoint</span>
-                                <span class="tool-item">GET /tab/{tabId}/dom</span>
-                                <span class="tool-item">GET /tab/{tabId}/elements</span>
-                            </div>
-                            <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
-                                <code>GET /</code> returns server status and MCP client info for discovery
-                            </p>
+                            <p>JSON responses for data access</p>
                         </div>
-                        <div class="tool-category">
+                    </div>
+                    <div class="mcp-item">GET /
+                        <div class="mcp-item-description">Server status and MCP client info</div>
+                    </div>
+                    <div class="mcp-item">GET /tabs
+                        <div class="mcp-item-description">List all connected browser tabs</div>
+                    </div>
+                    <div class="mcp-item">GET /tab/{tabId}
+                        <div class="mcp-item-description">Detailed tab information</div>
+                    </div>
+                    <div class="mcp-item">GET /tab/{tabId}/console
+                        <div class="mcp-item-description">Console logs with pagination</div>
+                    </div>
+                    <div class="mcp-item">GET /tab/{tabId}/dom
+                        <div class="mcp-item-description">HTML content of page or element</div>
+                    </div>
+                    <div class="mcp-item">GET /tab/{tabId}/elements
+                        <div class="mcp-item-description">Query elements by selector</div>
+                    </div>
+                </div>
+                
+                <div class="mcp-card">
+                    <div class="mcp-card-header">
+                        <div class="mcp-card-icon">🖼️</div>
+                        <div class="mcp-card-title">
                             <h4>Image Endpoints</h4>
-                            <div class="tool-list">
-                                <span class="tool-item">GET /tab/{tabId}/screenshot/view</span>
-                            </div>
-                            <p style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
-                                Returns actual image files for direct viewing or embedding
-                            </p>
+                            <p>Direct image file access</p>
                         </div>
+                    </div>
+                    <div class="mcp-item">GET /tab/{tabId}/screenshot
+                        <div class="mcp-item-description">Screenshot data with base64 encoding</div>
+                    </div>
+                    <div class="mcp-item">GET /tab/{tabId}/screenshot/view
+                        <div class="mcp-item-description">Direct image file for viewing/embedding</div>
+                    </div>
+                    <div class="mcp-item">GET /tab/{tabId}/elementsFromPoint
+                        <div class="mcp-item-description">Elements at specific coordinates</div>
                     </div>
                 </div>
             </div>
@@ -539,11 +503,8 @@
         <h2>Ready to automate?</h2>
         <p>Give your AI the power to browse the web</p>
         <div class="hero-buttons">
-            <a href="#" class="btn btn-primary" style="background: white; color: #667eea; opacity: 0.8; cursor: not-allowed;" onclick="return false;">
-                <span style="display: flex; flex-direction: column; align-items: center; line-height: 1.2;">
-                    Download Kapture
-                    <small style="font-size: 0.75em; opacity: 0.8;">(coming soon)</small>
-                </span>
+            <a href="install.html" class="btn btn-primary" style="background: white; color: #667eea;">
+                Install Kapture
             </a>
             <a href="MCP_USAGE.html" class="btn btn-secondary" style="border: 2px solid white; color: white; background: transparent;">
                 Read Documentation

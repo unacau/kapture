@@ -34,10 +34,11 @@
         <div id="browser-warning" class="warning-box" style="display: none; background: #fef2f2; border-color: #fca5a5; margin-bottom: 60px;">
             <p style="color: #dc2626;">
                 <span class="warning-icon">⚠️</span>
-                <span>Kapture requires Google Chrome or Brave browser. Please download one of these browsers to use Kapture.</span>
+                <span>Kapture requires a Chromium-based browser that supports Chrome extensions. Supported browsers include Chrome, Edge, Brave, Opera, and Vivaldi.</span>
             </p>
             <div class="button-group" style="margin-top: 20px;">
                 <a href="https://www.google.com/chrome/" class="btn btn-primary" target="_blank" rel="noopener">Download Chrome</a>
+                <a href="https://www.microsoft.com/edge" class="btn btn-secondary" target="_blank" rel="noopener">Download Edge</a>
                 <a href="https://brave.com/download/" class="btn btn-secondary" target="_blank" rel="noopener">Download Brave</a>
             </div>
         </div>
@@ -162,9 +163,14 @@
         (function() {
             const userAgent = navigator.userAgent.toLowerCase();
             const isChrome = userAgent.includes('chrome') && !userAgent.includes('edg');
+            const isEdge = userAgent.includes('edg/');
             const isBrave = (navigator.brave && navigator.brave.isBrave) || false;
+            const isOpera = userAgent.includes('opr/') || userAgent.includes('opera/');
+            const isVivaldi = userAgent.includes('vivaldi/');
+            
+            const isSupportedBrowser = isChrome || isEdge || isBrave || isOpera || isVivaldi;
 
-            if (!isChrome && !isBrave) {
+            if (!isSupportedBrowser) {
                 // Show browser warning
                 const warning = document.getElementById('browser-warning');
                 if (warning) {
