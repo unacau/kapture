@@ -10,7 +10,6 @@ const __dirname = path.dirname(__filename);
 // Load YAML files
 const toolsYaml = fs.readFileSync(path.join(__dirname, 'tools.yaml'), 'utf8');
 const resourcesYaml = fs.readFileSync(path.join(__dirname, 'resources.yaml'), 'utf8');
-const promptsYaml = fs.readFileSync(path.join(__dirname, 'prompts.yaml'), 'utf8');
 
 // Function to pre-process compact YAML format to standard JSON Schema
 function preprocessToolDefinition(tool: any): ToolDefinition {
@@ -94,29 +93,6 @@ function processResources(resources: Record<string, any> | any[], isDynamic: boo
 const resourcesConfig = {
   baseResources: processResources(rawResourcesConfig.baseResources),
   dynamicTabResources: processResources(rawResourcesConfig.dynamicTabResources, true)
-};
-const rawPromptsConfig = yaml.load(promptsYaml) as { prompts: Record<string, any> | any[] };
-
-// Process prompts to handle both array and object formats
-function processPrompts(prompts: Record<string, any> | any[]) {
-  if (Array.isArray(prompts)) {
-    // Legacy array format
-    return prompts;
-  }
-
-  // New object format - convert to array
-  const promptsArray: any[] = [];
-  for (const [name, prompt] of Object.entries(prompts)) {
-    promptsArray.push({
-      name,
-      ...prompt
-    });
-  }
-  return promptsArray;
-}
-
-const promptsConfig = {
-  prompts: processPrompts(rawPromptsConfig.prompts)
 };
 
 interface ToolDefinition {
@@ -270,5 +246,3 @@ export function createTabResources(tabId: string, tabTitle: string): Map<string,
   return resources;
 }
 
-// Export prompts
-export const prompts = promptsConfig.prompts;

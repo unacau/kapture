@@ -6,17 +6,14 @@ import {
   InitializeRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema
 } from '@modelcontextprotocol/sdk/types.js';
 import { WebSocket } from 'ws';
 import { logger } from './logger.js';
 import { TabRegistry } from './tab-registry.js';
 import { BrowserWebSocketManager } from './browser-websocket-manager.js';
 import { BrowserCommandHandler } from './browser-command-handler.js';
-import { baseResources, createTabResources, prompts } from './yaml-loader.js';
+import { baseResources, createTabResources } from './yaml-loader.js';
 import type { ResourceHandler } from './resource-handler.js';
-import type { PromptHandler } from './prompt-handler.js';
 import type { ToolHandler } from './tool-handler.js';
 
 interface MCPConnection {
@@ -36,7 +33,6 @@ export class MCPServerManager {
     private tabRegistry: TabRegistry,
     private commandHandler: BrowserCommandHandler,
     private resourceHandler: ResourceHandler,
-    private promptHandler: PromptHandler,
     private toolHandler: ToolHandler
   ) {
     // Set up tab callbacks
@@ -191,7 +187,6 @@ export class MCPServerManager {
         capabilities: {
           tools: {},
           resources: {},
-          prompts: {},
         },
       }
     );
@@ -215,8 +210,7 @@ export class MCPServerManager {
         protocolVersion: '2024-11-05',
         capabilities: {
           tools: {},
-          resources: {},
-          prompts: {}
+          resources: {}
         },
         serverInfo: {
           name: 'kapture-mcp-server',
@@ -272,25 +266,6 @@ export class MCPServerManager {
       return await this.resourceHandler.readResource(uri);
     });
 
-    // List prompts handler
-    server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      return {
-        prompts: prompts
-      };
-    });
-
-    // Get prompt handler
-    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-
-      const prompt = prompts.find(p => p.name === name);
-      if (!prompt) {
-        throw new Error(`Unknown prompt: ${name}`);
-      }
-
-      // Use the prompt handler
-      return this.promptHandler.getPrompt(name, args);
-    });
 
     // Handle server close
     server.onclose = () => {

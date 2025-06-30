@@ -12,7 +12,6 @@ import { BrowserCommandHandler } from './browser-command-handler.js';
 import { MCPServerManager } from './mcp-server-manager.js';
 import { logger } from './logger.js';
 import { ResourceHandler } from './resource-handler.js';
-import { PromptHandler } from './prompt-handler.js';
 import { ToolHandler } from './tool-handler.js';
 import { checkIfPortInUse } from './port-check.js';
 
@@ -53,7 +52,6 @@ browserWebSocketManager.setResponseHandler((response) => {
 // Initialize handlers
 const toolHandler = new ToolHandler(commandHandler, tabRegistry);
 const resourceHandler = new ResourceHandler(tabRegistry, toolHandler);
-const promptHandler = new PromptHandler(toolHandler);
 
 // ========================================================================
 // MCP Server Manager Initialization
@@ -65,7 +63,6 @@ const mcpServerManager = new MCPServerManager(
   tabRegistry,
   commandHandler,
   resourceHandler,
-  promptHandler,
   toolHandler
 );
 
