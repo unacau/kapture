@@ -194,19 +194,6 @@ tools:
         minimum: 0.1
         maximum: 1
 
-  evaluate:
-    description: >-
-      Execute JavaScript code in the browser context. Return values are 
-      automatically serialized to JSON-safe format: functions become 
-      "[Function: name]", DOM elements include unique CSS selectors, 
-      NodeLists/HTMLCollections are converted to arrays with selectors, 
-      circular references are handled, etc.
-    required: [tabId, code]
-    properties:
-      tabId: *tabId
-      code:
-        type: string
-        description: JavaScript code to execute. The last expression is returned as the result.
 
   dom:
     description: >-

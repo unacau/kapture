@@ -176,7 +176,6 @@ Then ask Claude to interact with web pages:
 - `fill` - Fill input fields (uses first matching element, returns unique selector)
 - `select` - Select dropdown options (HTML `<select>` only, uses first matching element, returns unique selector)
 - `keypress` - Send keyboard events to the page or specific elements (supports modifier keys)
-- `evaluate` - Execute JavaScript
 - `elements` - Query all elements matching a CSS selector or XPath with optional visibility filtering
 
 **Note on Selectors**: Tools that accept a `selector` parameter (`click`, `hover`, `fill`, `select`, `keypress`, `screenshot`, `dom`) will only operate on the **first element** that matches the CSS selector. The tool response includes the unique selector of the actual element that was used, which may include an auto-generated ID if the element didn't have one.

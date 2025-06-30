@@ -895,8 +895,6 @@ async function executeTool(toolName, button) {
           summaryEl.textContent = '✅ Selected successfully';
         } else if (toolName === 'logs') {
           summaryEl.textContent = `✅ Retrieved ${content.logs?.length || 0} logs`;
-        } else if (toolName === 'evaluate') {
-          summaryEl.textContent = '✅ Evaluated successfully';
         } else if (toolName === 'dom') {
           summaryEl.textContent = '✅ DOM retrieved';
         } else if (toolName === 'keypress') {

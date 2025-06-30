@@ -101,7 +101,7 @@ You can interact with this tab using tools like:
 - \`navigate\` to go to a different URL
 - \`click\`, \`fill\`, \`select\` for form interactions
 - \`screenshot\` to capture the page
-- \`evaluate\` to run JavaScript`
+- \`dom\` to get page HTML content`
             }
           }
         ]
@@ -170,7 +170,7 @@ To execute this navigation, use the \`navigate\` tool:
 
 **Follow-up actions you might want:**
 - Use \`screenshot\` to capture the loaded page
-- Use \`evaluate\` to check page content
+- Use \`dom\` or \`elements\` to check page content
 - Use \`click\` or \`fill\` to interact with page elements`
             }
           }

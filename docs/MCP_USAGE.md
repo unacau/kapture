@@ -351,14 +351,6 @@ Select an option from an HTML `<select>` dropdown element.
 - If the element is not a `<select>`, the tool will return an error with details about what element type was found
 - For custom dropdowns, use `kapturemcp_click` to open the dropdown and click the desired option
 
-### kapturemcp_evaluate
-Execute JavaScript in the browser context.
-
-**Parameters:**
-- `tabId` (string, required): Target tab ID
-- `code` (string, required): JavaScript code to execute
-
-**Returns:** Serialized result of execution
 
 ### kapturemcp_dom
 Get outerHTML of the body or a specific element.
@@ -574,10 +566,9 @@ await client.callTool('kapturemcp_navigate', {
   url: 'https://news.ycombinator.com'
 });
 
-// Get page title
-const result = await client.callTool('kapturemcp_evaluate', {
-  tabId,
-  code: 'document.title'
+// Get tab details (includes title)
+const tabDetails = await client.callTool('kapturemcp_tab_detail', {
+  tabId
 });
 
 // Click on first article
@@ -641,17 +632,19 @@ await client.callTool('kapturemcp_click', {
 });
 ```
 
-### Example 3: Debugging with Console Logs
+### Example 3: Capturing Console Logs
 
 ```javascript
-// Execute some code that logs
-await client.callTool('kapturemcp_evaluate', {
+// Navigate to a page that has console output
+await client.callTool('kapturemcp_navigate', {
   tabId,
-  code: `
-    console.log('Starting process...');
-    console.error('This is an error');
-    console.warn('This is a warning');
-  `
+  url: 'https://example.com'
+});
+
+// Interact with the page (console logs are captured automatically)
+await client.callTool('kapturemcp_click', {
+  tabId,
+  selector: 'button.action'
 });
 
 // Retrieve console logs using MCP resource
@@ -664,47 +657,49 @@ logs.forEach(log => {
 });
 ```
 
-### Example 4: Advanced JavaScript Execution
+### Example 4: Advanced Page Analysis
 
 ```javascript
-// Get page information
-const pageInfo = await client.callTool('kapturemcp_evaluate', {
-  tabId,
-  code: `
-    ({
-      title: document.title,
-      url: window.location.href,
-      links: document.querySelectorAll('a').length,
-      forms: document.querySelectorAll('form').length,
-      viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight
-      }
-    })
-  `
+// Get tab information (includes title, URL, dimensions)
+const tabInfo = await client.callTool('kapturemcp_tab_detail', {
+  tabId
 });
 
-// Scroll to bottom
-await client.callTool('kapturemcp_evaluate', {
+// Get all links on the page
+const links = await client.callTool('kapturemcp_elements', {
   tabId,
-  code: 'window.scrollTo(0, document.body.scrollHeight)'
+  selector: 'a',
+  visible: 'true'
 });
 
-// Wait for element to appear
-await client.callTool('kapturemcp_evaluate', {
+// Get all forms on the page
+const forms = await client.callTool('kapturemcp_elements', {
   tabId,
-  code: `
-    await new Promise((resolve) => {
-      const observer = new MutationObserver(() => {
-        if (document.querySelector('.dynamic-content')) {
-          observer.disconnect();
-          resolve();
-        }
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-    });
-  `
+  selector: 'form'
 });
+
+// Scroll to bottom using PageDown key
+await client.callTool('kapturemcp_keypress', {
+  tabId,
+  key: 'End'
+});
+
+// Check if dynamic content loaded
+const dynamicContent = await client.callTool('kapturemcp_elements', {
+  tabId,
+  selector: '.dynamic-content',
+  visible: 'true'
+});
+
+if (dynamicContent.elements.length === 0) {
+  // Wait and check again
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  const retryContent = await client.callTool('kapturemcp_elements', {
+    tabId,
+    selector: '.dynamic-content',
+    visible: 'true'
+  });
+}
 ```
 
 ### Example 5: Complex Form Automation
@@ -716,11 +711,8 @@ await client.callTool('kapturemcp_hover', {
   selector: '.account-menu'
 });
 
-// Wait for menu to appear
-await client.callTool('kapturemcp_evaluate', {
-  tabId,
-  code: 'await new Promise(r => setTimeout(r, 500))'
-});
+// Wait for menu to appear (using JavaScript timeout)
+await new Promise(resolve => setTimeout(resolve, 500));
 
 // Click login option
 await client.callTool('kapturemcp_click', {
@@ -829,23 +821,25 @@ Common error codes:
    });
    ```
 
-3. **Handle dynamic content** with waits:
+3. **Handle dynamic content** with polling:
    ```javascript
-   // Wait for element to appear
-   await client.callTool('kapturemcp_evaluate', {
-     tabId,
-     code: `
-       await new Promise((resolve) => {
-         const observer = new MutationObserver(() => {
-           if (document.querySelector('.dynamic-content')) {
-             observer.disconnect();
-             resolve();
-           }
-         });
-         observer.observe(document.body, { childList: true, subtree: true });
-       });
-     `
-   });
+   // Poll for element to appear
+   let attempts = 0;
+   while (attempts < 10) {
+     const elements = await client.callTool('kapturemcp_elements', {
+       tabId,
+       selector: '.dynamic-content',
+       visible: 'true'
+     });
+     
+     if (elements.elements.length > 0) {
+       break; // Element found
+     }
+     
+     // Wait before next attempt
+     await new Promise(resolve => setTimeout(resolve, 1000));
+     attempts++;
+   }
    ```
 
 4. **Clean up resources** when done:
