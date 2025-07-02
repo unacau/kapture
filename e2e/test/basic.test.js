@@ -32,7 +32,7 @@ describe('Kapture E2E Tests', function() {
     });
 
     it('should query tabs and find test page', async function() {
-      const testTab = await framework.ensureTestTab();
+      const testTab = await framework.openTestPage();
 
       expect(testTab).to.have.property('tabId');
       expect(testTab).to.have.property('url');
@@ -44,7 +44,7 @@ describe('Kapture E2E Tests', function() {
     let testTab;
 
     beforeEach(async function() {
-      testTab = await framework.ensureTestTab();
+      testTab = await framework.openTestPage();
 
       // Refresh the page to reset state by navigating to itself
       await framework.callTool('navigate', {
@@ -77,11 +77,11 @@ describe('Kapture E2E Tests', function() {
 
       expect(result.content).to.have.lengthOf(2);
       expect(result.content[0].type).to.equal('text');
-      
+
       // Validate common properties in the text response
       const resultData = JSON.parse(result.content[0].text);
       expectValidTabInfo(resultData);
-      
+
       expect(result.content[1].type).to.equal('image');
       expect(result.content[1].mimeType).to.match(/^image\//);
       expect(result.content[1].data).to.be.a('string');

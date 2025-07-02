@@ -6,7 +6,7 @@ describe('Reload Tool', function() {
   let testTab;
 
   beforeEach(async function() {
-    testTab = await framework.ensureTestTab();
+    testTab = await framework.openTestPage();
 
     // Navigate to test page with a timestamp to track reloads
     const timestamp = Date.now();

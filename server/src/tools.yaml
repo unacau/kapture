@@ -235,7 +235,7 @@ tools:
         description: Y coordinate relative to the viewport
 
   console_logs:
-    description: Get console logs from a browser tab (requires Chrome DevTools to be open)
+    description: Get console logs from a browser tab
     required: [tabId]
     properties:
       tabId: *tabId

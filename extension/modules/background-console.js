@@ -3,7 +3,7 @@ import { respondWith, respondWithError } from './background-commands.js';
 
 export async function getLogs(tabState, { before, limit = 100, level }) {
   try {
-    // DevTools is open, get the logs from the tab state using its built-in method
+    // Get the logs from the tab state using its built-in method
     const logs = tabState.getConsoleLogs(limit, level, before);
 
     // Check if there are more logs available

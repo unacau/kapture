@@ -1,12 +1,10 @@
 // Manual test for console logs tool
-// This cannot be automated because it requires DevTools to be open
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { WebSocketTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
 
 async function testConsoleLogs() {
   console.log('Starting manual console logs test...');
-  console.log('IMPORTANT: Make sure Chrome DevTools is open for the test tab!');
   
   const transport = new WebSocketTransport(new URL('ws://localhost:61822/mcp'));
   const client = new Client({ name: 'console-test', version: '1.0.0' }, { capabilities: {} });
@@ -51,12 +49,7 @@ async function testConsoleLogs() {
     console.log(JSON.parse(limitedLogs.content[0].text));
     
   } catch (error) {
-    if (error.message.includes('DevTools')) {
-      console.error('ERROR: DevTools must be open to use console logs tool');
-      console.error('Please open Chrome DevTools (F12) and try again');
-    } else {
-      console.error('Error getting console logs:', error);
-    }
+    console.error('Error getting console logs:', error);
   }
   
   await client.close();

@@ -1,4 +1,4 @@
-import { spawn, exec } from 'child_process';
+import { spawn } from 'child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/websocket.js';
 import WebSocket from 'ws';
@@ -66,7 +66,7 @@ class TestFramework {
       throw new Error('MCP client not connected');
     }
 
-    if (name !== 'list_tabs' && !args.tabId) {
+    if (name !== 'list_tabs' && name !== 'new_tab' && !args.tabId) {
       args.tabId = this.testTab.tabId;
     }
     return await this.mcpClient.callTool({ name, arguments: args});
@@ -85,58 +85,45 @@ class TestFramework {
     return await this.mcpClient.readResource({ uri });
   }
 
+  async getTab(tabId) {
+    const tabs = (await this.callToolAndParse('list_tabs', {})).tabs;
+    return tabs.find(tab => tab.tabId === tabId);
+  }
 
   async openTestPage() {
-    // Launch Chrome with the test page
-    // const { exec } = await import('child_process');
+    if (this.testTab) {
+      return this.testTab; // Return existing tab if already opened
+    }
+    // Open a new tab and navigate it to the test page
     const id = Date.now().toString();
     const testUrl = `http://localhost:${this.serverPort}/test.html?id=${id}`;
 
-    // Try to open Chrome (different commands for different OS)
-    const commands = [
-      `open -a "Google Chrome" "${testUrl}"`, // macOS
-      `google-chrome "${testUrl}"`, // Linux
-      `start chrome "${testUrl}"` // Windows
-    ];
+    try {
+      // Use new_tab tool to open a new browser tab
+      const newTabResult = await this.callToolAndParse('new_tab', {});
 
-    for (const cmd of commands) {
-      try {
-        exec(cmd);
-        console.log('Launched Chrome with test page');
-        // Wait for Chrome to open and extension to connect
-        await new Promise(resolve => setTimeout(resolve, 500));
-        return id;
-      } catch (e) {
-        // Try next command
+      if (!newTabResult.success) {
+        throw new Error(`Failed to open new tab: ${newTabResult.error || 'Unknown error'}`);
       }
-    }
 
-    throw new Error('Failed to launch Chrome. Please open test.html manually.');
-  }
+      // Wait for the new tab to connect
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-  async ensureTestTab() {
-    // If we already have a test tab for this test run, use it
-    if (this.testTab) {
-      return this.testTab;
-    }
-
-    // Open a new tab for this test run
-    console.log('Opening new test tab...');
-    const id = await this.openTestPage();
-
-    // Keep trying to find the test tab
-    for (let i = 0; i < 10; i++) {
-      const tabs = (await this.callToolAndParse('list_tabs', {})).tabs;
-      for (const tab of tabs) {
-        if (tab.url.includes('/test.html?id=') && tab.url.includes(id)) {
-          this.testTab = tab; // Store for reuse
-          return;
-        }
+      // Get the newly created tab
+      let newTab = await this.getTab(newTabResult.tabId);
+      if (!newTab) {
+        throw new Error('New tab was created but not found in tabs list');
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
 
-    throw new Error('Chrome launched but test tab not found. Make sure Kapture extension is installed.');
+      // Navigate the new tab to the test page
+      const navResult = await this.callToolAndParse('navigate', { tabId: newTab.tabId, url: testUrl });
+      if (!navResult.success) {
+        throw new Error(`Failed to navigate to test page: ${navResult.error || 'Unknown error'}`);
+      }
+      return this.testTab = await this.getTab(newTab.tabId);
+    } catch (error) {
+      throw new Error(`Failed to open test page: ${error.message}`);
+    }
   }
   async cleanup() {
     if (this.mcpClient) {
@@ -157,4 +144,4 @@ await delay(1000); // Wait for server to start
 console.log('Connecting MCP client...');
 await framework.connectMCP();
 
-await framework.ensureTestTab();
+await framework.openTestPage();
