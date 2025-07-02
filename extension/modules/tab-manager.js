@@ -262,10 +262,10 @@ export class TabManager {
   }
 
   // Console log management
-  addConsoleLog(tabId, level, args, stackTrace) {
+  addConsoleLog(tabId, log) {
     const tabState = this.getTab(tabId);
     if (tabState) {
-      const log = tabState.addConsoleLog(level, args, stackTrace);
+      tabState.addConsoleLog(log);
       this.notifyListeners(tabId, 'consoleLogAdded', tabState, log);
     }
   }

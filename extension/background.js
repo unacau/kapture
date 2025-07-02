@@ -1,6 +1,7 @@
 // Background service worker - manages WebSocket connections
 
 import { TabManager } from './modules/tab-manager.js';
+import {ConsoleLogEntry} from "./modules/models.js";
 
 // Single source of truth for all tab state
 const tabManager = new TabManager();
@@ -147,7 +148,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
           tabManager.clearConsoleLogs(sender.tab.id);
         } else {
           // Add console log
-          tabManager.addConsoleLog(sender.tab.id, request.level, request.args, request.stack);
+          tabManager.addConsoleLog(sender.tab.id, new ConsoleLogEntry(
+            request.level,
+            request.args,
+            request.stackTrace
+          ));
         }
       }
       return false;

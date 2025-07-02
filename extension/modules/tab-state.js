@@ -1,34 +1,7 @@
-// Connection state enum
-export const ConnectionStatus = {
-  DISCONNECTED: 'disconnected',
-  CONNECTING: 'connecting',
-  CONNECTED: 'connected',
-  RETRYING: 'retrying',
-  ERROR: 'error'
-};
-
-// Message class
-export class Message {
-  constructor(direction, data) {
-    this.id = crypto.randomUUID();
-    this.direction = direction; // 'incoming' | 'outgoing'
-    this.data = data;
-    this.timestamp = new Date();
-  }
-}
-
-// Console log entry class
-export class ConsoleLogEntry {
-  constructor(level, args, stackTrace) {
-    this.id = crypto.randomUUID();
-    this.level = level; // 'log' | 'info' | 'warn' | 'error'
-    this.args = args;
-    this.stackTrace = stackTrace;
-    this.timestamp = new Date();
-  }
-}
 
 // WebSocket connection info
+import { ConnectionStatus, Message } from "./models.js";
+
 export class ConnectionInfo {
   constructor(url) {
     this.url = url;
@@ -37,8 +10,6 @@ export class ConnectionInfo {
     this.userDisconnected = false;
     this.reconnectAttempts = 0;
     this.reconnectTimer = null;
-    this.lastConnectedAt = null;
-    this.lastDisconnectedAt = null;
     this.nextRetryIn = null;
   }
 
@@ -47,14 +18,12 @@ export class ConnectionInfo {
     this.connected = true;
     this.reconnectAttempts = 0;
     this.nextRetryIn = null;
-    this.lastConnectedAt = new Date();
   }
 
   setDisconnected(userInitiated = false) {
     this.status = ConnectionStatus.DISCONNECTED;
     this.connected = false;
     this.userDisconnected = userInitiated;
-    this.lastDisconnectedAt = new Date();
     if (userInitiated) {
       this.reconnectAttempts = 0;
       this.nextRetryIn = null;
@@ -71,8 +40,6 @@ export class ConnectionInfo {
   setError(error) {
     this.status = ConnectionStatus.ERROR;
     this.connected = false;
-    this.lastError = error;
-    this.lastDisconnectedAt = new Date();
   }
 }
 
@@ -87,8 +54,6 @@ export class TabState {
     this.ports = new Set(); // Connected DevTools panels/popups
     this.pageMetadata = {};
     this.mousePosition = { x: 0, y: 0 }; // Track current mouse position
-    this.createdAt = new Date();
-    this.lastActivityAt = new Date();
   }
 
   // WebSocket management
@@ -119,10 +84,8 @@ export class TabState {
   }
 
   // Console log management
-  addConsoleLog(level, args, stackTrace) {
-    const log = new ConsoleLogEntry(level, args, stackTrace);
-    this.consoleLogs.push(log);
-    return log;
+  addConsoleLog(log) {
+    this.consoleLogs.unshift(log);
   }
 
   clearConsoleLogs() {
@@ -131,18 +94,18 @@ export class TabState {
 
   getConsoleLogs(limit = null, level = null, before = null) {
     let logs = this.consoleLogs;
-    
+
     if (level) {
       logs = logs.filter(log => log.level === level);
     }
-    
+
     if (before) {
       const beforeTimestamp = new Date(before).getTime();
-      logs = logs.filter(log => 
+      logs = logs.filter(log =>
         new Date(log.timestamp).getTime() < beforeTimestamp
       );
     }
-    
+
     if (limit === null) {
       return [...logs];
     }
@@ -190,11 +153,6 @@ export class TabState {
   // Mouse position tracking
   setMousePosition(position) {
     this.mousePosition = { ...position };
-    this.lastActivityAt = new Date();
-  }
-
-  getMousePosition() {
-    return { ...this.mousePosition };
   }
 
   // Cleanup
@@ -215,23 +173,5 @@ export class TabState {
     this.messages = [];
     this.consoleLogs = [];
     this.ports.clear();
-  }
-
-  // Serialization for debugging
-  toJSON() {
-    return {
-      tabId: this.tabId,
-      connectionInfo: {
-        url: this.connectionInfo.url,
-        status: this.connectionInfo.status,
-        connected: this.connectionInfo.connected,
-        reconnectAttempts: this.connectionInfo.reconnectAttempts
-      },
-      messageCount: this.messages.length,
-      consoleLogCount: this.consoleLogs.length,
-      portCount: this.ports.size,
-      createdAt: this.createdAt,
-      lastActivityAt: this.lastActivityAt
-    };
   }
 }
