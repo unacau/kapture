@@ -5,7 +5,8 @@ export async function click({tabId, mousePosition}, { selector, xpath }) {
   return await hover({ tabId, mousePosition }, { selector, xpath }, true);
 }
 
-export async function hover({tabId, mousePosition}, { selector, xpath }, click = false) {
+export async function hover(tab, { selector, xpath }, click = false) {
+  const { tabId, mousePosition } = tab;
   // Validate that either selector or xpath is provided
   if (!selector && !xpath) {
     return respondWithError(tabId, 'SELECTOR_OR_XPATH_REQUIRED', 'Either selector or xpath is required');
@@ -29,14 +30,9 @@ export async function hover({tabId, mousePosition}, { selector, xpath }, click =
     // Set initial cursor position
     await getFromContentScript(tabId, '_moveMouseSVG', { x: currentPosition.x, y: currentPosition.y });
 
-    // Calculate animation based on pixels per second
+    // Animation configuration
     const pixelsPerSecond = 1000; // Adjust for desired speed
-    const distance = Math.sqrt(Math.pow(targetX - currentPosition.x, 2) + Math.pow(targetY - currentPosition.y, 2));
-    const duration = Math.min(1000, (distance / pixelsPerSecond) * 1000); // Cap at 1s for very long distances
     const frameInterval = 16; // ~60fps
-    const steps = Math.max(1, Math.ceil(duration / frameInterval)); // At least 1 step
-    const deltaX = (targetX - currentPosition.x) / steps;
-    const deltaY = (targetY - currentPosition.y) / steps;
 
     await attachDebugger(tabId, async () => {
       const sendCmd = (cmd, params) => chrome.debugger.sendCommand({ tabId }, cmd, params);
@@ -45,24 +41,71 @@ export async function hover({tabId, mousePosition}, { selector, xpath }, click =
       // Enable Input domain for mouse events
       // await sendCmd('Input.enable');
 
-      // Animate cursor movement
-      for (let i = 1; i <= steps; i++) {
-        const x = currentPosition.x + (deltaX * i);
-        const y = currentPosition.y + (deltaY * i);
+      // Function to animate to a position
+      const animateToPosition = async (fromX, fromY, toX, toY) => {
+        const distance = Math.sqrt(Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2));
+        const duration = Math.min(1000, (distance / pixelsPerSecond) * 1000);
+        const animSteps = Math.max(1, Math.ceil(duration / frameInterval));
+        const dx = (toX - fromX) / animSteps;
+        const dy = (toY - fromY) / animSteps;
 
-        // Move visual cursor
-        await getFromContentScript(tabId, '_moveMouseSVG', { x, y });
+        for (let i = 1; i <= animSteps; i++) {
+          const x = fromX + (dx * i);
+          const y = fromY + (dy * i);
 
-        // Send mouse move event
-        await dispatchMouseEvent({ type: 'mouseMoved', x, y });
+          // Move visual cursor
+          await getFromContentScript(tabId, '_moveMouseSVG', { x, y });
 
-        // Wait for next frame
-        await new Promise(resolve => setTimeout(resolve, frameInterval));
+          // Send mouse move event
+          await dispatchMouseEvent({ type: 'mouseMoved', x, y });
+
+          // Wait for next frame
+          await new Promise(resolve => setTimeout(resolve, frameInterval));
+        }
+
+        return { x: toX, y: toY };
+      };
+
+      // Initial animation to target
+      let finalPosition = await animateToPosition(currentPosition.x, currentPosition.y, targetX, targetY);
+
+      // Try up to 5 times to ensure we're over the target element
+      const maxAttempts = 5;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const finalCheck = await getElement(tabId, selector, xpath, true);
+        if (!finalCheck.error && finalCheck.element) {
+          const bounds = finalCheck.element.bounds;
+
+          // Check if cursor is actually over the element
+          const isOverElement = finalPosition.x >= bounds.x &&
+                               finalPosition.x <= bounds.x + bounds.width &&
+                               finalPosition.y >= bounds.y &&
+                               finalPosition.y <= bounds.y + bounds.height;
+
+          console.log('isOverElement', isOverElement);
+          if (!isOverElement) {
+            // Calculate new target center and animate to it
+            const actualTargetX = bounds.x + bounds.width / 2;
+            const actualTargetY = bounds.y + bounds.height / 2;
+            finalPosition = await animateToPosition(finalPosition.x, finalPosition.y, actualTargetX, actualTargetY);
+          } else {
+            // Cursor is over the element, we're done
+            break;
+          }
+        } else {
+          // Element not found, stop trying
+          break;
+        }
       }
 
+      const bounds = await getFromContentScript(tabId, '_elementPosition', { id: elementResult.element.id });
+      const actualTargetX = bounds.x + bounds.width / 2;
+      const actualTargetY = bounds.y + bounds.height / 2;
+      await getFromContentScript(tabId, '_moveMouseSVG', { x: actualTargetX, y: actualTargetY });
+
       if (click) {
-        await dispatchMouseEvent({type: 'mousePressed', x: targetX, y: targetY, button: 'left', clickCount: 1});
-        await dispatchMouseEvent({type: 'mouseReleased', x: targetX, y: targetY, button: 'left', clickCount: 1});
+        await dispatchMouseEvent({type: 'mousePressed', x: actualTargetX.x, y: actualTargetX.y, button: 'left', clickCount: 1});
+        await dispatchMouseEvent({type: 'mouseReleased', x: actualTargetX.x, y: actualTargetX.y, button: 'left', clickCount: 1});
       }
     });
 

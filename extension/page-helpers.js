@@ -320,6 +320,10 @@ const helpers = {
   _navigate: ({ url }) => {
     window.location.href = url;
   },
+  _elementPosition: ({ id }) => {
+    const element = document.getElementById(id);
+    return element.getBoundingClientRect();
+  },
 
   // tool calls
   getTabInfo,
@@ -495,7 +499,7 @@ const helpers = {
       if (show === false) {
         // Hide cursor
         if (cursor) {
-          cursor.style.display = 'none';
+          //cursor.style.display = 'none';
         }
         return respondWith({ visible: false });
       }
