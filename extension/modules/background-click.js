@@ -82,7 +82,6 @@ export async function hover(tab, { selector, xpath }, click = false) {
                                finalPosition.y >= bounds.y &&
                                finalPosition.y <= bounds.y + bounds.height;
 
-          console.log('isOverElement', isOverElement);
           if (!isOverElement) {
             // Calculate new target center and animate to it
             const actualTargetX = bounds.x + bounds.width / 2;
@@ -104,8 +103,8 @@ export async function hover(tab, { selector, xpath }, click = false) {
       await getFromContentScript(tabId, '_moveMouseSVG', { x: actualTargetX, y: actualTargetY });
 
       if (click) {
-        await dispatchMouseEvent({type: 'mousePressed', x: actualTargetX.x, y: actualTargetX.y, button: 'left', clickCount: 1});
-        await dispatchMouseEvent({type: 'mouseReleased', x: actualTargetX.x, y: actualTargetX.y, button: 'left', clickCount: 1});
+        await dispatchMouseEvent({type: 'mousePressed', x: actualTargetX, y: actualTargetY, button: 'left', clickCount: 1});
+        await dispatchMouseEvent({type: 'mouseReleased', x: actualTargetX, y: actualTargetY, button: 'left', clickCount: 1});
       }
     });
 

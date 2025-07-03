@@ -499,7 +499,7 @@ const helpers = {
       if (show === false) {
         // Hide cursor
         if (cursor) {
-          //cursor.style.display = 'none';
+          cursor.style.display = 'none';
         }
         return respondWith({ visible: false });
       }
