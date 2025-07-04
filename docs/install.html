@@ -43,12 +43,37 @@
             </div>
         </div>
 
-        <div class="warning-box">
-            <p>
-                <span class="warning-icon">⚠️</span>
-                <span>Since Kapture is not available in the Chrome Web Store yet, you'll need to install with developer mode and may see occasional warnings about developer mode extensions.</span>
+        <div class="chrome-store-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 40px; margin-bottom: 60px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+            <h2 style="color: white; margin-top: 0; margin-bottom: 16px; font-size: 2rem; text-align: center;">
+                <span style="display: inline-flex; align-items: center; gap: 12px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+                    Install from Chrome Web Store
+                </span>
+            </h2>
+            <p style="color: rgba(255, 255, 255, 0.9); margin-bottom: 24px; text-align: center; font-size: 1.1rem;">
+                The easiest way to install Kapture - no developer mode required!
             </p>
+            <div style="text-align: center;">
+                <a href="https://chromewebstore.google.com/detail/kapture-mcp-browser-autom/ejfnegenodbdcodemkibocefmajjjjbn" class="btn" style="background: white; color: #667eea; font-size: 1.2rem; padding: 18px 40px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); hover: transform: scale(1.05);" target="_blank" rel="noopener">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 12px;"><path d="M12,20L15.46,14H15.45C15.79,13.4 16,12.73 16,12C16,10.8 15.46,9.73 14.62,9H19.41C19.79,9.93 20,10.94 20,12A8,8 0 0,1 12,20M4,12C4,10.54 4.39,9.18 5.07,8L8.54,14H8.55C9.24,15.19 10.5,16 12,16C12.45,16 12.88,15.91 13.29,15.77L10.89,19.91C6,19.21 4,16.05 4,12M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12M12,4C14.96,4 17.54,5.61 18.92,8H12C10.06,8 8.45,9.38 8.08,11.21L5.7,7.08C7.16,5.21 9.44,4 12,4M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg>
+                    Add to Chrome
+                </a>
+            </div>
         </div>
+
+        <div class="alternative-install" style="position: relative;">
+            <h2 style="text-align: center; margin-bottom: 40px; color: #4a5568;">
+                <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af;">Alternative Method</span>
+                <br>
+                <span style="font-size: 1.5rem; margin-top: 8px; display: block;">Manual Installation</span>
+            </h2>
+            
+            <div class="warning-box" style="margin-bottom: 40px;">
+                <p>
+                    <span class="warning-icon">ℹ️</span>
+                    <span>Manual installation requires developer mode and may show occasional warnings about developer mode extensions.</span>
+                </p>
+            </div>
 
         <div class="install-steps">
             <div class="step">
@@ -108,6 +133,7 @@
                     <p style="margin-top: 12px; color: #6b7280; font-size: 0.9rem;">Click the puzzle piece icon and then click the pin next to Kapture MCP Browser Automation.</p>
                 </div>
             </div>
+        </div>
         </div>
 
         <div class="next-steps">
@@ -177,16 +203,16 @@
                     warning.style.display = 'block';
                 }
 
-                // Hide installation steps
-                const steps = document.querySelector('.install-steps');
-                if (steps) {
-                    steps.style.display = 'none';
+                // Hide Chrome Web Store section
+                const chromeStore = document.querySelector('.chrome-store-section');
+                if (chromeStore) {
+                    chromeStore.style.display = 'none';
                 }
 
-                // Hide the "Developer mode extension" warning
-                const devWarning = document.querySelector('.warning-box:not(#browser-warning)');
-                if (devWarning) {
-                    devWarning.style.display = 'none';
+                // Hide alternative installation section
+                const altInstall = document.querySelector('.alternative-install');
+                if (altInstall) {
+                    altInstall.style.display = 'none';
                 }
 
                 // Hide the "What's Next?" section
