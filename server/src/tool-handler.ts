@@ -75,7 +75,9 @@ export class ToolHandler {
         const enhancedResult = {
           preview: screenshotUrl,
           ...result,
-          dataUrl: undefined // Remove original dataUrl to avoid duplication
+          // data goes in the image content
+          data: undefined,
+          dataUrl: undefined
         };
 
         return {
