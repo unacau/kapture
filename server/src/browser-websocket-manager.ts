@@ -290,12 +290,6 @@ export class BrowserWebSocketManager {
       type: 'request',
       action: 'update-tab-info'
     }));
-
-    logger.log(`Tab ${tabId} registered. Active tabs: ${this.tabRegistry.getActiveTabCount()}`);
-
-    // Log all currently registered tabs
-    const allTabs = this.tabRegistry.getAll();
-    logger.log(`Current tabs in registry: ${allTabs.map(t => `${t.tabId}(${t.ws.readyState === WebSocket.OPEN ? 'open' : 'closed'})`).join(', ')}`);
   }
 
   sendCommand(tabId: string, command: any): void {

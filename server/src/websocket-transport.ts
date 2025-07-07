@@ -16,8 +16,8 @@ export class WebSocketTransport implements Transport {
     this.ws.on('message', (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString()) as JSONRPCMessage;
-        logger.log(`WebSocket transport received: ${JSON.stringify(message)}`);
-        
+        logger.log(`MCP IN: ${JSON.stringify(message)}`);
+
         if (this._onmessage) {
           this._onmessage(message);
         }
@@ -46,7 +46,7 @@ export class WebSocketTransport implements Transport {
 
   async start(): Promise<void> {
     // WebSocket is already connected
-    logger.log('WebSocket transport started');
+    // logger.log('WebSocket transport started');
   }
 
   async send(message: JSONRPCMessage): Promise<void> {
@@ -63,11 +63,11 @@ export class WebSocketTransport implements Transport {
         params: (message as any).params
       };
       const messageStr = JSON.stringify(notification);
-      logger.log(`WebSocket transport sending notification: ${messageStr}`);
+      logger.log(`MCP OUT: ${messageStr}`);
       this.ws.send(messageStr);
     } else {
       const messageStr = JSON.stringify(message);
-      logger.log(`WebSocket transport sending: ${messageStr}`);
+      logger.log(`MCP OUT: ${messageStr}`);
       this.ws.send(messageStr);
     }
   }

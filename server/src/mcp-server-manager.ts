@@ -42,9 +42,8 @@ export class MCPServerManager {
   private setupTabCallbacks(): void {
     // Tab connect callback
     this.tabRegistry.setConnectCallback(async (tabId: string) => {
-      logger.log(`Tab connected: ${tabId}`);
-
       const tab = this.tabRegistry.get(tabId);
+      logger.log(`New ${tab?.browser} tab: ${tabId}`);
       const tabTitle = tab?.title || `Tab ${tabId}`;
 
       this.updateTabResources(tabId, tabTitle);
@@ -163,8 +162,6 @@ export class MCPServerManager {
       scrollPosition: tab.scrollPosition,
       pageVisibility: tab.pageVisibility
     }));
-
-    logger.log(`Preparing tabs_changed notification with ${tabs.length} tabs`);
 
     await this.notifyAllConnections(async (connection) => {
       await connection.server.notification({
@@ -290,7 +287,7 @@ export class MCPServerManager {
 
     try {
       await server.connect(transport);
-      logger.log(`MCP WebSocket server connected (${connectionId})`);
+      // logger.log(`MCP WebSocket server connected (${connectionId})`);
     } catch (error) {
       logger.error(`Failed to connect MCP WebSocket server (${connectionId}):`, error);
       this.connections.delete(connectionId);

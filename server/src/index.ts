@@ -205,26 +205,20 @@ async function startServer() {
   await checkIfPortInUse(PORT);
 
   httpServer.listen(PORT, () => {
-    logger.log('='.repeat(70));
-    logger.log('Kapture MCP Server Started');
-    logger.log('='.repeat(70));
-    logger.log(`Server port: ${PORT}`);
-    logger.log(`Mode: WebSocket only`);
-    logger.log('');
-    logger.log('MCP Client Connection:');
-    logger.log(`  WebSocket: ws://localhost:${PORT}/mcp`);
-    logger.log('');
-    logger.log('HTTP Endpoints:');
-    logger.log(`  Discovery: http://localhost:${PORT}/`);
-    logger.log(`  Resources: http://localhost:${PORT}/tabs`);
-    logger.log(`  Tab info: http://localhost:${PORT}/tab/{tabId}`);
-    logger.log(`  Console: http://localhost:${PORT}/tab/{tabId}/console`);
-    logger.log(`  Screenshot: http://localhost:${PORT}/tab/{tabId}/screenshot`);
-    logger.log(`  View image: http://localhost:${PORT}/tab/{tabId}/screenshot/view`);
-    logger.log(`  Elements: http://localhost:${PORT}/tab/{tabId}/elements`);
-    logger.log(`  Point query: http://localhost:${PORT}/tab/{tabId}/elementsFromPoint`);
-    logger.log(`  DOM: http://localhost:${PORT}/tab/{tabId}/dom`);
-    logger.log('='.repeat(70));
+    console.log('='.repeat(70));
+    console.log('Kapture MCP Server Started');
+    console.log();
+    console.log('HTTP Endpoints:');
+    console.log(`  Discovery: http://localhost:${PORT}/`);
+    console.log(`  Resources: http://localhost:${PORT}/tabs`);
+    console.log(`  Tab info: http://localhost:${PORT}/tab/{tabId}`);
+    console.log(`  Console: http://localhost:${PORT}/tab/{tabId}/console`);
+    console.log(`  Screenshot: http://localhost:${PORT}/tab/{tabId}/screenshot`);
+    console.log(`  View image: http://localhost:${PORT}/tab/{tabId}/screenshot/view`);
+    console.log(`  Elements: http://localhost:${PORT}/tab/{tabId}/elements`);
+    console.log(`  Point query: http://localhost:${PORT}/tab/{tabId}/elementsFromPoint`);
+    console.log(`  DOM: http://localhost:${PORT}/tab/{tabId}/dom`);
+    console.log('='.repeat(70));
   });
 }
 
