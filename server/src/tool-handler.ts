@@ -28,6 +28,11 @@ export class ToolHandler {
       // For tools without arguments, use empty object
       const validatedArgs = tool.inputSchema.parse(args || {}) as any;
 
+      // Check for invalid :contains() pseudo-selector
+      if (validatedArgs.selector && validatedArgs.selector.includes(':contains(')) {
+        throw new Error('The :contains() pseudo-selector is not valid CSS and is not supported by browsers. Use contains() selector with the `xpath` property instead!');
+      }
+
       // Handle special cases that don't go through the command handler
       let result: any;
       switch (name) {

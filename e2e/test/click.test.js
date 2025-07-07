@@ -113,6 +113,16 @@ describe('Click Tool Tests', function() {
     expect(resultData.error).to.have.property('message').that.includes('Invalid selector');
   });
 
+  it('should reject :contains() pseudo-selector', async function() {
+    const resultData = await framework.callToolAndParse('click', {
+      selector: 'div:contains(hello)'
+    });
+
+    expect(resultData).to.have.property('error');
+    expect(resultData.error).to.have.property('message').that.includes('The :contains() pseudo-selector is not valid CSS');
+    expect(resultData.error).to.have.property('message').that.includes('Use contains() selector with the `xpath` property instead');
+  });
+
   it('should handle invalid xpath', async function() {
     const resultData = await framework.callToolAndParse('click', {
       xpath: '//invalid[xpath'
