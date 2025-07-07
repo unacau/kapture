@@ -6,6 +6,20 @@ import {ConsoleLogEntry} from "./modules/models.js";
 // Single source of truth for all tab state
 const tabManager = new TabManager();
 
+// Helper function to send connection state to content script
+function sendConnectionStateToTab(tabId, connectionState) {
+  chrome.tabs.sendMessage(tabId, {
+    command: '_connectionStateChanged',
+    params: {
+      status: connectionState.status,
+      connected: connectionState.connected
+    }
+  }).catch(err => {
+    // Content script might not be injected yet, ignore error
+    console.debug('Could not send connection state to tab:', err);
+  });
+}
+
 // Listen for tab state changes
 tabManager.addListener((tabId, event, tabState, data) => {
   switch (event) {
@@ -16,6 +30,10 @@ tabManager.addListener((tabId, event, tabState, data) => {
         tabId,
         ...tabState.getConnectionState()
       });
+
+      // Send connection state to content script
+      const connectionState = tabState.getConnectionState();
+      sendConnectionStateToTab(tabId, connectionState);
 
       // Update action badge for active tab
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -108,6 +126,14 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (sender.tab) {
     if (request.type === 'contentScriptReady') {
       console.log(`Content script ready in tab ${sender.tab.id}`);
+      
+      // Send current connection state to the newly ready content script
+      const tabState = tabManager.getTab(sender.tab.id);
+      if (tabState) {
+        const connectionState = tabState.getConnectionState();
+        sendConnectionStateToTab(sender.tab.id, connectionState);
+      }
+      
       sendResponse({ acknowledged: true });
       return false;
     }

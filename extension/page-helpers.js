@@ -324,6 +324,20 @@ const helpers = {
     const element = document.getElementById(id);
     return element.getBoundingClientRect();
   },
+  _connectionStateChanged: ({ status, connected }) => {
+    // Remove existing connection classes
+    document.body.classList.remove('kapture-connected', 'kapture-connecting');
+    
+    // Add appropriate class based on status
+    if (status === 'connected') {
+      document.body.classList.add('kapture-connected');
+    } else if (status === 'retrying') {
+      document.body.classList.add('kapture-connecting');
+    }
+    // No class for disconnected state
+    
+    return { success: true };
+  },
 
   // tool calls
   getTabInfo,

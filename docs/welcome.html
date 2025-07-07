@@ -22,7 +22,7 @@
         .welcome-container {
             width: 100%;
             max-width: 1200px;
-            padding: 40px;
+            padding: 40px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -61,6 +61,7 @@
             text-align: left;
             position: relative;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-width: 280px;
         }
 
         .step-card:hover {
@@ -215,19 +216,82 @@
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
-        @media (max-width: 768px) {
+        /* Responsive breakpoints */
+        @media (max-width: 1024px) {
+            .welcome-header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .step-card {
+                padding: 32px;
+            }
+            
+            .steps-container {
+                gap: 32px;
+            }
+        }
+        
+        @media (max-width: 900px) {
             .steps-container {
                 grid-template-columns: 1fr;
+                max-width: 500px;
             }
+            
+            .welcome-container {
+                padding: 32px 20px;
+            }
+        }
 
+        @media (max-width: 768px) {
             .welcome-header h1 {
                 font-size: 2rem;
             }
 
+            .step-card {
+                padding: 24px;
+            }
 
             .code-box {
                 font-size: 0.9rem;
                 padding: 16px 24px;
+            }
+            
+            .step-card h2 {
+                font-size: 1.5rem;
+            }
+            
+            .step-card p {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .welcome-header h1 {
+                font-size: 1.75rem;
+            }
+            
+            .step-card {
+                padding: 20px;
+                min-width: 240px;
+            }
+            
+            .code-box {
+                font-size: 0.8rem;
+                padding: 12px 16px;
+            }
+            
+            .pin-visual img {
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .success-state {
+                padding: 24px;
+            }
+            
+            .next-button {
+                padding: 12px 24px;
+                font-size: 1rem;
             }
         }
 
@@ -332,12 +396,14 @@
             });
         }
 
-        // Check if both steps are completed (simplified version)
-        // In a real implementation, you might check extension status and MCP setup
-        function checkCompletion() {
-            // This is a placeholder - you could implement actual checks here
-            // For now, we'll just show the success state after a delay for demo
-        }
+        // Auto-connect when Kapture is loaded
+        window.addEventListener('kapture-loaded', () => {
+          console.log('Kapture loaded! Auto-connecting...');
+          const event = new CustomEvent('kapture-message', {
+            detail: { type: 'connect' }
+          });
+          window.dispatchEvent(event);
+        });
     </script>
 </body>
 </html>
