@@ -4,7 +4,7 @@ Kapture is a Chrome DevTools Extension that enables browser automation through t
 
 **✨ Key Feature**: Multiple AI clients can connect to the same server! Claude Desktop, Cline, and other MCP clients can all control browser tabs through a single server instance.
 
-[![Available in the Chrome Web Store](https://storage.googleapis.com/web-dev-uploads/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/YT2Grfi9vEBa2wAPzhWa.png)](https://chromewebstore.google.com/detail/kapture-mcp-browser-autom/ejfnegenodbdcodemkibocefmajjjjbn)
+![Available in the Chrome Web Store](https://to.kap.co/kapture-extension)]
 
 ![Kapture DevTools Extension Panel](docs/assets/images/ScreenshotWithExtensionPanel.webp)
 
@@ -37,7 +37,7 @@ npm install
 ### 2. Install Chrome Extension
 
 #### Option A: Install from Chrome Web Store (Recommended)
-1. Visit the [Kapture Chrome Web Store page](https://chromewebstore.google.com/detail/kapture-mcp-browser-autom/ejfnegenodbdcodemkibocefmajjjjbn)
+1. Visit the [Kapture Chrome Web Store page](https://to.kap.co/kapture-extension)
 2. Click "Add to Chrome"
 3. Confirm the installation
 
