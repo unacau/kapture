@@ -63,3 +63,20 @@ export async function close({tabId}) {
 export async function reload({tabId}) {
   return executeNavigation(tabId, () => chrome.tabs.reload(tabId));
 }
+
+export async function show({tabId}) {
+  try {
+    // Get the tab to find its window ID
+    const tab = await chrome.tabs.get(tabId);
+    
+    // Bring the window to the front
+    await chrome.windows.update(tab.windowId, { focused: true });
+    
+    // Make the tab active in the window
+    await chrome.tabs.update(tabId, { active: true });
+    
+    return await respondWith(tabId, { shown: true });
+  } catch (error) {
+    return respondWithError(tabId, 'SHOW_FAILED', error.message);
+  }
+}

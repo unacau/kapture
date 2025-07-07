@@ -281,3 +281,12 @@ tools:
     required: [tabId]
     properties:
       tabId: *tabId
+
+  show:
+    description: >-
+      Brings the browser tab to the front and focuses it. This will switch to 
+      the tab's window and make it the active tab. Useful for directing user 
+      attention to a specific tab when managing multiple browser tabs.
+    required: [tabId]
+    properties:
+      tabId: *tabId
