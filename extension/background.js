@@ -195,3 +195,19 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   tabManager.removeTab(tabId);
 });
+
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === 'install') {
+    const destination = { url: 'https://to.kap.co/kapture-welcome' };
+    // Navigate the current active tab instead of creating a new one
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        chrome.tabs.update(tabs[0].id, destination);
+      }
+      else {
+        // Fallback: create a new tab if no active tab is found
+        chrome.tabs.create(destination);
+      }
+    });
+  }
+});
