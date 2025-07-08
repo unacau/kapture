@@ -1,13 +1,14 @@
 {
-  "name": "kapture-mcp-server",
+  "name": "kapture-mcp",
   "version": "1.6.0",
   "description": "MCP server for Kapture browser automation",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "kapture-mcp-server": "dist/index.js",
+    "kapture-mcp": "dist/index.js",
+    "server": "dist/index.js",
     "bridge": "dist/bridge.js",
-    "kapture-mcp-setup": "dist/setup.js"
+    "setup": "dist/setup.js"
   },
   "files": [
     "dist/**/*",
