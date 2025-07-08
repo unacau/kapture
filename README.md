@@ -6,7 +6,7 @@ Kapture is a Chrome DevTools Extension that enables browser automation through t
 
 ![Available in the Chrome Web Store](https://to.kap.co/kapture-extension)]
 
-![Kapture DevTools Extension Panel](docs/assets/images/ScreenshotWithExtensionPanel.webp)
+![Kapture DevTools Extension Panel](website/assets/images/ScreenshotWithExtensionPanel.webp)
 
 ## Overview
 
@@ -17,7 +17,7 @@ Kapture bridges AI assistants with web browsers through:
 - **Multi-Client Support**: Multiple AI clients can connect simultaneously via WebSocket
 
 ## Architecture
-![How Kapture Works](docs/assets/images/HowKaptureWorks.webp)
+![How Kapture Works](website/assets/images/HowKaptureWorks.webp)
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ npm install
 4. Select the `extension` folder
 
 ### 3. Start MCP Server
-[Configure your AI client](docs/MCP_USAGE.html) and open it. It will start the MCP server automatically.
+[Configure your AI client](https://williamkapke.github.io/kapture/MCP_USAGE.html) and open it. It will start the MCP server automatically.
 
 **OR**
 

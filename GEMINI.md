@@ -15,7 +15,7 @@ The primary goal of the Kapture project is to create a browser extension that ca
     *   `panel.js` & `panel.html`: The user interface for the extension's developer tools panel.
 *   **`/server`**: Contains a Node.js server that the extension communicates with. This server is likely responsible for processing the captured events and generating the automation scripts.
 *   **`/e2e`**: End-to-end tests for the project, ensuring that the extension and server work together as expected.
-*   **`/docs`**: Project documentation.
+*   **`/website`**: Project documentation and website (GitHub Pages).
 *   **`/test-app`**: A simple web application used for testing the Kapture extension.
 
 ## How it Works (Inferred)
