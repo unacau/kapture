@@ -5,7 +5,8 @@ on:
   push:
     branches: ["master", "main"]
     paths:
-      - 'docs/**'
+      - 'website/**'
+      - 'server/static/welcome.html'
       - '.github/workflows/deploy-pages.yml'
 
   # Allows you to run this workflow manually from the Actions tab
@@ -31,17 +32,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
+      - name: Setup build directory
+        run: |
+          mkdir -p ./build
+          # Copy website files
+          cp -r website/* ./build/
+          # Create static directory and copy welcome.html from server
+          cp server/static/welcome.html ./build/welcome.html
+          
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./docs
-          destination: ./_site
-          
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./build
 
   # Deployment job
   deploy:

@@ -14,6 +14,7 @@ import { logger } from './logger.js';
 import { ResourceHandler } from './resource-handler.js';
 import { ToolHandler } from './tool-handler.js';
 import { checkIfPortInUse } from './port-check.js';
+import { detectAssistants, configureAssistants } from './assistant-manager.js';
 
 
 // ========================================================================
@@ -103,6 +104,63 @@ const httpServer = createServer(async (req, res) => {
       logger.error('Error serving test.html:', error);
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('test.html not found');
+    }
+    return;
+  }
+
+  // Serve welcome.html
+  if (req.url === '/welcome' && req.method === 'GET') {
+    try {
+      const welcomePath = join(__dirname, '..', 'static', 'welcome.html');
+      const content = await readFile(welcomePath, 'utf-8');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(content);
+    } catch (error) {
+      logger.error('Error serving welcome.html:', error);
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('welcome.html not found');
+    }
+    return;
+  }
+
+  // Handle /assistants endpoint
+  if (req.url === '/assistants' && req.method === 'GET') {
+    try {
+      const assistants = detectAssistants();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(assistants));
+    } catch (error) {
+      logger.error('Error detecting assistants:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Failed to detect assistants' }));
+    }
+    return;
+  }
+
+  // Handle /assistants/configure endpoint
+  if (req.url === '/assistants/configure' && req.method === 'POST') {
+    try {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      
+      req.on('end', () => {
+        try {
+          const assistantsToConfig = JSON.parse(body);
+          const results = configureAssistants(assistantsToConfig);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(results));
+        } catch (error: any) {
+          logger.error('Error configuring assistants:', error);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message }));
+        }
+      });
+    } catch (error) {
+      logger.error('Error handling configure request:', error);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Failed to configure assistants' }));
     }
     return;
   }

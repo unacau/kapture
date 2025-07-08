@@ -5,24 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Kapture - Get Started in 2 Steps</title>
     <meta name="description" content="Get started with Kapture browser automation in just 2 simple steps">
-    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
-    <link rel="alternate icon" type="image/png" href="assets/images/icon48.png">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/svg+xml" href="https://williamkapke.github.io/kapture/assets/logo.svg">
+    <link rel="alternate icon" type="image/png" href="https://williamkapke.github.io/kapture/assets/images/icon48.png">
+    <link rel="stylesheet" href="https://williamkapke.github.io/kapture/styles.css">
     <style>
         body {
             margin: 0;
             padding: 0;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            min-height: 100vh;
             background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
         }
 
         .welcome-container {
             width: 100%;
             max-width: 1200px;
-            padding: 40px 20px;
+            margin: 0 auto;
+            padding: 60px 20px 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -435,6 +433,264 @@
             margin-bottom: 0;
         }
 
+        /* Assistant list styles */
+        .assistants-section {
+            width: 100%;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: all 2s ease-out;
+        }
+
+        .assistants-section.visible {
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        .assistants-section.hiding {
+            transition: none;
+        }
+
+        .assistants-section h3 {
+            margin-top: 24px;
+            margin-bottom: 6px;
+            color: #2d3748;
+            font-size: 1.2rem;
+        }
+
+        .assistants-list {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .assistant-item {
+            display: grid;
+            grid-template-columns: 120px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            transition: all 0.2s ease;
+            width: 100%;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .assistant-item:last-child {
+            border-bottom: none;
+        }
+
+        .assistant-item:hover {
+            background: #f7fafc;
+        }
+
+        .assistant-name {
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .assistant-status {
+            color: #718096;
+            text-align: center;
+        }
+
+        .assistant-status.configured {
+            color: #10b981;
+        }
+
+        /* Toggle switch styles */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e0;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #667eea;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .toggle-switch input:disabled + .toggle-slider {
+            background-color: #e2e8f0;
+            cursor: not-allowed;
+        }
+
+        .toggle-switch input:disabled + .toggle-slider:before {
+            background-color: #f7fafc;
+        }
+
+        .toggle-switch.loading .toggle-slider {
+            opacity: 0.6;
+        }
+
+        .assistant-not-detected {
+            opacity: 0.6;
+        }
+
+        .assistant-not-detected .assistant-name {
+            color: #a0aec0;
+        }
+
+        .assistant-not-detected .assistant-status {
+            color: #e53e3e;
+        }
+
+        /* Other assistants section */
+        .other-assistants-section {
+            width: 100%;
+            max-width: 1200px;
+            margin: 40px auto 40px;
+        }
+
+        .other-assistants-details {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .other-assistants-details summary {
+            padding: 16px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+
+        .other-assistants-details summary:hover {
+            background: #f7fafc;
+        }
+
+        .other-assistants-details summary::after {
+            content: '▶';
+            font-size: 0.8rem;
+            transition: transform 0.2s ease;
+            margin-left: auto;
+        }
+
+        .other-assistants-details[open] summary::after {
+            transform: rotate(90deg);
+        }
+
+        .other-assistants-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .details-content {
+            padding: 0 20px 20px;
+            color: #4a5568;
+        }
+
+        .details-content p {
+            margin: 0 0 16px 0;
+            line-height: 1.6;
+        }
+
+        .manual-config-box {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .manual-config-box h4 {
+            margin: 0 0 12px 0;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+
+        .manual-config-box pre {
+            margin: 0;
+            background: #f7fafc;
+            color: #2d3748;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+        }
+
+        .manual-config-box code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #2d3748;
+        }
+
+        .manual-instructions h4 {
+            margin: 24px 0 12px 0;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+
+        .manual-instructions ul {
+            margin: 0 0 16px 0;
+            padding-left: 24px;
+        }
+
+        .manual-instructions li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .manual-instructions code {
+            background: #edf2f7;
+            color: #2d3748;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.875rem;
+        }
+
+        .manual-instructions .note {
+            background: #fefcbf;
+            border: 1px solid #f6e05e;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-top: 16px;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .server-status {
@@ -443,6 +699,16 @@
 
             .code-section {
                 margin-bottom: 20px;
+            }
+
+            .assistant-item {
+                padding: 10px 12px;
+                grid-template-columns: 100px 1fr auto;
+                gap: 8px;
+            }
+
+            .assistant-name {
+                font-size: 0.875rem;
             }
         }
 
@@ -475,7 +741,7 @@
                 </div>
                 <p>Click the puzzle piece icon in your browser toolbar and pin Kapture for easy access.</p>
                 <div class="pin-visual">
-                    <img src="assets/images/kapture_pin.png" alt="Pin Kapture extension">
+                    <img src="https://williamkapke.github.io/kapture/assets/images/kapture_pin.png" alt="Pin Kapture extension">
                 </div>
             </div>
 
@@ -510,7 +776,84 @@
                     <div class="status-indicator searching" id="status-indicator"></div>
                     <span class="status-text searching" id="status-text">Searching <span class="dots"></span></span>
                 </div>
+                <div class="assistants-section" id="assistants-section">
+                    <h3>Assistant Configuration:</h3>
+                    <div class="assistants-list" id="assistants-list">
+                        <div class="assistant-item" data-assistant="claude-desktop">
+                            <span class="assistant-name">Claude Desktop</span>
+                            <span class="assistant-status">Checking...</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" disabled>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="assistant-item" data-assistant="claude-code">
+                            <span class="assistant-name">Claude Code</span>
+                            <span class="assistant-status">Checking...</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" disabled>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="assistant-item" data-assistant="vscode">
+                            <span class="assistant-name">VS Code</span>
+                            <span class="assistant-status">Checking...</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" disabled>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="assistant-item" data-assistant="cursor">
+                            <span class="assistant-name">Cursor</span>
+                            <span class="assistant-status">Checking...</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" disabled>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="assistant-item" data-assistant="windsurf">
+                            <span class="assistant-name">Windsurf</span>
+                            <span class="assistant-status">Checking...</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" disabled>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <div class="other-assistants-section" id="other-assistants-section" style="display: none;">
+            <details class="other-assistants-details">
+                <summary>Manual Configuration for Other Assistants</summary>
+                <div class="details-content">
+                    <p>For assistants not listed above, you can manually add Kapture to their MCP configuration:</p>
+
+                    <div class="manual-config-box">
+                        <h4>MCP Configuration</h4>
+                        <pre><code>{
+  "mcpServers": {
+    "kapture": {
+      "command": "npx",
+      "args": ["-y", "kapture-mcp-server", "bridge"]
+    }
+  }
+}</code></pre>
+                    </div>
+
+                    <div class="manual-instructions">
+                        <h4>Common Configuration Locations:</h4>
+                        <ul>
+                            <li><strong>VS Code-based editors:</strong> Look for <code>settings.json</code> and add under <code>"mcp.servers"</code></li>
+                            <li><strong>JetBrains IDEs:</strong> Check plugin settings for MCP configuration</li>
+                            <li><strong>Custom integrations:</strong> Refer to your tool's MCP documentation</li>
+                        </ul>
+
+                        <p class="note">Note: After adding the configuration, restart your assistant to connect to Kapture.</p>
+                    </div>
+                </div>
+            </details>
         </div>
 
         <div class="success-state" id="success-state">
@@ -546,11 +889,112 @@
             });
         }
 
+        // Assistant configuration state
+        let assistantsList = {};
+
+        // Fetch assistants from server
+        async function fetchAssistants() {
+            try {
+                const response = await fetch('http://localhost:61822/assistants');
+                if (response.ok) {
+                    assistantsList = await response.json();
+                    displayAssistants();
+                }
+            } catch (error) {
+                console.error('Failed to fetch assistants:', error);
+            }
+        }
+
+        // Display assistants in the UI
+        function displayAssistants() {
+            // Update each assistant item
+            for (const [key, status] of Object.entries(assistantsList)) {
+                const item = document.querySelector(`[data-assistant="${key}"]`);
+                if (!item) continue;
+
+                const statusSpan = item.querySelector('.assistant-status');
+                const toggleInput = item.querySelector('input[type="checkbox"]');
+                const toggleSwitch = item.querySelector('.toggle-switch');
+
+                // Update classes
+                if (!status.installed) {
+                    item.classList.add('assistant-not-detected');
+                    statusSpan.textContent = '✗ Not detected';
+                    statusSpan.classList.remove('configured');
+                } else if (status.configured) {
+                    item.classList.remove('assistant-not-detected');
+                    statusSpan.textContent = '✓ Enabled';
+                    statusSpan.classList.add('configured');
+                } else {
+                    item.classList.remove('assistant-not-detected');
+                    statusSpan.textContent = 'Not Enabled';
+                    statusSpan.classList.remove('configured');
+                }
+
+                // Update toggle
+                toggleInput.checked = status.configured;
+                toggleInput.disabled = !status.installed;
+
+                // Clear any existing handlers and add new one
+                toggleInput.onchange = null;
+                toggleInput.onchange = (e) => configureAssistant(key, e.target.checked, toggleSwitch);
+            }
+
+            // Show the assistants section with animation
+            document.getElementById('assistants-section').classList.add('visible');
+        }
+
+        // Configure or unconfigure an assistant
+        async function configureAssistant(assistantKey, configure, toggleSwitch) {
+            const toggleInput = toggleSwitch.querySelector('input');
+            toggleInput.disabled = true;
+            toggleSwitch.classList.add('loading');
+
+            try {
+                const response = await fetch('http://localhost:61822/assistants/configure', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        [assistantKey]: configure
+                    })
+                });
+
+                if (response.ok) {
+                    const results = await response.json();
+                    if (results[assistantKey]?.success) {
+                        // Update local state
+                        assistantsList[assistantKey].configured = configure;
+                        // Refresh display
+                        displayAssistants();
+                    } else {
+                        // Revert toggle on failure
+                        toggleInput.checked = !configure;
+                        alert(`Failed to ${configure ? 'configure' : 'unconfigure'} ${assistantKey}: ${results[assistantKey]?.error || 'Unknown error'}`);
+                    }
+                } else {
+                    // Revert toggle on failure
+                    toggleInput.checked = !configure;
+                    alert(`Failed to ${configure ? 'configure' : 'unconfigure'} assistant`);
+                }
+            } catch (error) {
+                console.error('Configuration error:', error);
+                // Revert toggle on failure
+                toggleInput.checked = !configure;
+                alert(`Error: ${error.message}`);
+            } finally {
+                toggleInput.disabled = false;
+                toggleSwitch.classList.remove('loading');
+            }
+        }
+
         // Server status management
         function updateServerStatus(status) {
             const indicator = document.getElementById('status-indicator');
             const text = document.getElementById('status-text');
             const codeSection = document.getElementById('code-section');
+            const assistantsSection = document.getElementById('assistants-section');
 
             // Remove all status classes
             indicator.classList.remove('searching', 'connected', 'disconnected');
@@ -565,17 +1009,42 @@
                     text.innerHTML = 'Connected!';
                     // Hide the code section with animation
                     codeSection.classList.add('hidden');
+
+                    // Fetch and display assistants
+                    fetchAssistants();
+
+                    // Check if we're not on localhost:61822/welcome and navigate there
+                    const currentUrl = window.location.href;
+                    const targetUrl = 'http://localhost:61822/welcome';
+
+                    // Only redirect if we're not already on the local server welcome page
+                    if (!currentUrl.startsWith('http://localhost:61822/welcome') &&
+                        !currentUrl.startsWith('http://127.0.0.1:61822/welcome')) {
+                        console.log('Navigating to local Kapture server welcome page...');
+                        window.location.href = targetUrl;
+                    } else {
+                        // We're on localhost, show the other assistants section
+                        document.getElementById('other-assistants-section').style.display = 'block';
+                    }
                     break;
                 case 'disconnected':
                     text.innerHTML = 'Disconnected';
                     // Show the code section again
                     codeSection.classList.remove('hidden');
+                    // Hide assistants section instantly
+                    assistantsSection.classList.add('hiding');
+                    assistantsSection.classList.remove('visible');
+                    setTimeout(() => assistantsSection.classList.remove('hiding'), 0);
                     break;
                 case 'searching':
                 default:
                     text.innerHTML = 'Searching<span class="dots"></span>';
                     // Keep code section visible while searching
                     codeSection.classList.remove('hidden');
+                    // Hide assistants section instantly
+                    assistantsSection.classList.add('hiding');
+                    assistantsSection.classList.remove('visible');
+                    setTimeout(() => assistantsSection.classList.remove('hiding'), 0);
                     break;
             }
         }
