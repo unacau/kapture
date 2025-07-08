@@ -9,7 +9,7 @@ MCP server for Kapture browser automation. This server enables AI assistants lik
 ### Run with npx (no installation required)
 
 ```bash
-npx kapture-mcp-server
+npx kapture-mcp
 ```
 
 The server automatically runs on port 61822.
@@ -17,14 +17,14 @@ The server automatically runs on port 61822.
 ### Bridge mode (Alternative for stdio-based MCP clients)
 
 ```bash
-npx kapture-mcp-server bridge
+npx kapture-mcp bridge
 ```
 
 This starts the server and provides stdio-to-WebSocket translation using the built-in mcp2websocket bridge.
 
 ### Smart Server Detection
 
-When running `npx kapture-mcp-server`, it automatically detects if a server is already running:
+When running `npx kapture-mcp`, it automatically detects if a server is already running:
 - **No existing server**: Starts a new server
 - **Server already running**: Shows connection info and exits gracefully
 
@@ -52,7 +52,7 @@ This single command starts the server and handles stdio communication:
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "bridge"]
+      "args": ["-y", "kapture-mcp", "bridge"]
     }
   }
 }
@@ -61,7 +61,7 @@ This single command starts the server and handles stdio communication:
 ### Alternative: Direct WebSocket connection
 First start the server:
 ```bash
-npx kapture-mcp-server
+npx kapture-mcp
 ```
 
 Then configure Claude Desktop to use WebSocket transport:
@@ -94,7 +94,7 @@ Kapture supports multiple AI clients through a single server instance:
 
 Start the server manually:
 ```bash
-npx kapture-mcp-server
+npx kapture-mcp
 ```
 
 Claude Desktop (claude_desktop_config.json):
@@ -103,7 +103,7 @@ Claude Desktop (claude_desktop_config.json):
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "bridge"]
+      "args": ["-y", "kapture-mcp", "bridge"]
     }
   }
 }

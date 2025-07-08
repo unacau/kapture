@@ -90,7 +90,7 @@ This single command starts the server and handles stdio-to-WebSocket translation
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "bridge"]
+      "args": ["-y", "kapture-mcp", "bridge"]
     }
   }
 }
@@ -101,7 +101,7 @@ For advanced use cases where you need manual server control:
 
 1. Start the server manually:
 ```bash
-npx kapture-mcp-server
+npx kapture-mcp
 ```
 
 2. Configure Claude Desktop to connect via WebSocket:
@@ -128,7 +128,7 @@ Kapture supports multiple MCP clients connecting to the same server! You can run
 - Notifications are broadcast to all connected clients
 
 ### Smart Server Detection
-When running `npx kapture-mcp-server`, the command automatically detects if a server is already running:
+When running `npx kapture-mcp`, the command automatically detects if a server is already running:
 - **No existing server**: Starts a new server on port 61822
 - **Server already running**: Shows connection information and exits gracefully
 
@@ -144,7 +144,7 @@ Each client should use the same bridge command configuration:
   "mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "bridge"]
+      "args": ["-y", "kapture-mcp", "bridge"]
     }
   }
 }
@@ -156,14 +156,14 @@ Each client should use the same bridge command configuration:
   "cline.mcpServers": {
     "kapture": {
       "command": "npx",
-      "args": ["kapture-mcp-server", "bridge"]
+      "args": ["-y", "kapture-mcp", "bridge"]
     }
   }
 }
 ```
 
 **Other MCP Clients**:
-Use the same configuration pattern with `"command": "npx"` and `"args": ["kapture-mcp-server", "bridge"]`.
+Use the same configuration pattern with `"command": "npx"` and `"args": ["-y", "kapture-mcp", "bridge"]`.
 
 [See the complete multi-assistant guide →](https://williamkapke.github.io/kapture/MULTI_ASSISTANT_GUIDE.html)
 

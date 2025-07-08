@@ -95,7 +95,7 @@ function isKaptureConfigured(configPath: string, configKey: string): boolean {
 
 const KAPTURE_MCP_CONFIG = {
   command: "npx",
-  args: ["-y", "kapture-mcp-server", "bridge"]
+  args: ["-y", "kapture-mcp", "bridge"]
 };
 
 function writeConfig(configPath: string, config: any): void {
