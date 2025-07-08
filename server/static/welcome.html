@@ -175,11 +175,29 @@
         .success-state {
             display: none;
             text-align: center;
-            margin-top: 60px;
+            margin-top: 40px;
             padding: 40px;
             background: white;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+        }
+        .has-configured-assistant .success-state {
+            display: block;
+            animation: slideInFade 0.5s ease-out forwards;
+        }
+
+        @keyframes slideInFade {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .success-state h2 {
@@ -440,6 +458,7 @@
             max-height: 0;
             opacity: 0;
             transition: all 2s ease-out;
+            position: relative;
         }
 
         .assistants-section.visible {
@@ -570,6 +589,86 @@
 
         .assistant-not-detected .assistant-status {
             color: #e53e3e;
+        }
+
+        .enable-prompt {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Enable prompt styles */
+        .kapture-connected .has-installed-assistant .enable-prompt {
+            display: block;
+            position: absolute;
+            right: 18px;
+            top: 90px;
+            text-align: center;
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .kapture-connected .has-installed-assistant.has-configured-assistant .enable-prompt {
+            animation: fadeOut 0.3s ease-in-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .enable-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #667eea;
+            line-height: 1.2;
+            margin-bottom: 4px;
+            animation: text-bounce 2s ease-in-out infinite;
+        }
+
+        .arrow-down {
+            font-size: 1.3rem;
+            color: #667eea;
+            animation: arrow-bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes text-bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes arrow-bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(5px);
+            }
         }
 
         /* Other assistants section */
@@ -710,6 +809,14 @@
             .assistant-name {
                 font-size: 0.875rem;
             }
+
+            .enable-text {
+                font-size: 0.9rem;
+            }
+
+            .arrow-down {
+                font-size: 1.2rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -724,115 +831,129 @@
     </style>
 </head>
 <body>
-    <div class="welcome-container">
-        <div class="welcome-header">
-            <h1>Welcome to Kapture MCP!</h1>
-        </div>
+<div class="welcome-container">
+    <div class="welcome-header">
+        <h1>Welcome to Kapture MCP!</h1>
+    </div>
 
-        <div class="steps-container">
-            <div class="step-card">
-                <div class="step-header">
-                    <div class="step-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12M8.8,14L10,12.8V4H14V12.8L15.2,14H8.8Z"/>
-                        </svg>
-                    </div>
-                    <h2>Pin the Extension</h2>
+    <div class="steps-container">
+        <div class="step-card">
+            <div class="step-header">
+                <div class="step-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12M8.8,14L10,12.8V4H14V12.8L15.2,14H8.8Z"/>
+                    </svg>
                 </div>
-                <p>Click the puzzle piece icon in your browser toolbar and pin Kapture for easy access.</p>
-                <div class="pin-visual">
-                    <img src="https://williamkapke.github.io/kapture/assets/images/kapture_pin.png" alt="Pin Kapture extension">
-                </div>
+                <h2>Pin the Extension</h2>
             </div>
-
-            <div class="step-card">
-                <div class="step-header">
-                    <div class="step-icon">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <text x="12" y="17" font-family="monospace" font-size="20" text-anchor="middle" font-weight="bold">{}</text>
-                        </svg>
-                    </div>
-                    <h2>Setup Your Assistants</h2>
-                </div>
-                <div class="code-section" id="code-section">
-                    <p>Run this command in your terminal to configure your assistants to use Kapture.</p>
-                    <div class="code-box" onclick="copyCommand()">
-                        <span class="prefix">$</span>
-                        <span class="command">npx -y kapture-mcp-setup</span>
-                        <button class="copy-button" aria-label="Copy command">
-                            <svg id="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                            <svg id="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </button>
-                        <div class="copied-tooltip" id="tooltip">Copied!</div>
-                    </div>
-                </div>
-                <div class="server-status" id="server-status">
-                    <span class="status-label">Kapture MCP Server:</span>
-                    <div class="status-indicator searching" id="status-indicator"></div>
-                    <span class="status-text searching" id="status-text">Searching <span class="dots"></span></span>
-                </div>
-                <div class="assistants-section" id="assistants-section">
-                    <h3>Assistant Configuration:</h3>
-                    <div class="assistants-list" id="assistants-list">
-                        <div class="assistant-item" data-assistant="claude-desktop">
-                            <span class="assistant-name">Claude Desktop</span>
-                            <span class="assistant-status">Checking...</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" disabled>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="assistant-item" data-assistant="claude-code">
-                            <span class="assistant-name">Claude Code</span>
-                            <span class="assistant-status">Checking...</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" disabled>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="assistant-item" data-assistant="vscode">
-                            <span class="assistant-name">VS Code</span>
-                            <span class="assistant-status">Checking...</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" disabled>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="assistant-item" data-assistant="cursor">
-                            <span class="assistant-name">Cursor</span>
-                            <span class="assistant-status">Checking...</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" disabled>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="assistant-item" data-assistant="windsurf">
-                            <span class="assistant-name">Windsurf</span>
-                            <span class="assistant-status">Checking...</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" disabled>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
+            <p>Click the puzzle piece icon in your browser toolbar and pin Kapture for easy access.</p>
+            <div class="pin-visual">
+                <img src="https://williamkapke.github.io/kapture/assets/images/kapture_pin.png" alt="Pin Kapture extension">
             </div>
         </div>
 
-        <div class="other-assistants-section" id="other-assistants-section" style="display: none;">
-            <details class="other-assistants-details">
-                <summary>Manual Configuration for Other Assistants</summary>
-                <div class="details-content">
-                    <p>For assistants not listed above, you can manually add Kapture to their MCP configuration:</p>
+        <div class="step-card">
+            <div class="enable-prompt">
+                <div class="enable-text">Enable your<br>clients!</div>
+                <div class="arrow-down">↓</div>
+            </div>
+            <div class="step-header">
+                <div class="step-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <text x="12" y="17" font-family="monospace" font-size="20" text-anchor="middle" font-weight="bold">{}</text>
+                    </svg>
+                </div>
+                <h2>Setup Your Assistants</h2>
+            </div>
+            <div class="code-section" id="code-section">
+                <p>Run this command in your terminal to configure your assistants to use Kapture.</p>
+                <div class="code-box" onclick="copyCommand()">
+                    <span class="prefix">$</span>
+                    <span class="command">npx -y kapture-mcp-setup</span>
+                    <button class="copy-button" aria-label="Copy command">
+                        <svg id="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <svg id="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </button>
+                    <div class="copied-tooltip" id="tooltip">Copied!</div>
+                </div>
+            </div>
+            <div class="server-status" id="server-status">
+                <span class="status-label">Kapture MCP Server:</span>
+                <div class="status-indicator searching" id="status-indicator"></div>
+                <span class="status-text searching" id="status-text">Searching <span class="dots"></span></span>
+            </div>
+            <div class="assistants-section" id="assistants-section">
+                <h3>Assistant Configuration:</h3>
+                <div class="assistants-list" id="assistants-list">
+                    <div class="assistant-item" data-assistant="claude-desktop">
+                        <span class="assistant-name">Claude Desktop</span>
+                        <span class="assistant-status">Checking...</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" disabled>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="assistant-item" data-assistant="claude-code">
+                        <span class="assistant-name">Claude Code</span>
+                        <span class="assistant-status">Checking...</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" disabled>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="assistant-item" data-assistant="vscode">
+                        <span class="assistant-name">VS Code</span>
+                        <span class="assistant-status">Checking...</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" disabled>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="assistant-item" data-assistant="cursor">
+                        <span class="assistant-name">Cursor</span>
+                        <span class="assistant-status">Checking...</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" disabled>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="assistant-item" data-assistant="windsurf">
+                        <span class="assistant-name">Windsurf</span>
+                        <span class="assistant-status">Checking...</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" disabled>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="success-state">
+        <h2>🎉 You're All Set!</h2>
+        <p>Kapture is ready to use. Check out the how-to guide to see it in action.</p>
+        <a href="https://williamkapke.github.io/kapture/how-to.html" class="next-button">
+            View How-To Guide
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
+            </svg>
+        </a>
+    </div>
 
-                    <div class="manual-config-box">
-                        <h4>MCP Configuration</h4>
-                        <pre><code>{
+    <div class="other-assistants-section" id="other-assistants-section" style="display: none;">
+        <details class="other-assistants-details">
+            <summary>Manual Configuration for Other Assistants</summary>
+            <div class="details-content">
+                <p>For assistants not listed above, you can manually add Kapture to their MCP configuration:</p>
+
+                <div class="manual-config-box">
+                    <h4>MCP Configuration</h4>
+                    <pre><code>{
   "mcpServers": {
     "kapture": {
       "command": "npx",
@@ -840,254 +961,248 @@
     }
   }
 }</code></pre>
-                    </div>
-
-                    <div class="manual-instructions">
-                        <h4>Common Configuration Locations:</h4>
-                        <ul>
-                            <li><strong>VS Code-based editors:</strong> Look for <code>settings.json</code> and add under <code>"mcp.servers"</code></li>
-                            <li><strong>JetBrains IDEs:</strong> Check plugin settings for MCP configuration</li>
-                            <li><strong>Custom integrations:</strong> Refer to your tool's MCP documentation</li>
-                        </ul>
-
-                        <p class="note">Note: After adding the configuration, restart your assistant to connect to Kapture.</p>
-                    </div>
                 </div>
-            </details>
-        </div>
 
-        <div class="success-state" id="success-state">
-            <h2>🎉 You're All Set!</h2>
-            <p>Kapture is ready to use. Check out the how-to guide to see it in action.</p>
-            <a href="how-to.html" class="next-button">
-                View How-To Guide
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"/>
-                </svg>
-            </a>
-        </div>
+                <div class="manual-instructions">
+                    <h4>Common Configuration Locations:</h4>
+                    <ul>
+                        <li><strong>VS Code-based editors:</strong> Look for <code>settings.json</code> and add under <code>"mcp.servers"</code></li>
+                        <li><strong>JetBrains IDEs:</strong> Check plugin settings for MCP configuration</li>
+                        <li><strong>Custom integrations:</strong> Refer to your tool's MCP documentation</li>
+                    </ul>
+
+                    <p class="note">Note: After adding the configuration, restart your assistant to connect to Kapture.</p>
+                </div>
+            </div>
+        </details>
     </div>
+</div>
 
-    <script>
-        function copyCommand() {
-            const command = 'npx -y kapture-mcp-setup';
-            navigator.clipboard.writeText(command).then(() => {
-                // Show check icon
-                document.getElementById('copy-icon').style.display = 'none';
-                document.getElementById('check-icon').style.display = 'block';
+<script>
+  function copyCommand() {
+    const command = 'npx -y kapture-mcp-setup';
+    navigator.clipboard.writeText(command).then(() => {
+      // Show check icon
+      document.getElementById('copy-icon').style.display = 'none';
+      document.getElementById('check-icon').style.display = 'block';
 
-                // Show tooltip
-                const tooltip = document.getElementById('tooltip');
-                tooltip.classList.add('show');
+      // Show tooltip
+      const tooltip = document.getElementById('tooltip');
+      tooltip.classList.add('show');
 
-                // Reset after 2 seconds
-                setTimeout(() => {
-                    document.getElementById('copy-icon').style.display = 'block';
-                    document.getElementById('check-icon').style.display = 'none';
-                    tooltip.classList.remove('show');
-                }, 2000);
-            });
+      // Reset after 2 seconds
+      setTimeout(() => {
+        document.getElementById('copy-icon').style.display = 'block';
+        document.getElementById('check-icon').style.display = 'none';
+        tooltip.classList.remove('show');
+      }, 2000);
+    });
+  }
+
+  // Assistant configuration state
+  let assistantsList = {};
+
+  // Fetch assistants from server
+  async function fetchAssistants() {
+    try {
+      const response = await fetch('http://localhost:61822/assistants');
+      if (response.ok) {
+        assistantsList = await response.json();
+        displayAssistants();
+      }
+    } catch (error) {
+      console.error('Failed to fetch assistants:', error);
+    }
+  }
+
+  // Display assistants in the UI
+  function displayAssistants() {
+    const welcomeContainer = document.querySelector('.welcome-container');
+    welcomeContainer.classList.remove('has-configured-assistant', 'has-installed-assistant');
+
+    // Update each assistant item
+    for (const [key, status] of Object.entries(assistantsList)) {
+      const item = document.querySelector(`[data-assistant="${key}"]`);
+      if (!item) continue;
+
+      const statusSpan = item.querySelector('.assistant-status');
+      const toggleInput = item.querySelector('input[type="checkbox"]');
+      const toggleSwitch = item.querySelector('.toggle-switch');
+
+      // Update classes
+      if (!status.installed) {
+        item.classList.add('assistant-not-detected');
+        statusSpan.textContent = '✗ Not detected';
+        statusSpan.classList.remove('configured');
+      } else if (status.configured) {
+        item.classList.remove('assistant-not-detected');
+        statusSpan.textContent = '✓ Enabled';
+        statusSpan.classList.add('configured');
+        welcomeContainer.classList.add('has-configured-assistant', 'has-installed-assistant');
+      } else {
+        item.classList.remove('assistant-not-detected');
+        statusSpan.textContent = 'Not Enabled';
+        statusSpan.classList.remove('configured');
+        welcomeContainer.classList.add('has-installed-assistant');
+      }
+
+      // Update toggle
+      toggleInput.checked = status.configured;
+      toggleInput.disabled = !status.installed;
+
+      // Clear any existing handlers and add new one
+      toggleInput.onchange = null;
+      toggleInput.onchange = (e) => configureAssistant(key, e.target.checked, toggleSwitch);
+    }
+
+    // Show the assistants section with animation
+    document.getElementById('assistants-section').classList.add('visible');
+  }
+
+  // Configure or unconfigure an assistant
+  async function configureAssistant(assistantKey, configure, toggleSwitch) {
+    const toggleInput = toggleSwitch.querySelector('input');
+    toggleInput.disabled = true;
+    toggleSwitch.classList.add('loading');
+
+    try {
+      const response = await fetch('http://localhost:61822/assistants/configure', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          [assistantKey]: configure
+        })
+      });
+
+      if (response.ok) {
+        const results = await response.json();
+        if (results[assistantKey]?.success) {
+          // Update local state
+          assistantsList[assistantKey].configured = configure;
+          // Refresh display
+          displayAssistants();
+        } else {
+          // Revert toggle on failure
+          toggleInput.checked = !configure;
+          alert(`Failed to ${configure ? 'configure' : 'unconfigure'} ${assistantKey}: ${results[assistantKey]?.error || 'Unknown error'}`);
         }
+      } else {
+        // Revert toggle on failure
+        toggleInput.checked = !configure;
+        alert(`Failed to ${configure ? 'configure' : 'unconfigure'} assistant`);
+      }
+    } catch (error) {
+      console.error('Configuration error:', error);
+      // Revert toggle on failure
+      toggleInput.checked = !configure;
+      alert(`Error: ${error.message}`);
+    } finally {
+      toggleInput.disabled = false;
+      toggleSwitch.classList.remove('loading');
+    }
+  }
 
-        // Assistant configuration state
-        let assistantsList = {};
+  // Server status management
+  function updateServerStatus(status) {
+    const indicator = document.getElementById('status-indicator');
+    const text = document.getElementById('status-text');
+    const codeSection = document.getElementById('code-section');
+    const assistantsSection = document.getElementById('assistants-section');
 
-        // Fetch assistants from server
-        async function fetchAssistants() {
-            try {
-                const response = await fetch('http://localhost:61822/assistants');
-                if (response.ok) {
-                    assistantsList = await response.json();
-                    displayAssistants();
-                }
-            } catch (error) {
-                console.error('Failed to fetch assistants:', error);
-            }
+    // Remove all status classes
+    indicator.classList.remove('searching', 'connected', 'disconnected');
+    text.classList.remove('searching', 'connected', 'disconnected');
+
+    // Add new status class and update text
+    indicator.classList.add(status);
+    text.classList.add(status);
+
+    switch(status) {
+      case 'connected':
+        text.innerHTML = 'Connected!';
+        // Hide the code section with animation
+        codeSection.classList.add('hidden');
+
+        // Fetch and display assistants
+        fetchAssistants();
+
+        // Check if we're not on localhost:61822/welcome and navigate there
+        const currentUrl = window.location.href;
+        const targetUrl = 'http://localhost:61822/welcome';
+
+        // Only redirect if we're not already on the local server welcome page
+        if (!currentUrl.startsWith('http://localhost:61822/welcome') &&
+          !currentUrl.startsWith('http://127.0.0.1:61822/welcome')) {
+          console.log('Navigating to local Kapture server welcome page...');
+          window.location.href = targetUrl;
+        } else {
+          // We're on localhost, show the other assistants section
+          document.getElementById('other-assistants-section').style.display = 'block';
         }
+        break;
+      case 'disconnected':
+        text.innerHTML = 'Disconnected';
+        // Show the code section again
+        codeSection.classList.remove('hidden');
+        // Hide assistants section instantly
+        assistantsSection.classList.add('hiding');
+        assistantsSection.classList.remove('visible');
+        setTimeout(() => assistantsSection.classList.remove('hiding'), 0);
+        break;
+      case 'searching':
+      default:
+        text.innerHTML = 'Searching<span class="dots"></span>';
+        // Keep code section visible while searching
+        codeSection.classList.remove('hidden');
+        // Hide assistants section instantly
+        assistantsSection.classList.add('hiding');
+        assistantsSection.classList.remove('visible');
+        setTimeout(() => assistantsSection.classList.remove('hiding'), 0);
+        break;
+    }
+  }
 
-        // Display assistants in the UI
-        function displayAssistants() {
-            // Update each assistant item
-            for (const [key, status] of Object.entries(assistantsList)) {
-                const item = document.querySelector(`[data-assistant="${key}"]`);
-                if (!item) continue;
-
-                const statusSpan = item.querySelector('.assistant-status');
-                const toggleInput = item.querySelector('input[type="checkbox"]');
-                const toggleSwitch = item.querySelector('.toggle-switch');
-
-                // Update classes
-                if (!status.installed) {
-                    item.classList.add('assistant-not-detected');
-                    statusSpan.textContent = '✗ Not detected';
-                    statusSpan.classList.remove('configured');
-                } else if (status.configured) {
-                    item.classList.remove('assistant-not-detected');
-                    statusSpan.textContent = '✓ Enabled';
-                    statusSpan.classList.add('configured');
-                } else {
-                    item.classList.remove('assistant-not-detected');
-                    statusSpan.textContent = 'Not Enabled';
-                    statusSpan.classList.remove('configured');
-                }
-
-                // Update toggle
-                toggleInput.checked = status.configured;
-                toggleInput.disabled = !status.installed;
-
-                // Clear any existing handlers and add new one
-                toggleInput.onchange = null;
-                toggleInput.onchange = (e) => configureAssistant(key, e.target.checked, toggleSwitch);
-            }
-
-            // Show the assistants section with animation
-            document.getElementById('assistants-section').classList.add('visible');
+  // Check for body class changes to detect connection status
+  const bodyObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const body = document.body;
+        if (body.classList.contains('kapture-connected')) {
+          updateServerStatus('connected');
+        } else if (body.classList.contains('kapture-connecting')) {
+          updateServerStatus('searching');
+        } else {
+          updateServerStatus('disconnected');
         }
+      }
+    });
+  });
 
-        // Configure or unconfigure an assistant
-        async function configureAssistant(assistantKey, configure, toggleSwitch) {
-            const toggleInput = toggleSwitch.querySelector('input');
-            toggleInput.disabled = true;
-            toggleSwitch.classList.add('loading');
+  // Start observing body class changes
+  bodyObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
 
-            try {
-                const response = await fetch('http://localhost:61822/assistants/configure', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        [assistantKey]: configure
-                    })
-                });
+  // Auto-connect when Kapture is loaded
+  window.addEventListener('kapture-loaded', () => {
+    console.log('Kapture loaded! Auto-connecting...');
+    const event = new CustomEvent('kapture-message', {
+      detail: { type: 'connect' }
+    });
+    window.dispatchEvent(event);
+  });
 
-                if (response.ok) {
-                    const results = await response.json();
-                    if (results[assistantKey]?.success) {
-                        // Update local state
-                        assistantsList[assistantKey].configured = configure;
-                        // Refresh display
-                        displayAssistants();
-                    } else {
-                        // Revert toggle on failure
-                        toggleInput.checked = !configure;
-                        alert(`Failed to ${configure ? 'configure' : 'unconfigure'} ${assistantKey}: ${results[assistantKey]?.error || 'Unknown error'}`);
-                    }
-                } else {
-                    // Revert toggle on failure
-                    toggleInput.checked = !configure;
-                    alert(`Failed to ${configure ? 'configure' : 'unconfigure'} assistant`);
-                }
-            } catch (error) {
-                console.error('Configuration error:', error);
-                // Revert toggle on failure
-                toggleInput.checked = !configure;
-                alert(`Error: ${error.message}`);
-            } finally {
-                toggleInput.disabled = false;
-                toggleSwitch.classList.remove('loading');
-            }
-        }
-
-        // Server status management
-        function updateServerStatus(status) {
-            const indicator = document.getElementById('status-indicator');
-            const text = document.getElementById('status-text');
-            const codeSection = document.getElementById('code-section');
-            const assistantsSection = document.getElementById('assistants-section');
-
-            // Remove all status classes
-            indicator.classList.remove('searching', 'connected', 'disconnected');
-            text.classList.remove('searching', 'connected', 'disconnected');
-
-            // Add new status class and update text
-            indicator.classList.add(status);
-            text.classList.add(status);
-
-            switch(status) {
-                case 'connected':
-                    text.innerHTML = 'Connected!';
-                    // Hide the code section with animation
-                    codeSection.classList.add('hidden');
-
-                    // Fetch and display assistants
-                    fetchAssistants();
-
-                    // Check if we're not on localhost:61822/welcome and navigate there
-                    const currentUrl = window.location.href;
-                    const targetUrl = 'http://localhost:61822/welcome';
-
-                    // Only redirect if we're not already on the local server welcome page
-                    if (!currentUrl.startsWith('http://localhost:61822/welcome') &&
-                        !currentUrl.startsWith('http://127.0.0.1:61822/welcome')) {
-                        console.log('Navigating to local Kapture server welcome page...');
-                        window.location.href = targetUrl;
-                    } else {
-                        // We're on localhost, show the other assistants section
-                        document.getElementById('other-assistants-section').style.display = 'block';
-                    }
-                    break;
-                case 'disconnected':
-                    text.innerHTML = 'Disconnected';
-                    // Show the code section again
-                    codeSection.classList.remove('hidden');
-                    // Hide assistants section instantly
-                    assistantsSection.classList.add('hiding');
-                    assistantsSection.classList.remove('visible');
-                    setTimeout(() => assistantsSection.classList.remove('hiding'), 0);
-                    break;
-                case 'searching':
-                default:
-                    text.innerHTML = 'Searching<span class="dots"></span>';
-                    // Keep code section visible while searching
-                    codeSection.classList.remove('hidden');
-                    // Hide assistants section instantly
-                    assistantsSection.classList.add('hiding');
-                    assistantsSection.classList.remove('visible');
-                    setTimeout(() => assistantsSection.classList.remove('hiding'), 0);
-                    break;
-            }
-        }
-
-        // Check for body class changes to detect connection status
-        const bodyObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                    const body = document.body;
-                    if (body.classList.contains('kapture-connected')) {
-                        updateServerStatus('connected');
-                    } else if (body.classList.contains('kapture-connecting')) {
-                        updateServerStatus('searching');
-                    } else {
-                        updateServerStatus('disconnected');
-                    }
-                }
-            });
-        });
-
-        // Start observing body class changes
-        bodyObserver.observe(document.body, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-
-        // Auto-connect when Kapture is loaded
-        window.addEventListener('kapture-loaded', () => {
-          console.log('Kapture loaded! Auto-connecting...');
-          const event = new CustomEvent('kapture-message', {
-            detail: { type: 'connect' }
-          });
-          window.dispatchEvent(event);
-        });
-
-        // Check initial connection status
-        setTimeout(() => {
-            if (document.body.classList.contains('kapture-connected')) {
-                updateServerStatus('connected');
-            } else if (document.body.classList.contains('kapture-connecting')) {
-                updateServerStatus('searching');
-            }
-        }, 100);
-    </script>
+  // Check initial connection status
+  setTimeout(() => {
+    if (document.body.classList.contains('kapture-connected')) {
+      updateServerStatus('connected');
+    } else if (document.body.classList.contains('kapture-connecting')) {
+      updateServerStatus('searching');
+    }
+  }, 100);
+</script>
 </body>
 </html>
