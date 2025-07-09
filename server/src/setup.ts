@@ -11,6 +11,7 @@ process.title = 'Kapture Setup';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const localhost_welcome = 'http://localhost:61822/welcome';
 
 async function setup() {
   console.log('Setup Server...');
@@ -84,10 +85,10 @@ async function setup() {
     }
 
     if (welcomeTabId) {
-      await client.callTool({
-        name: 'show',
-        arguments: { tabId: welcomeTabId }
-      });
+      setTimeout(async () => {
+        await client.callTool({name: 'navigate', arguments: {tabId: welcomeTabId, url: localhost_welcome}});
+        await client.callTool({name: 'show', arguments: {tabId: welcomeTabId}});
+      }, 1000); // Wait 1 second before navigating
     }
 
   } catch (error) {
@@ -99,7 +100,7 @@ async function setup() {
     await client.close();
   }
 
-  console.log('\n👉 Open http://localhost:61822/welcome to continue\n');
+  console.log(`👉 Continue at ${localhost_welcome}`);
 
   // Exit the process
   process.exit(0);
