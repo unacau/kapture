@@ -66,7 +66,12 @@ async function setup() {
             // Find the welcome tab
             for (const tab of tabs) {
               const url = tab.url || '';
-              if ((url.includes('localhost:61822') || url.includes('kapture')) || url.includes('/welcome')) {
+              const local_welcome_url = url.includes(localhost_welcome);
+
+              //https://williamkapke.github.io/kapture/welcome
+              const public_welcome_url = url.includes('/kapture/welcome');
+              if (local_welcome_url || public_welcome_url) {
+                console.log('Found welcome tab:', tab.tabId);
                 welcomeTabId = tab.tabId;
                 break;
               }
@@ -85,12 +90,15 @@ async function setup() {
     }
 
     if (welcomeTabId) {
-      setTimeout(async () => {
-        await client.callTool({name: 'navigate', arguments: {tabId: welcomeTabId, url: localhost_welcome}});
-        await client.callTool({name: 'show', arguments: {tabId: welcomeTabId}});
-      }, 1000); // Wait 1 second before navigating
+      console.log('\nNavigating to welcome page...');
+      await client.callTool({name: 'navigate', arguments: {tabId: welcomeTabId, url: localhost_welcome}});
+      console.log('\nShowing welcome page...');
+      await client.callTool({name: 'show', arguments: {tabId: welcomeTabId}});
     }
+    console.log(`👉 Continue at ${localhost_welcome}`);
 
+    // Exit the process
+    process.exit(0);
   } catch (error) {
     // no op
     console.log('\n⚠️⚠️⚠️');
@@ -99,11 +107,6 @@ async function setup() {
     // Close the client connection
     await client.close();
   }
-
-  console.log(`👉 Continue at ${localhost_welcome}`);
-
-  // Exit the process
-  process.exit(0);
 }
 
 // Run setup
