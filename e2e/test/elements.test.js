@@ -153,4 +153,32 @@ describe('Elements Tool Tests', function() {
     expect(resultData).to.have.property('error');
     expect(resultData.error.code).to.equal('SELECTOR_OR_XPATH_REQUIRED');
   });
+
+  it('should correctly detect visibility of elements outside parent overflow bounds', async function() {
+    // Test the overflow-escape element that uses fixed positioning to escape parent's overflow:hidden
+    const result = await framework.callTool('elements', {
+      selector: '#overflow-escape'
+    });
+
+    const resultData = JSON.parse(result.content[0].text);
+    expectValidTabInfo(resultData);
+    expect(resultData.elements).to.have.lengthOf(1);
+
+    const element = resultData.elements[0];
+    expect(element.id).to.equal('overflow-escape');
+
+    // This element should be visible because it uses fixed positioning
+    // to escape the parent's overflow:hidden constraint
+    expect(element.visible).to.equal(true);
+
+    // Also test with visibility filter
+    const visibleResult = await framework.callTool('elements', {
+      selector: '#overflow-escape',
+      visible: 'true'
+    });
+
+    const visibleData = JSON.parse(visibleResult.content[0].text);
+    expect(visibleData.elements).to.have.lengthOf(1);
+    expect(visibleData.elements[0].visible).to.equal(true);
+  });
 });

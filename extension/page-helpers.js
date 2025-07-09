@@ -240,6 +240,20 @@ function isElementVisible(element, rect, computedStyle) {
 
   if (!inViewport) return false;
 
+  // Get element's center point (used multiple times below)
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+
+  // Helper function to check if element is visible at a point
+  const isElementAtPoint = (x, y) => {
+    const elementAtPoint = document.elementFromPoint(x, y);
+    if (!elementAtPoint) return false;
+    return elementAtPoint === element || element.contains(elementAtPoint) || elementAtPoint.contains(element);
+  };
+
+  // Check if element is visible at center point - this is the most reliable check
+  if (isElementAtPoint(centerX, centerY)) return true;
+
   // Check if element is hidden by ancestor's properties
   let parent = element.parentElement;
   while (parent && parent !== document.body) {
@@ -253,28 +267,19 @@ function isElementVisible(element, rect, computedStyle) {
       const parentRect = parent.getBoundingClientRect();
       // Check if element is outside parent's visible area
       if (rect.bottom < parentRect.top || rect.top > parentRect.bottom || rect.right < parentRect.left || rect.left > parentRect.right) {
+        // Before returning false, check if the element is actually visible using elementsFromPoint
+        const elementsAtPoint = document.elementsFromPoint(centerX, centerY);
+        
+        // If the element is in the elements chain at its center point, it's visible
+        if (elementsAtPoint.includes(element)) {
+          continue; // Skip this parent check and continue checking other parents
+        }
+        
         return false;
       }
     }
     parent = parent.parentElement;
   }
-
-  // Check if element is covered by another element
-  // Get element's center point
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-
-  // Check what element is at the center point
-  const elementAtPoint = document.elementFromPoint(centerX, centerY);
-
-  // If elementAtPoint is null, the point is outside viewport
-  if (!elementAtPoint) return false;
-
-  // Check if the element at point is our element or a descendant
-  if (elementAtPoint === element || element.contains(elementAtPoint)) return true;
-
-  // Check if the element at point is an ancestor (element might be transparent)
-  if (elementAtPoint.contains(element)) return true;
 
   // Element might be partially covered, check multiple points
   const points = [
@@ -285,15 +290,7 @@ function isElementVisible(element, rect, computedStyle) {
   ];
 
   // Check if any of the points hit our element
-  for (const point of points) {
-    const el = document.elementFromPoint(point.x, point.y);
-    if (el === element || element.contains(el) || (el && el.contains(element))) {
-      return true;
-    }
-  }
-
-  // Element is completely covered
-  return false;
+  return points.some(point => isElementAtPoint(point.x, point.y));
 }
 
 function respondWith(obj, selector, xpath) {

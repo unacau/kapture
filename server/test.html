@@ -215,6 +215,15 @@
                     <div id="visible-element">This element is visible</div>
                     <div id="hidden-element" style="display: none;">This element is hidden</div>
                     <div id="zero-height" style="height: 0; overflow: hidden;">This element has zero height</div>
+
+                    <!-- Overflow test case - element appears outside parent but is visible -->
+                    <div style="position: relative; height: 30px; overflow: hidden; border: 1px solid #ddd; margin-top: 10px; margin-bottom: 50px;">
+                        <span>Parent with overflow:hidden</span>
+                        <!-- This simulates a dropdown that uses fixed positioning to escape parent's overflow -->
+                        <div id="overflow-escape" style="position: fixed; top: 300px; left: 20px; background: #e3f2fd; padding: 5px; border: 1px solid blue;">
+                            Fixed child (escapes overflow)
+                        </div>
+                    </div>
                 </div>
 
                 <h3>Console Log Tests</h3>
@@ -291,6 +300,7 @@
                     <span>Hover to highlight</span>
                 </div>
             </div>
+
         </div>
 
         <!-- Scrollable Area - Full Width -->
@@ -330,6 +340,7 @@
                 <div style="height: 1500px;"></div>
             </div>
         </div>
+
     </div>
 </body>
 </html>
