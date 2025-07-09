@@ -1197,6 +1197,13 @@
 
   // Check initial connection status
   setTimeout(() => {
+
+    // temp hack until extension v14 is published
+    const currentUrl = window.location.href;
+    if (currentUrl.startsWith('http://localhost:61822/welcome') || currentUrl.startsWith('http://127.0.0.1:61822/welcome')) {
+      document.body.classList.add('kapture-connected')
+    }
+
     if (document.body.classList.contains('kapture-connected')) {
       updateServerStatus('connected');
     } else if (document.body.classList.contains('kapture-connecting')) {
