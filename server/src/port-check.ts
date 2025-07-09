@@ -48,28 +48,37 @@ async function getPortInfo(port: number): Promise<{ inUse: boolean; pid?: string
  */
 export async function checkIfPortInUse(port: number): Promise<void> {
   const portCheck = await getPortInfo(port);
+  const GREEN = "\x1b[1;32m";
+  const YELLOW = "\x1b[1;33m";
+  const GREY = "\x1b[38;5;244m";
+  const RESET = "\x1b[0m";
 
   if (portCheck.inUse) {
-    logger.error('='.repeat(35));
-    logger.error(`ERROR: Port ${port} is already in use`);
-    logger.error('='.repeat(35));
-
+    let message = '';
     if (portCheck.pid) {
-      logger.error(`Process ID: ${portCheck.pid}`);
-      if (portCheck.command) {
-        logger.error(`Process: ${portCheck.command}`);
+      if (portCheck.command !== 'node') {
+        message = `⚠️ Port ${port} is already in use by "${portCheck.command}"`;
       }
-      logger.error('');
-      logger.error('To kill the process, run:');
-
-      if (process.platform === 'darwin' || process.platform === 'linux') {
-        logger.error(`  kill -9 ${portCheck.pid}`);
-      } else if (process.platform === 'win32') {
-        logger.error(`  taskkill /PID ${portCheck.pid} /F`);
+      else {
+        message = `✅ A server instance is already running!`;
+      }
+      console.log(`${GREEN}┌${'─'.repeat(message.length + 3)}┐${RESET}`);
+      console.log(`${GREEN}│${RESET} ${YELLOW}${message}${RESET} ${GREEN}│${RESET}`);
+      console.log(`${GREEN}├${'─'.repeat(message.length + 3)}┤${RESET}`);
+      if (portCheck.pid) {
+        let kill_cmd = '';
+        if (process.platform === 'darwin' || process.platform === 'linux') {
+          kill_cmd = `      kill -9 ${portCheck.pid}`
+        } else if (process.platform === 'win32') {
+          kill_cmd = `      taskkill /PID ${portCheck.pid} /F`;
+        }
+        console.log(`${GREEN}│${RESET} ${GREY}${'   To stop the other instance, run:'.padEnd(message.length + 2)}${GREEN}│${RESET}`);
+        console.log(`${GREEN}│${RESET} ${GREY}${kill_cmd.padEnd(message.length + 2)}${GREEN}│${RESET}`);
+        console.log(`${GREEN}└${'─'.repeat(message.length + 3)}┘${RESET}`);
       }
     }
 
-    logger.error('='.repeat(35));
+    console.log();
     process.exit(1);
   }
 }
