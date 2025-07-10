@@ -33,14 +33,13 @@ This prevents port conflicts and provides helpful information about existing con
 ### Install globally
 
 ```bash
-npm install -g kapture-mcp-server
-kapture-mcp-server
+npm install -g kapture-mcp
 ```
 
 ### Install locally in a project
 
 ```bash
-npm install kapture-mcp-server
+npm install kapture-mcp
 ```
 
 ## Usage with Claude Desktop

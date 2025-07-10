@@ -15,6 +15,19 @@ import { BrowserCommandHandler } from './browser-command-handler.js';
 import { baseResources, createTabResources } from './yaml-loader.js';
 import type { ResourceHandler } from './resource-handler.js';
 import type { ToolHandler } from './tool-handler.js';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8'));
+const SERVER_NAME = packageJson.name;
+const SERVER_VERSION = packageJson.version;
+const SERVER_INFO = {
+  name: SERVER_NAME,
+  version: SERVER_VERSION
+};
 
 interface MCPConnection {
   id: string;
@@ -176,10 +189,7 @@ export class MCPServerManager {
 
   private createMCPServer(connectionId: string): Server {
     const server = new Server(
-      {
-        name: 'kapture-mcp-server',
-        version: '1.0.0',
-      },
+      SERVER_INFO,
       {
         capabilities: {
           tools: {},
@@ -209,10 +219,7 @@ export class MCPServerManager {
           tools: {},
           resources: {}
         },
-        serverInfo: {
-          name: 'kapture-mcp-server',
-          version: '1.0.0'
-        }
+        serverInfo: SERVER_INFO
       };
     });
 
