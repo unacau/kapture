@@ -15,13 +15,32 @@ import { BrowserCommandHandler } from './browser-command-handler.js';
 import { baseResources, createTabResources } from './yaml-loader.js';
 import type { ResourceHandler } from './resource-handler.js';
 import type { ToolHandler } from './tool-handler.js';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const packageJson = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8'));
+
+// Try multiple paths to find package.json
+let packageJson: any = { name: 'kapture-mcp', version: 'unknown' };
+const possiblePaths = [
+  join(__dirname, '../../package.json'), // Development path
+  join(__dirname, '../package.json'),    // Compiled distribution path
+  join(__dirname, 'package.json'),       // Same directory (edge case)
+];
+
+for (const path of possiblePaths) {
+  if (existsSync(path)) {
+    try {
+      packageJson = JSON.parse(readFileSync(path, 'utf-8'));
+      break;
+    } catch (error) {
+      // Continue to next path
+    }
+  }
+}
+
 const SERVER_NAME = packageJson.name;
 const SERVER_VERSION = packageJson.version;
 const SERVER_INFO = {
