@@ -258,6 +258,11 @@ function handleClearLogs() {
 function handleClearMessages() {
   // Request background to clear messages
   port.postMessage({ type: 'clearMessages', tabId });
+  
+  // Clear the detail view
+  const detailContainer = document.getElementById('detail-container');
+  detailContainer.classList.remove('visible');
+  selectedMessageIndex = -1;
 }
 
 // Update console count
