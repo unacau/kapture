@@ -50,20 +50,20 @@ const ASSISTANTS: Record<string, AssistantConfig> = {
   'Cursor': {
     key: 'cursor',
     configPaths: {
-      darwin: join(homedir(), 'Library', 'Application Support', 'Cursor', 'User', 'settings.json'),
-      win32: join(process.env.APPDATA || '', 'Cursor', 'User', 'settings.json'),
-      linux: join(homedir(), '.config', 'Cursor', 'User', 'settings.json')
+      darwin: join(homedir(), '.cursor', 'mcp.json'),
+      win32: join(homedir(), '.cursor', 'mcp.json'),
+      linux: join(homedir(), '.cursor', 'mcp.json')
     },
-    configKey: 'mcp.servers'
+    configKey: 'mcpServers'
   },
-  'Windsurf': {
-    key: 'windsurf',
+  'Gemini': {
+    key: 'gemini',
     configPaths: {
-      darwin: join(homedir(), 'Library', 'Application Support', 'Windsurf', 'User', 'settings.json'),
-      win32: join(process.env.APPDATA || '', 'Windsurf', 'User', 'settings.json'),
-      linux: join(homedir(), '.config', 'Windsurf', 'User', 'settings.json')
+      darwin: join(homedir(), '.gemini', 'settings.json'),
+      win32: join(homedir(), '.gemini', 'settings.json'),
+      linux: join(homedir(), '.gemini', 'settings.json')
     },
-    configKey: 'mcp.servers'
+    configKey: 'mcpServers'
   }
 };
 
