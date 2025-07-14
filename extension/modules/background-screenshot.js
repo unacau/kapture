@@ -19,7 +19,16 @@ export async function screenshot({tabId}, { scale = 0.5, quality = 0.5, format =
     };
   }
 
-  const clip = elementResult.element.bounds;
+  const clip = { ...elementResult.element.bounds };
+  
+  // For fixed positioned elements, we need viewport-relative coordinates
+  // For non-fixed elements, we need document-relative coordinates
+  if (elementResult.element.position !== 'fixed') {
+    // Add scroll position to convert from viewport to document coordinates
+    clip.x += elementResult.scrollPosition.x;
+    clip.y += elementResult.scrollPosition.y;
+  }
+  
   if (scale) {
     clip.scale = scale;
   }

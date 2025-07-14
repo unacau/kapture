@@ -195,7 +195,8 @@ function getElementData(element) {
     selector: selector,
     bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
     visible: visible,
-    focused: element === document.activeElement
+    focused: element === document.activeElement,
+    position: computedStyle.position
   };
   // Conditionally add attributes
   ["href", "src", "value", "name"].forEach(attr => element[attr] && (data[attr] = element[attr]));
