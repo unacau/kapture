@@ -32,9 +32,9 @@ const ASSISTANTS: Record<string, AssistantConfig> = {
   'Claude Code': {
     key: 'claude-code',
     configPaths: {
-      darwin: join(homedir(), '.claude', 'settings.json'),
-      win32: join(homedir(), '.claude', 'settings.json'),
-      linux: join(homedir(), '.claude', 'settings.json')
+      darwin: join(homedir(), '.claude.json'),
+      win32: join(homedir(), '.claude.json'),
+      linux: join(homedir(), '.claude.json')
     },
     configKey: 'mcpServers'
   },
